@@ -21,7 +21,7 @@ from typing import Any
 from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.prompt_values import PromptValue
 from langchain_core.runnables import RunnableLambda
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from techeval.agents._deps import TechResearchOutput
 from techeval.schemas import (
@@ -221,8 +221,55 @@ class FakeStructuredLLM:
         if schema is JudgeResult:
             return JudgeResult.model_validate(self.load_fixture("judge_result.json"))
 
-        # 그 외 BaseModel: 필드별로 재귀 해석 (각 역할이 정의한 래퍼 모델 지원)
+        # 그 외 BaseModel (각 역할이 정의한 래퍼/드래프트 모델):
+        # 1) 단일 객체 픽스처 중 그 모델로 검증되는 것이 있으면 그대로 반환 (예: D의 SynthesisDraft ← synthesis.json)
+        # 2) 없으면 필드별로 재귀 해석 (예: results: list[CriterionResult] 같은 래퍼)
+        found = self._resolve_by_structure(schema, text)
+        if found is not None:
+            return found
         return self._resolve_generic(schema, text)
+
+    # 단일 객체 픽스처 (파일, 프롬프트의 tech_id로 항목을 골라야 하는지)
+    _OBJECT_FIXTURES: tuple[tuple[str, bool], ...] = (
+        ("synthesis.json", False),
+        ("evidence_gap.json", False),
+        ("judge_result.json", False),
+        ("tech_profiles.json", True),
+    )
+
+    def _resolve_by_structure(self, schema: type[BaseModel], text: str) -> BaseModel | None:
+        """픽스처 데이터가 `schema`로 검증되면(초과 키는 무시) 그 인스턴스를 돌려준다.
+
+        계약 모델의 부분집합 필드를 가진 드래프트 모델(예: `generated_at`을 뺀 `SynthesisDraft`)을 위한 경로다.
+        여러 픽스처가 동시에 맞으면 모호하므로 에러를 낸다.
+        """
+        matches: list[tuple[str, BaseModel]] = []
+        for name, per_tech in self._OBJECT_FIXTURES:
+            try:
+                data = self.load_fixture(name)
+            except FixtureLookupError:
+                continue
+            if per_tech:
+                tech_id = extract_tech_id(text)
+                items = [d for d in data if d.get("tech_id") == tech_id]
+                if not items:
+                    continue
+                data = items[0]
+            if not isinstance(data, dict):
+                continue
+            # 필드가 하나도 안 겹치면 "빈 모델"에 우연히 맞는 걸 막는다
+            if not (set(schema.model_fields) & set(data)):
+                continue
+            try:
+                matches.append((name, schema.model_validate(data)))
+            except ValidationError:
+                continue
+        if len(matches) > 1:
+            raise FixtureLookupError(
+                f"{schema.__name__} matches multiple fixtures: {[m[0] for m in matches]}. "
+                f"use FakeStructuredLLM.register({schema.__name__}, fn)."
+            )
+        return matches[0][1] if matches else None
 
     def _resolve_generic(self, schema: type[BaseModel], text: str) -> BaseModel:
         values: dict[str, Any] = {}

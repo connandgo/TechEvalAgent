@@ -149,3 +149,59 @@ def test_plain_invoke_records(llm):
 )
 def test_extract_tech_id(text, expected):
     assert extract_tech_id(text) == expected
+
+
+def test_draft_model_maps_to_object_fixture(fixtures_dir):
+    """D의 SynthesisDraft처럼 계약 모델의 부분집합 필드를 가진 모델은 해당 픽스처로 채운다."""
+    from techeval.schemas import Agreement, Conflict, Gap
+
+    synthesis = {
+        "agreements": [
+            {
+                "tech_id": "mla",
+                "perspectives": ["trl", "domain"],
+                "criterion_ids": ["T2", "D1"],
+                "statement": "s",
+                "evidence_ids": ["mla-T2-01"],
+            }
+        ],
+        "conflicts": [
+            {
+                "tech_id": "mla",
+                "perspective_a": "market",
+                "criterion_a": "M2",
+                "perspective_b": "domain",
+                "criterion_b": "D2",
+                "statement": "s",
+                "cause": "c",
+                "evidence_ids": ["mla-M2-01", "mla-D2-01"],
+            }
+        ],
+        "gaps": [{"tech_id": "pim_cxl", "criterion_id": "M2", "gap_type": "single_source", "description": "d"}],
+        "unit_notes": "u",
+        "evidence_asymmetry_note": "a",
+        "generated_at": "2026-01-01T00:00:00",
+    }
+    (fixtures_dir / "synthesis.json").write_text(json.dumps(synthesis))
+
+    class SynthesisDraft(BaseModel):  # generated_at 없음 — D가 deps.now()로 채움
+        agreements: list[Agreement]
+        conflicts: list[Conflict]
+        gaps: list[Gap]
+        unit_notes: str
+        evidence_asymmetry_note: str
+
+    llm = FakeStructuredLLM(fixtures_dir=fixtures_dir)
+    out = llm.with_structured_output(SynthesisDraft).invoke("종합 평가")
+    assert isinstance(out, SynthesisDraft)
+    assert out.conflicts[0].criterion_a == "M2" and not hasattr(out, "generated_at")
+
+
+def test_draft_profile_model_picks_tech(fixtures_dir):
+    class ProfileDraft(BaseModel):
+        principle: str
+        limitations: list[str]
+
+    llm = FakeStructuredLLM(fixtures_dir=fixtures_dir)
+    out = llm.with_structured_output(ProfileDraft).invoke("tech_id: pim_cxl 기술 개요")
+    assert out.principle == "pim_cxl principle"
