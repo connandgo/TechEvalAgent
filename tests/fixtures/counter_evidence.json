@@ -1,0 +1,58 @@
+[
+  {
+    "evidence_id": "mla-COUNTER-01",
+    "source_type": "paper",
+    "unit": "family",
+    "quote": "MLA requires modifying the attention architecture and training the model from scratch, which limits its direct applicability to existing pre-trained models that use MHA or GQA.",
+    "locator": "kv_survey p.9 §4.2",
+    "title": "A Survey on Large Language Model Acceleration based on KV Cache Management",
+    "authors": "Li, H. et al.",
+    "publisher": "arXiv",
+    "published_date": "2024-12",
+    "doc_id": "kv_survey",
+    "page": 9,
+    "section": "4.2 Architecture-level KV Cache Compression",
+    "chunk_id": "kv_survey:009:02"
+  },
+  {
+    "evidence_id": "mla-COUNTER-02",
+    "source_type": "web",
+    "unit": "family",
+    "quote": "Converting a GQA-based model to MLA is not free: the resulting model requires additional fine-tuning to recover the accuracy of the original checkpoint, and the inference speedup depends on the serving engine supporting the absorbed MLA kernels.",
+    "locator": "https://arxiv.org/abs/2502.07864",
+    "title": "TransMLA: Multi-Head Latent Attention Is All You Need",
+    "authors": "Meng, F. et al.",
+    "publisher": "arXiv",
+    "published_date": "2025-02-11",
+    "url": "https://arxiv.org/abs/2502.07864",
+    "accessed_date": "2026-01-01"
+  },
+  {
+    "evidence_id": "pim_cxl-COUNTER-01",
+    "source_type": "paper",
+    "unit": "family",
+    "quote": "CXL-attached memory exhibits access latency several times higher than local DRAM, so offloading the KV cache across the CXL link can degrade decode throughput unless the additional latency is hidden by memory-side computation or prefetching.",
+    "locator": "io_survey p.14 §5.3",
+    "title": "I/O for LLM inference: a survey of storage and memory bottlenecks",
+    "authors": "Survey authors",
+    "publisher": "arXiv",
+    "published_date": "2026-07",
+    "doc_id": "io_survey",
+    "page": 14,
+    "section": "5.3 CXL Memory Expansion",
+    "chunk_id": "io_survey:014:01"
+  },
+  {
+    "evidence_id": "pim_cxl-COUNTER-02",
+    "source_type": "web",
+    "unit": "family",
+    "quote": "Despite multiple vendor announcements, CXL memory expansion for AI inference remains in early deployment, with most reported use cases limited to evaluation systems rather than production-scale serving clusters.",
+    "locator": "https://www.nextplatform.com/2025/06/cxl-memory-ai-inference-adoption",
+    "title": "CXL memory pooling is still waiting for its AI moment",
+    "authors": "The Next Platform",
+    "publisher": "The Next Platform",
+    "published_date": "2025-06-18",
+    "url": "https://www.nextplatform.com/2025/06/cxl-memory-ai-inference-adoption",
+    "accessed_date": "2026-01-01"
+  }
+]

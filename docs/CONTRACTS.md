@@ -528,7 +528,7 @@ START
 
 - 픽스처는 **실제 논문 내용 기반**으로 그럴듯하게 작성한다(하류의 프롬프트 튜닝에 쓰이므로). 단, 빈 필드로 스키마를 통과시키지 않는다.
 - `tests/test_fixtures.py`(E)가 모든 픽스처를 스키마로 검증한다. 픽스처가 스키마를 깨면 main에 머지되지 않는다.
-- 스텁 LLM: `tests/conftest.py`(E)에 `FakeStructuredLLM`을 둔다. `with_structured_output(Model)` 호출 시 픽스처에서 해당 Model 인스턴스를 돌려준다. 각 역할은 이걸로 자기 에이전트 함수의 흐름(검색 호출 → 프롬프트 조립 → 검증)을 테스트한다.
+- 스텁 LLM: `src/techeval/stub_llm.py`(E)의 `FakeStructuredLLM`. `scripts/run.py --stub`과 테스트가 함께 쓰므로 `tests/` 밖에 둔다(`tests/conftest.py`의 `fake_llm`/`deps_stub` 픽스처가 이를 주입). `with_structured_output(Model)` 호출 시 프롬프트에서 `tech_id`(`tech_id: mla` 표기 권장)·`criterion_id`를 추출해 픽스처에서 해당 Model 인스턴스를 돌려준다. `list[CriterionResult]`와 각 역할이 정의한 래퍼 BaseModel(필드가 계약 모델/리스트인 경우)도 지원한다. 매칭 실패 시 `FixtureLookupError`. 각 역할은 이걸로 자기 에이전트 함수의 흐름(검색 호출 → 프롬프트 조립 → 검증)을 테스트하고, `llm.calls`로 프롬프트 내용을 검증한다.
 
 ---
 
