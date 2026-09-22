@@ -13,5 +13,5 @@ PDF 원문은 로컬 인덱싱 전용이며 저장소에 커밋하지 않는다.
 실행 예시:
 
 ```bash
-uv run python scripts/ingest.py --papers-dir paper --chroma-dir data/chroma
+uv run python scripts/ingest.py --papers-dir data/papers --chroma-dir data/chroma --rebuild
 ```

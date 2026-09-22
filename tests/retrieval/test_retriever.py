@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from techeval.retrieval import RetrievedChunk, StubRetriever, rrf_fuse
-from techeval.retrieval.ingest import chunk_document, parse_pdf
+from techeval.retrieval.ingest import ParsedPage, chunk_document, parse_pdf
 
 
 def _chunk(chunk_id: str, score: float) -> RetrievedChunk:
@@ -58,17 +58,32 @@ def test_stub_retriever_applies_doc_filter() -> None:
     assert {chunk.doc_id for chunk in chunks} == {"pim_cxl_1m"}
 
 
+def test_chunk_document_enforces_token_budget_and_records_sequence() -> None:
+    pages = [ParsedPage(page=1, text="1. Introduction\n" + "word " * 40)]
+    chunks = chunk_document(
+        pages,
+        doc_id="deepseek_v2",
+        doc_title="DeepSeek-V2",
+        max_tokens=10,
+        overlap_tokens=2,
+    )
+
+    assert len(chunks) > 1
+    assert [chunk.seq for chunk in chunks] == list(range(1, len(chunks) + 1))
+    assert all(len(chunk.text.split()) <= 10 for chunk in chunks)
+
+
 @pytest.mark.integration
 def test_all_papers_parse_and_include_table_chunks() -> None:
     papers = (
-        ("deepseek_v2", "DeepSeek-V2", "Deepseek_v2.pdf"),
-        ("pim_cxl_1m", "PIM/CXL", "PIM:CXL_KVcache.pdf"),
-        ("io_survey", "I/O survey", "LLM_storage_HW_survey.pdf"),
-        ("kv_survey", "KV survey", "KV_manage_survey.pdf"),
+        ("deepseek_v2", "DeepSeek-V2", "data/papers/Deepseek_v2.pdf"),
+        ("pim_cxl_1m", "PIM/CXL", "data/papers/PIM:CXL_KVcache.pdf"),
+        ("io_survey", "I/O survey", "data/papers/LLM_storage_HW_survey.pdf"),
+        ("kv_survey", "KV survey", "data/papers/KV_manage_survey.pdf"),
     )
     for doc_id, title, filename in papers:
         chunks = chunk_document(
-            parse_pdf(Path("paper") / filename), doc_id=doc_id, doc_title=title
+            parse_pdf(Path(filename)), doc_id=doc_id, doc_title=title
         )
         assert len(chunks) >= 5
         assert any(chunk.chunk_type == "table" for chunk in chunks)
@@ -77,10 +92,10 @@ def test_all_papers_parse_and_include_table_chunks() -> None:
 @pytest.mark.integration
 def test_fixture_chunks_are_verbatim_substrings_of_the_papers() -> None:
     papers = (
-        ("deepseek_v2", "DeepSeek-V2", "Deepseek_v2.pdf"),
-        ("pim_cxl_1m", "PIM/CXL", "PIM:CXL_KVcache.pdf"),
-        ("io_survey", "I/O survey", "LLM_storage_HW_survey.pdf"),
-        ("kv_survey", "KV survey", "KV_manage_survey.pdf"),
+        ("deepseek_v2", "DeepSeek-V2", "data/papers/Deepseek_v2.pdf"),
+        ("pim_cxl_1m", "PIM/CXL", "data/papers/PIM:CXL_KVcache.pdf"),
+        ("io_survey", "I/O survey", "data/papers/LLM_storage_HW_survey.pdf"),
+        ("kv_survey", "KV survey", "data/papers/KV_manage_survey.pdf"),
     )
     original = {}
     for doc_id, title, filename in papers:
@@ -88,7 +103,7 @@ def test_fixture_chunks_are_verbatim_substrings_of_the_papers() -> None:
             {
                 chunk.chunk_id: chunk
                 for chunk in chunk_document(
-                    parse_pdf(Path("paper") / filename), doc_id=doc_id, doc_title=title
+                    parse_pdf(Path(filename)), doc_id=doc_id, doc_title=title
                 )
             }
         )
@@ -102,3 +117,23 @@ def test_fixture_chunks_are_verbatim_substrings_of_the_papers() -> None:
     for item in fixture:
         assert item["chunk_id"] in original
         assert normalize(item["text"]) in normalize(original[item["chunk_id"]].text)
+
+
+@pytest.mark.integration
+def test_vector_retriever_cross_language_and_bm25_contract() -> None:
+    chroma_dir = Path("data/chroma")
+    if not (chroma_dir / "bm25.pkl").exists():
+        pytest.skip("Run scripts/ingest.py before vector integration tests")
+
+    from techeval.retrieval import VectorRetriever
+
+    retriever = VectorRetriever(str(chroma_dir))
+    mla = retriever.search("MLA의 KV cache 감소율", top_k=3)
+    cxl = retriever.search("CXL 메모리로 KV cache 확장 실험 하드웨어", top_k=3)
+    pnm = retriever.search("PNM", top_k=1, mode="bm25")
+    survey = retriever.search("KV cache taxonomy", top_k=5, doc_ids=["kv_survey"])
+
+    assert any(chunk.doc_id == "deepseek_v2" for chunk in mla)
+    assert any(chunk.doc_id == "pim_cxl_1m" for chunk in cxl)
+    assert pnm[0].doc_id == "pim_cxl_1m"
+    assert {chunk.doc_id for chunk in survey} == {"kv_survey"}
