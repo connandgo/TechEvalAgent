@@ -77,3 +77,13 @@ tests/fixtures/chunks.json
 - 논문 전체를 하나의 벡터로 만들지 않는다.
 - `RetrievedChunk` 필드 이름을 바꾸지 않는다(CONTRACT CHANGE 필요).
 - 논문 PDF를 커밋하지 않는다.
+
+## 9. 현재 구현·전달 기준
+
+- 현재 로컬 논문 파일은 `paper/`에 두고, 인덱싱 CLI에는 항상 경로를 명시한다.
+  ```bash
+  uv run python scripts/ingest.py --papers-dir paper --chroma-dir data/chroma
+  ```
+- `data/chroma/`와 논문 PDF는 로컬 산출물이며 커밋하지 않는다. 팀원은 각자 같은 명령으로 인덱스를 생성한다.
+- `tests/fixtures/chunks.json`은 네 논문 각각 5개 청크(표 청크 포함)를 제공한다. 각 `chunk_id`와 fixture `text`는 실제 PDF를 다시 파싱한 결과에 존재하는지 검사한다.
+- B/C/E는 `BaseRetriever.search()`와 `get_chunk()`만 사용한다. 논문 Evidence는 `RetrievedChunk.to_evidence()`로 만들고, E의 검사 노드는 `chunk_id`와 quote substring을 대조한다.
