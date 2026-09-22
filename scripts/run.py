@@ -16,7 +16,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from techeval.config import build_deps, load_settings  # noqa: E402
+from techeval.config import build_agent_deps, build_deps, load_settings  # noqa: E402
 from techeval.graph import GraphConfig, build_graph, invoke_config, load_agents, state_to_json  # noqa: E402
 
 logger = logging.getLogger("techeval.run")
@@ -53,7 +53,8 @@ def main(argv: list[str] | None = None) -> int:
     deps = build_deps(stub=stub_deps, settings=settings, use_cache=not args.no_cache)
     agents, stubbed = load_agents(stub=args.stub, allow_stub_fallback=args.allow_stub_fallback)
     cfg = GraphConfig(output_dir=str(out_dir), skip_pdf=args.skip_pdf, stub=stub_deps)
-    graph = build_graph(deps, agents, cfg)
+    agent_deps = {} if stub_deps else build_agent_deps(deps, settings)  # LLM_MODEL_<AGENT> 가 있는 에이전트만
+    graph = build_graph(deps, agents, cfg, agent_deps=agent_deps)
 
     node_counts: Counter[str] = Counter()
     step = 0
@@ -86,6 +87,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"LLM 호출: {fmt(llm_calls)} (judge {fmt(judge_calls)})")
     if stubbed:
         print("스텁 대체:", ", ".join(stubbed))
+    if agent_deps:
+        print("에이전트별 모델:", settings.agent_overrides())
     if jr is not None:
         print(f"judge: passed={jr.passed} scores={jr.scores} missing={jr.missing_required}")
     print(

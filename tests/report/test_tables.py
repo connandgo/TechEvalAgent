@@ -23,7 +23,5 @@ def test_thirty_results_make_four_tables():
 
 
 def test_missing_result_row():
-    table = criterion_table(
-        ["mla", "pim_cxl"], ["T1"], [r for r in _results() if r.tech_id == "mla"]
-    )
+    table = criterion_table(["mla", "pim_cxl"], ["T1"], [r for r in _results() if r.tech_id == "mla"])
     assert "| T1 현재 TRL | pim_cxl | 결과 없음 |" in table

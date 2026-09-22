@@ -85,9 +85,7 @@ def _index(inp: ReportInput) -> dict[str, Evidence]:
 
 def _deps(llm) -> tuple[Deps, SearchSpy]:
     spy = SearchSpy()
-    return Deps(
-        retriever=spy, web_search=spy, llm=llm, now=lambda: "2026-01-01T00:00:00"
-    ), spy
+    return Deps(retriever=spy, web_search=spy, llm=llm, now=lambda: "2026-01-01T00:00:00"), spy
 
 
 def test_report_structure_and_lint(inp):
@@ -193,9 +191,7 @@ def test_real_llm_report_passes_lint(inp, tmp_path):
     except RuntimeError as exc:  # .env에 LLM_PROVIDER/LLM_MODEL/JUDGE_MODEL이 없으면
         pytest.skip(str(exc))
     deps, spy = _deps(llm)
-    syn = run_synthesis(
-        SynthesisInput(**inp.model_dump(include=set(SynthesisInput.model_fields))), deps
-    )
+    syn = run_synthesis(SynthesisInput(**inp.model_dump(include=set(SynthesisInput.model_fields))), deps)
     md = run_report(inp.model_copy(update={"synthesis": syn}), deps)
     res = lint_report(md, _index(inp))
     assert not spy.called

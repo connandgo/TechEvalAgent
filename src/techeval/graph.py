@@ -140,13 +140,28 @@ def _log_node(fn: Callable[..., Any]) -> Callable[..., Any]:
     return wrapper
 
 
-def build_graph(deps: Deps, agents: Agents | None = None, config: GraphConfig | None = None):
-    """CompiledStateGraph를 만든다. `deps.web_search`는 출처 레지스트리로 감싸 V5 검사에 쓴다."""
+def build_graph(
+    deps: Deps,
+    agents: Agents | None = None,
+    config: GraphConfig | None = None,
+    agent_deps: dict[str, Deps] | None = None,
+):
+    """CompiledStateGraph를 만든다. `deps.web_search`는 출처 레지스트리로 감싸 V5 검사에 쓴다.
+
+    `agent_deps`: 에이전트 이름(tech_research/domain/market/stakeholder/synthesis/report) → 그 노드에만 줄 Deps.
+    없는 에이전트는 공용 `deps`를 쓴다 (에이전트별 모델 분리용, 계약 변경 없음).
+    """
     cfg = config or GraphConfig()
     if agents is None:
         agents, _ = load_agents(stub=cfg.stub)
     registry = SourceRegistry(preload_urls=_preload_fixture_urls() if cfg.stub else None)
-    deps = deps.model_copy(update={"web_search": registry.wrap(deps.web_search)})
+    wrapped_search = registry.wrap(deps.web_search)
+    deps = deps.model_copy(update={"web_search": wrapped_search})
+    per_agent = {k: v.model_copy(update={"web_search": wrapped_search}) for k, v in (agent_deps or {}).items()}
+
+    def deps_for(agent: str) -> Deps:
+        return per_agent.get(agent, deps)
+
     retriever = deps.retriever
     rewrite_llm = None if cfg.stub else deps.llm
 
@@ -177,7 +192,7 @@ def build_graph(deps: Deps, agents: Agents | None = None, config: GraphConfig | 
     @_log_node
     def tech_research(payload: dict) -> dict:
         inp = AgentInput.model_validate(payload)
-        out = agents.run_tech_research(inp, deps)
+        out = agents.run_tech_research(inp, deps_for("tech_research"))
         out = TechResearchOutput.model_validate(out if isinstance(out, dict) else out.model_dump())
         return {"tech_profiles": [out.tech_profile], "trl_eval": out.trl_eval}
 
@@ -262,7 +277,7 @@ def build_graph(deps: Deps, agents: Agents | None = None, config: GraphConfig | 
     def _perspective_node(name: str, key: str, fn_name: str):
         def node(payload: dict) -> dict:
             inp = AgentInput.model_validate(payload)
-            results = getattr(agents, fn_name)(inp, deps)
+            results = getattr(agents, fn_name)(inp, deps_for(name))
             results = [CriterionResult.model_validate(r if isinstance(r, dict) else r.model_dump()) for r in results]
             expected = set(inp.missing_criteria) if inp.missing_criteria else set(PERSPECTIVE_CRITERIA[name])
             got = {r.criterion_id for r in results}
@@ -350,7 +365,7 @@ def build_graph(deps: Deps, agents: Agents | None = None, config: GraphConfig | 
 
     @_log_node
     def synthesis(state: GraphState) -> dict:
-        out = agents.run_synthesis(synthesis_input(state), deps)
+        out = agents.run_synthesis(synthesis_input(state), deps_for("synthesis"))
         from techeval.schemas import SynthesisResult
 
         return {"synthesis": SynthesisResult.model_validate(out if isinstance(out, dict) else out.model_dump())}
@@ -398,7 +413,7 @@ def build_graph(deps: Deps, agents: Agents | None = None, config: GraphConfig | 
         if state.get("judge_result") is not None:  # 재생성
             retry["report"] = retry.get("report", 0) + 1
             logger.info("report: 재생성 %d/%d", retry["report"], MAX_REPORT_REGENERATION)
-        md = agents.run_report(report_input(state), deps)
+        md = agents.run_report(report_input(state), deps_for("report"))
         if not isinstance(md, str) or not md.strip():
             raise ValueError("run_report must return non-empty markdown")
         return {"report_md": md, "retry_counts": retry}

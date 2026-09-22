@@ -207,17 +207,13 @@ def test_to_evidence_maps_all_fields():
 
 def test_to_evidence_accepts_quote_from_content():
     r = _result(content="Leo supports memory pooling for server hosts.")
-    e = r.to_evidence(
-        evidence_id="pim_cxl-M3-02", quote="memory pooling", unit="family"
-    )
+    e = r.to_evidence(evidence_id="pim_cxl-M3-02", quote="memory pooling", unit="family")
     assert e.quote == "memory pooling"
 
 
 def test_to_evidence_normalizes_whitespace_when_matching():
     r = _result(snippet="Leo CXL memory controllers\n   are shipping in production.")
-    e = r.to_evidence(
-        evidence_id="pim_cxl-M3-03", quote="controllers are shipping", unit="family"
-    )
+    e = r.to_evidence(evidence_id="pim_cxl-M3-03", quote="controllers are shipping", unit="family")
     assert e.quote == "controllers are shipping"
 
 
@@ -288,44 +284,30 @@ def test_not_public_evidence_records_queries_and_scope():
 )
 def test_not_public_evidence_requires_query_and_scope(queries, scope):
     with pytest.raises(ValueError):
-        not_public_evidence(
-            evidence_id="pim_cxl-M2-04", queries=queries, scope=scope, unit="family"
-        )
+        not_public_evidence(evidence_id="pim_cxl-M2-04", queries=queries, scope=scope, unit="family")
 
 
 def test_not_public_evidence_makes_confidence_low():
     """신뢰도 규칙 — not_public이 섞이면 low (AGENTS.md 3)."""
-    paper = _result(
-        url="https://arxiv.org/abs/2405.04434", source_kind="paper"
-    ).to_evidence(
+    paper = _result(url="https://arxiv.org/abs/2405.04434", source_kind="paper").to_evidence(
         evidence_id="mla-M2-01", quote="shipping in production", unit="family"
     )
-    gap = not_public_evidence(
-        evidence_id="mla-M2-02", queries=["q"], scope="news", unit="family"
-    )
+    gap = not_public_evidence(evidence_id="mla-M2-02", queries=["q"], scope="news", unit="family")
     assert compute_confidence([paper]) == "medium"
     assert compute_confidence([paper, gap]) == "low"
 
 
 def test_confidence_high_requires_two_independent_sources_with_primary():
-    paper = _result(
-        url="https://arxiv.org/abs/2405.04434", source_kind="paper"
-    ).to_evidence(
+    paper = _result(url="https://arxiv.org/abs/2405.04434", source_kind="paper").to_evidence(
         evidence_id="mla-M2-01", quote="shipping in production", unit="family"
     )
-    news = _result(
-        url="https://www.nextplatform.com/2025/04/08/moe/", source_kind="news"
-    ).to_evidence(
+    news = _result(url="https://www.nextplatform.com/2025/04/08/moe/", source_kind="news").to_evidence(
         evidence_id="mla-M2-02", quote="shipping in production", unit="family"
     )
-    other_paper = _result(
-        url="https://arxiv.org/abs/2412.19442", source_kind="paper"
-    ).to_evidence(
+    other_paper = _result(url="https://arxiv.org/abs/2412.19442", source_kind="paper").to_evidence(
         evidence_id="mla-M2-03", quote="shipping in production", unit="family"
     )
-    same_host_news = _result(
-        url="https://www.nextplatform.com/2025/06/02/cxl/", source_kind="news"
-    ).to_evidence(
+    same_host_news = _result(url="https://www.nextplatform.com/2025/06/02/cxl/", source_kind="news").to_evidence(
         evidence_id="mla-M2-04", quote="shipping in production", unit="family"
     )
     assert compute_confidence([paper, news]) == "high"
@@ -366,9 +348,7 @@ def test_fixture_metadata_is_filled():
             assert r.snippet.strip(), f"{key}: {r.url} snippet 누락"
             if r.published_date:
                 dated += 1
-    assert dated / total >= 0.6, (
-        "픽스처 날짜 채움 비율이 통합 테스트 기준(60%)보다 낮다"
-    )
+    assert dated / total >= 0.6, "픽스처 날짜 채움 비율이 통합 테스트 기준(60%)보다 낮다"
 
 
 def test_fixture_source_kind_matches_url_classification():

@@ -20,9 +20,18 @@ logger = logging.getLogger(__name__)
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
+AGENT_NAMES: tuple[str, ...] = ("tech_research", "domain", "market", "stakeholder", "synthesis", "report")
+
+
 class Settings(BaseModel):
     llm_provider: str = ""
-    llm_model: str = ""
+    llm_model: str = ""  # 기본 생성 모델. 아래 에이전트별 키가 비어 있으면 이 값으로 폴백
+    llm_model_tech_research: str = ""
+    llm_model_domain: str = ""
+    llm_model_market: str = ""
+    llm_model_stakeholder: str = ""
+    llm_model_synthesis: str = ""
+    llm_model_report: str = ""
     judge_model: str = ""
     embedding_model: str = "BAAI/bge-m3"
     chroma_dir: str = "data/chroma"
@@ -40,6 +49,20 @@ class Settings(BaseModel):
                 self.judge_model,
             )
         return self
+
+    def model_for(self, agent: str | None) -> str:
+        """에이전트별 모델(`LLM_MODEL_<AGENT>`), 없으면 `LLM_MODEL`."""
+        if agent:
+            if agent not in AGENT_NAMES:
+                raise KeyError(f"unknown agent: {agent} (choose from {AGENT_NAMES})")
+            override = getattr(self, f"llm_model_{agent}")
+            if override:
+                return override
+        return self.llm_model
+
+    def agent_overrides(self) -> dict[str, str]:
+        """LLM_MODEL과 다른 모델을 지정한 에이전트만 {agent: model}로."""
+        return {a: self.model_for(a) for a in AGENT_NAMES if self.model_for(a) != self.llm_model}
 
     def require_llm(self) -> None:
         missing = [k for k in ("LLM_PROVIDER", "LLM_MODEL", "JUDGE_MODEL") if not getattr(self, k.lower())]
@@ -67,11 +90,15 @@ def _init_chat_model(model: str, provider: str) -> Any:
     return init_chat_model(model, model_provider=provider, temperature=0)
 
 
-def get_llm(settings: Settings | None = None) -> Any:
-    """평가·생성용 모델 (`LLM_MODEL`)."""
+def get_llm(settings: Settings | None = None, agent: str | None = None) -> Any:
+    """평가·생성용 모델. `agent`를 주면 `LLM_MODEL_<AGENT>`(없으면 `LLM_MODEL`)를 쓴다.
+
+    어떤 모델이든 `with_structured_output`이 네이티브 tool calling으로 동작하는 provider여야 한다
+    (JSON 모드 흉내만 내는 provider는 중첩 리스트 출력에서 깨진다).
+    """
     s = settings or load_settings()
     s.require_llm()
-    return _init_chat_model(s.llm_model, s.llm_provider)
+    return _init_chat_model(s.model_for(agent), s.llm_provider)
 
 
 def get_judge_llm(settings: Settings | None = None) -> Any:
@@ -79,6 +106,16 @@ def get_judge_llm(settings: Settings | None = None) -> Any:
     s = settings or load_settings()
     s.require_llm()
     return _init_chat_model(s.judge_model, s.llm_provider)
+
+
+def build_agent_deps(deps: Deps, settings: Settings | None = None) -> dict[str, Deps]:
+    """에이전트별 모델이 지정된 경우에만 그 에이전트용 Deps(llm만 교체)를 만든다. 나머지는 공용 deps를 쓴다."""
+    s = settings or load_settings()
+    out: dict[str, Deps] = {}
+    for agent, model in s.agent_overrides().items():
+        logger.info("에이전트별 모델: %s -> %s", agent, model)
+        out[agent] = deps.model_copy(update={"llm": _init_chat_model(model, s.llm_provider)})
+    return out
 
 
 def build_deps(stub: bool = False, settings: Settings | None = None, *, use_cache: bool = True) -> Deps:

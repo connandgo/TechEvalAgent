@@ -31,9 +31,7 @@ class StructuredStub:
 
     def invoke(self, messages):
         self.calls.append(messages)
-        return SynthesisDraft.model_validate(
-            self.drafts[min(len(self.calls), len(self.drafts)) - 1]
-        )
+        return SynthesisDraft.model_validate(self.drafts[min(len(self.calls), len(self.drafts)) - 1])
 
 
 class SearchSpy:
@@ -81,10 +79,7 @@ def _deps(llm) -> tuple[Deps, SearchSpy, SearchSpy]:
 def test_fixture_is_valid_synthesis_result():
     syn = load("synthesis.json", SynthesisResult)
     for tid in ("mla", "pim_cxl"):
-        assert any(
-            c.tech_id == tid and "S4" in (c.criterion_a, c.criterion_b)
-            for c in syn.conflicts
-        )
+        assert any(c.tech_id == tid and "S4" in (c.criterion_a, c.criterion_b) for c in syn.conflicts)
 
 
 def test_run_synthesis_with_shared_fake_llm(inp, fake_llm):
@@ -94,10 +89,7 @@ def test_run_synthesis_with_shared_fake_llm(inp, fake_llm):
     assert not retriever.called and not web.called
     assert fake_llm.prompts_for(SynthesisDraft)  # 구조화 호출이 SynthesisDraft로 나갔다
     for tid in ("mla", "pim_cxl"):
-        assert any(
-            c.tech_id == tid and "S4" in (c.criterion_a, c.criterion_b)
-            for c in result.conflicts
-        )
+        assert any(c.tech_id == tid and "S4" in (c.criterion_a, c.criterion_b) for c in result.conflicts)
 
 
 def test_run_synthesis_no_search_and_s4_conflicts(inp):
@@ -107,19 +99,12 @@ def test_run_synthesis_no_search_and_s4_conflicts(inp):
     assert not retriever.called and not web.called
     assert len(llm.calls) == 1
     for tid in ("mla", "pim_cxl"):
-        assert any(
-            c.tech_id == tid and "S4" in (c.criterion_a, c.criterion_b)
-            for c in result.conflicts
-        )
+        assert any(c.tech_id == tid and "S4" in (c.criterion_a, c.criterion_b) for c in result.conflicts)
     assert result.generated_at == "2026-01-01T00:00:00"
     assert result.evidence_asymmetry_note.startswith("근거 수: ")
     # 프롬프트에 매트릭스·S4 tradeoffs·반대 근거가 들어간다
     human = llm.calls[0][-1][1]
-    assert (
-        "| mla | stakeholder | S4 |" in human
-        and "S4 tradeoffs" in human
-        and "mla-COUNTER-01" in human
-    )
+    assert "| mla | stakeholder | S4 |" in human and "S4 tradeoffs" in human and "mla-COUNTER-01" in human
 
 
 def test_unknown_evidence_ids_are_removed(inp):
@@ -137,18 +122,12 @@ def test_missing_s4_conflict_retries_then_raises(inp):
     draft = _draft_from_fixture()
     no_s4 = dict(
         draft,
-        conflicts=[
-            c
-            for c in draft["conflicts"]
-            if "S4" not in (c["criterion_a"], c["criterion_b"])
-        ],
+        conflicts=[c for c in draft["conflicts"] if "S4" not in (c["criterion_a"], c["criterion_b"])],
     )
     llm = StructuredStub([no_s4, draft])
     result = run_synthesis(inp, _deps(llm)[0])  # 2차 시도에서 통과
     assert len(llm.calls) == 2
-    assert (
-        "S4(details.tradeoffs)" in llm.calls[1][-1][1]
-    )  # 피드백이 재시도 프롬프트에 들어감
+    assert "S4(details.tradeoffs)" in llm.calls[1][-1][1]  # 피드백이 재시도 프롬프트에 들어감
     assert result.conflicts
 
     with pytest.raises(ValueError, match="S4"):
@@ -180,10 +159,6 @@ def test_detect_gaps_rules(inp):
     assert ("mla", "T4", "single_source") not in gaps  # not_public과 중복 표시하지 않음
     assert not any(t == "unit_mismatch" for *_, t in gaps)
 
-    m2 = next(
-        r for r in inp.market_eval if r.tech_id == "mla" and r.criterion_id == "M2"
-    )
-    shifted = m2.model_copy(
-        update={"evidence_unit": "paper"}
-    )  # 시장 판정을 논문 단위로 → 기대 단위(family)와 불일치
+    m2 = next(r for r in inp.market_eval if r.tech_id == "mla" and r.criterion_id == "M2")
+    shifted = m2.model_copy(update={"evidence_unit": "paper"})  # 시장 판정을 논문 단위로 → 기대 단위(family)와 불일치
     assert any(g.gap_type == "unit_mismatch" for g in detect_gaps([shifted]))
