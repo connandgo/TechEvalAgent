@@ -1,0 +1,69 @@
+{
+  "domain": "대규모 데이터센터의 장문맥 LLM 추론 환경",
+  "technologies": [
+    {
+      "tech_id": "mla",
+      "name": "DeepSeek-V2 MLA",
+      "approach": "sw",
+      "family": "MLA 계열",
+      "primary_doc_id": "deepseek_v2",
+      "paper_title": "DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model",
+      "paper_date": "2024-06",
+      "search_aliases": [
+        "Multi-head Latent Attention",
+        "MLA",
+        "DeepSeek-V2",
+        "latent KV compression",
+        "low-rank KV joint compression"
+      ]
+    },
+    {
+      "tech_id": "pim_cxl",
+      "name": "PIM/CXL",
+      "approach": "hw",
+      "family": "CXL·PIM/PNM 메모리 계열",
+      "primary_doc_id": "pim_cxl_1m",
+      "paper_title": "1M-Token LLM Inference with PIM/CXL Memory Expansion",
+      "paper_date": "2025-10",
+      "search_aliases": [
+        "Processing-in-Memory",
+        "PIM",
+        "Processing-near-Memory",
+        "PNM",
+        "CXL memory expansion",
+        "CXL-PNM",
+        "KV cache offloading CXL"
+      ]
+    }
+  ],
+  "stakeholders": [
+    "model_developer",
+    "cloud_serving_operator",
+    "memory_semiconductor_vendor",
+    "investor"
+  ],
+  "tech_profiles": [],
+  "trl_eval": [],
+  "market_eval": [],
+  "stakeholder_eval": [],
+  "domain_eval": [],
+  "missing_criteria": {
+    "trl": [],
+    "market": [],
+    "stakeholder": [],
+    "domain": []
+  },
+  "retry_counts": {
+    "trl:mla": 0,
+    "trl:pim_cxl": 0,
+    "market:mla": 0,
+    "market:pim_cxl": 0,
+    "stakeholder:mla": 0,
+    "stakeholder:pim_cxl": 0,
+    "domain:mla": 0,
+    "domain:pim_cxl": 0,
+    "counter": 0,
+    "report": 0
+  },
+  "counter_evidence": []
+}

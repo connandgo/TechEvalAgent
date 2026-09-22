@@ -1,0 +1,19 @@
+{
+  "asymmetry": true,
+  "evidence_count": {"mla": 23, "pim_cxl": 11},
+  "vendor_source_ratio": {"mla": 0.35, "pim_cxl": 0.55},
+  "opposing_missing": [
+    {
+      "tech_id": "mla",
+      "criterion_id": "D2",
+      "reason": "mla D2의 근거가 모두 DeepSeek-V2 원문(제안사 자료)이며, MLA의 처리량 이득이 나타나지 않거나 감소하는 조건을 보고한 독립 근거가 0건이다."
+    },
+    {
+      "tech_id": "pim_cxl",
+      "criterion_id": "M2",
+      "reason": "pim_cxl M2 채택 사례가 벤더 발표 자료(official)에만 의존하며, 상용 운영 단계에 이르지 못한 이유를 다룬 제3자 근거가 0건이다."
+    }
+  ],
+  "needs_counter_search": true,
+  "note": "고유 evidence 수 비율이 23:11(2.09:1)로 상한 2:1을 초과했고, mla D2·pim_cxl M2에 반대 방향 근거가 없어 반대 근거 탐색(1회)을 요청한다. pim_cxl은 벤더 발표 자료 비율이 55%로 높아 보고서 6장 한계점에 명시가 필요하다."
+}

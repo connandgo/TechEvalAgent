@@ -1,0 +1,23 @@
+{
+  "scores": {
+    "evidence": 5,
+    "criteria_compliance": 3,
+    "neutrality": 5,
+    "specificity": 3,
+    "format": 5
+  },
+  "reasons": {
+    "evidence": "본문의 모든 판정 문장이 [E: ...] 각주로 evidence_id에 연결되고, REFERENCE에는 본문에 등장한 evidence_id만 나열되어 있다.",
+    "criteria_compliance": "30개 기준이 모두 존재하나 pim_cxl T1의 '한 단계 위로 올리지 못한 이유'가 4.1절 본문에 서술되지 않고 요약표에만 있다.",
+    "neutrality": "우열·추천·순위·합산 표현이 없다. 근거 비대칭(mla 23건 vs pim_cxl 11건)과 벤더 자료 비율이 6장 한계점에 명시되어 있다.",
+    "specificity": "D1~D3 수치에 모델 규모·컨텍스트·하드웨어가 병기되어 있으나, mla D2의 처리량 수치에 배치 크기와 베이스라인이 빠져 있다.",
+    "format": "SUMMARY, 1~6장, REFERENCE 목차와 4.1~4.4 각 절 말미의 기술×기준 요약표가 모두 있다."
+  },
+  "missing_required": [],
+  "revision_instructions": [
+    "4.1절 pim_cxl T1 본문에 '한 단계 위로 올리지 못한 이유'를 details.why_not_higher 내용으로 추가하라.",
+    "4.4절 mla D2의 처리량 수치에 batch_size와 baseline을 Measurement 그대로 병기하라."
+  ],
+  "passed": true,
+  "judged_at": "2026-01-01T00:00:00"
+}
