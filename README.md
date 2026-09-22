@@ -76,6 +76,7 @@ TechEvalAgent/
 │   └── chroma/               # Chroma + BM25 생성 결과 (Git 제외)
 ├── docs/                     # 계약, 평가 기준, 역할별 구현 명세
 ├── scripts/
+│   ├── download_papers.py    # 공개 원문 PDF 4편 다운로드
 │   ├── ingest.py             # PDF → Chroma/BM25 인덱싱
 │   └── run.py                # 전체 LangGraph 실행
 ├── src/techeval/
@@ -112,7 +113,11 @@ cp .env.example .env
 
 ### 3. 원문 PDF 준비
 
-원문 PDF 4편의 `data/papers/` 배치. 파일명과 출처는 [`data/papers/README.md`](data/papers/README.md) 참고.
+아래 스크립트로 원문 PDF 4편을 `data/papers/`에 다운로드. 이미 받은 파일은 건너뛰며, 파일명과 출처는 [`data/papers/README.md`](data/papers/README.md) 참고.
+
+```bash
+uv run python scripts/download_papers.py
+```
 
 ### 4. 로컬 검색 인덱스 생성
 
