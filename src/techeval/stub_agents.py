@@ -224,8 +224,9 @@ def _perspective_eval(
 
 def run_tech_research(inp: AgentInput, deps: Deps) -> TechResearchOutput:
     now = deps.now()
+    criteria = _criteria(inp, "trl")  # missing_criteria 가 있으면 그 기준만 (프로필은 항상 갱신)
     profiles = _fixture("tech_profiles.json")
-    trl = _fixture_results("trl_eval.json", inp.tech.tech_id, PERSPECTIVE_CRITERIA["trl"], now, inp.retry_count)
+    trl = _fixture_results("trl_eval.json", inp.tech.tech_id, criteria, now, inp.retry_count)
     raw = next((p for p in profiles or [] if p["tech_id"] == inp.tech.tech_id), None)
     if raw is not None and trl is not None:
         profile = TechProfile.model_validate(raw).model_copy(
@@ -273,7 +274,7 @@ def run_tech_research(inp: AgentInput, deps: Deps) -> TechResearchOutput:
     )
     trl_eval = [
         _synth_result(inp.tech, "trl", cid, _paper_evidence(inp.tech, cid, deps), deps, inp.retry_count)
-        for cid in PERSPECTIVE_CRITERIA["trl"]
+        for cid in criteria
     ]
     return TechResearchOutput(tech_profile=profile, trl_eval=trl_eval)
 

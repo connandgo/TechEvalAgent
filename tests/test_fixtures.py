@@ -4,6 +4,7 @@
 """
 
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -27,10 +28,16 @@ FIXTURES = Path(__file__).parent / "fixtures"
 TECH_IDS = ("mla", "pim_cxl")
 
 
+REQUIRE_ALL = os.environ.get("TECHEVAL_REQUIRE_FIXTURES") == "1"  # 통합 완료 후 CI에서 1로 두면 누락 = 실패
+
+
 def _load(name: str):
     path = FIXTURES / name
     if not path.exists():
-        pytest.skip(f"{name} 미제공 (역할 {FIXTURE_OWNERS.get(name, '?')})")
+        msg = f"{name} 미제공 (역할 {FIXTURE_OWNERS.get(name, '?')})"
+        if REQUIRE_ALL:
+            pytest.fail(msg)
+        pytest.skip(msg)
     if name.endswith(".md"):
         return path.read_text(encoding="utf-8")
     return json.loads(path.read_text(encoding="utf-8"))

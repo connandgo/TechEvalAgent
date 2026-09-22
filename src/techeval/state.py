@@ -1,6 +1,7 @@
 """LangGraph State 스키마와 State 헬퍼. `docs/CONTRACTS.md` §7과 1:1로 대응한다."""
 
 import operator
+from datetime import UTC, datetime
 from typing import Annotated, TypedDict
 
 from techeval.schemas import (
@@ -44,6 +45,17 @@ class GraphState(TypedDict, total=False):
     report_pdf_path: str
 
 
+def _ts(value: str) -> tuple[int, datetime | str]:
+    """generated_at 비교 키. ISO datetime이면 aware UTC로 정규화해 비교하고, 파싱 실패 시 문자열 비교로 폴백한다."""
+    try:
+        dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except (ValueError, AttributeError):
+        return (0, value)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=UTC)
+    return (1, dt)
+
+
 # operator.add 로 누적되는 키 목록 (중복 제거가 필요한 키)
 APPEND_KEYS: tuple[str, ...] = ("tech_profiles", "trl_eval", "market_eval", "stakeholder_eval", "domain_eval")
 
@@ -51,7 +63,7 @@ APPEND_KEYS: tuple[str, ...] = ("tech_profiles", "trl_eval", "market_eval", "sta
 def latest_by_criterion(results: list[CriterionResult]) -> list[CriterionResult]:
     """`(tech_id, criterion_id)`별로 `generated_at`이 가장 최신인 결과 1개만 남긴다.
 
-    `generated_at`은 같은 형식의 ISO 문자열이어야 한다 (문자열 비교).
+    `generated_at`은 ISO datetime으로 파싱해 비교한다(offset 표기가 달라도 안전). 파싱 불가면 문자열 비교.
     같은 시각이면 뒤에 온 것(나중에 append된 것)을 취한다.
     반환 순서는 입력에서 각 키가 처음 등장한 순서를 따른다.
     """
@@ -59,7 +71,7 @@ def latest_by_criterion(results: list[CriterionResult]) -> list[CriterionResult]
     for r in results:
         key = (r.tech_id, r.criterion_id)
         prev = chosen.get(key)
-        if prev is None or r.generated_at >= prev.generated_at:
+        if prev is None or _ts(r.generated_at) >= _ts(prev.generated_at):
             chosen[key] = r
     return list(chosen.values())
 
@@ -69,7 +81,7 @@ def latest_by_tech(profiles: list[TechProfile]) -> list[TechProfile]:
     chosen: dict[str, TechProfile] = {}
     for p in profiles:
         prev = chosen.get(p.tech_id)
-        if prev is None or p.generated_at >= prev.generated_at:
+        if prev is None or _ts(p.generated_at) >= _ts(prev.generated_at):
             chosen[p.tech_id] = p
     return list(chosen.values())
 

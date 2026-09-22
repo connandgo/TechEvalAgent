@@ -167,10 +167,22 @@ def judge_report(report_md: str, inp: ReportInput, judge_llm: Any, now: str) -> 
             neutrality_hits = [*neutrality_hits, *banned]
         if cites:
             ev_problems = [*ev_problems, *cites]
-    if static_missing:
+    # 누락 항목을 차원별로 분리: 챕터·요약표 → format, "<tech>/<criterion>" 기준 누락 → criteria_compliance
+    all_missing = [*static_missing, *lint_missing]
+    criteria_missing = [m for m in all_missing if re.fullmatch(r"[a-z_]+/[TMSD][1-4]", m)]
+    format_missing = [m for m in all_missing if m not in criteria_missing]
+    if format_missing:
         scores["format"] = 1
-        reasons["format"] = (reasons.get("format", "") + f" [코드 검사] 필수 챕터·기준 누락: {static_missing}").strip()
-        instructions.append(f"누락된 필수 항목을 추가하라: {', '.join(static_missing)}")
+        reasons["format"] = (
+            reasons.get("format", "") + f" [코드 검사] 필수 챕터·요약표 누락: {format_missing}"
+        ).strip()
+        instructions.append(f"누락된 필수 챕터·요약표를 추가하라: {', '.join(format_missing)}")
+    if criteria_missing:
+        scores["criteria_compliance"] = 1
+        reasons["criteria_compliance"] = (
+            reasons.get("criteria_compliance", "") + f" [코드 검사] 기준 결과 누락: {criteria_missing}"
+        ).strip()
+        instructions.append(f"누락된 기준 결과를 반영하라: {', '.join(criteria_missing)}")
     if neutrality_hits:
         scores["neutrality"] = 1
         reasons["neutrality"] = (

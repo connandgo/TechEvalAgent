@@ -194,6 +194,15 @@ def build_graph(
         inp = AgentInput.model_validate(payload)
         out = agents.run_tech_research(inp, deps_for("tech_research"))
         out = TechResearchOutput.model_validate(out if isinstance(out, dict) else out.model_dump())
+        expected = set(inp.missing_criteria) if inp.missing_criteria else set(PERSPECTIVE_CRITERIA["trl"])
+        got = {r.criterion_id for r in out.trl_eval}
+        if got != expected:
+            logger.warning(
+                "tech_research(%s): 반환 기준 %s ≠ 요청 %s — 검사 노드가 재실행을 건다",
+                inp.tech.tech_id,
+                sorted(got),
+                sorted(expected),
+            )
         return {"tech_profiles": [out.tech_profile], "trl_eval": out.trl_eval}
 
     def route_after_tech_research(state: GraphState) -> str:
