@@ -85,9 +85,7 @@ def _index(inp: ReportInput) -> dict[str, Evidence]:
 
 def _deps(llm) -> tuple[Deps, SearchSpy]:
     spy = SearchSpy()
-    return Deps(
-        retriever=spy, web_search=spy, llm=llm, now=lambda: "2026-01-01T00:00:00"
-    ), spy
+    return Deps(retriever=spy, web_search=spy, llm=llm, now=lambda: "2026-01-01T00:00:00"), spy
 
 
 def test_report_structure_and_lint(inp):
@@ -121,6 +119,15 @@ def test_report_structure_and_lint(inp):
     assert "/ S4" not in market_prompt and "/ M2" in market_prompt
 
 
+def test_report_with_shared_fake_llm(inp, fake_llm):
+    """E의 FakeStructuredLLM은 invoke()에 등록이 없으면 빈 문자열을 준다. D의 stub_overrides()가 str 응답을 채운다."""
+    md = run_report(inp, _deps(fake_llm)[0])
+    assert fake_llm.prompts_for(str)
+    summary = next(s for s in split_sections(md) if s.key == "SUMMARY")
+    assert "(스텁 LLM)" in summary.body and "[E: " in summary.body
+    assert lint_report(md, _index(inp)).passed
+
+
 def test_unknown_citation_from_llm_is_removed(inp):
     llm = TextStub(extra=" 추가 문장이다[E: mla-FAKE-01].")
     md = run_report(inp, _deps(llm)[0])
@@ -142,6 +149,25 @@ def test_banned_term_triggers_one_fix_pass(inp):
     # 스텁은 수정 요청에도 같은 문장을 붙이므로 남아 있을 수 있다 — 단, 수정 호출은 5장에만 1회
     assert sum("# 수정 모드" in c for c in llm.calls) == 1
     assert md
+
+
+def test_summary_intro_is_rewritten_once_and_gets_whole_report_data(inp):
+    class IntroSummary(TextStub):
+        def invoke(self, messages):
+            resp = super().invoke(messages)
+            human = messages[-1][1]
+            if "SUMMARY" in human.splitlines()[0] and "# 수정 모드" not in human:
+                resp.content = "본 보고서는 두 기술을 4관점에서 평가했다. " + resp.content
+            return resp
+
+    llm = IntroSummary()
+    md = run_report(inp, _deps(llm)[0])
+    summary_calls = [c for c in llm.calls if "SUMMARY" in c.splitlines()[0]]
+    assert len(summary_calls) == 2 and "# 수정 모드" in summary_calls[1]  # 인트로 → SUMMARY만 1회 재작성
+    assert "도입 문장" in summary_calls[1]
+    assert "## 기술별 관점 판정" in summary_calls[0] and "## 해석상 한계" in summary_calls[0]  # 전체 보고서 요약 재료
+    summary = next(s for s in split_sections(md) if s.key == "SUMMARY")
+    assert not summary.body.strip().startswith("본 보고서는")
 
 
 def test_regeneration_only_changes_target_chapters(inp):
@@ -193,9 +219,7 @@ def test_real_llm_report_passes_lint(inp, tmp_path):
     except RuntimeError as exc:  # .env에 LLM_PROVIDER/LLM_MODEL/JUDGE_MODEL이 없으면
         pytest.skip(str(exc))
     deps, spy = _deps(llm)
-    syn = run_synthesis(
-        SynthesisInput(**inp.model_dump(include=set(SynthesisInput.model_fields))), deps
-    )
+    syn = run_synthesis(SynthesisInput(**inp.model_dump(include=set(SynthesisInput.model_fields))), deps)
     md = run_report(inp.model_copy(update={"synthesis": syn}), deps)
     res = lint_report(md, _index(inp))
     assert not spy.called

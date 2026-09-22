@@ -3,7 +3,9 @@ import pytest
 from techeval.report.citation import (
     build_reference_section,
     collect_cited_ids,
+    format_citations,
     format_reference,
+    normalize_citations,
     reference_ids,
 )
 from techeval.schemas import Evidence
@@ -70,9 +72,7 @@ def test_format_web_with_and_without_date():
     assert format_reference(_web("pim_cxl-M2-01")) == (
         "Samsung Semiconductor(2024-05-02). CXL Memory Module. Samsung Semiconductor, https://example.com/cmm-d"
     )
-    undated = format_reference(
-        _web("pim_cxl-M2-01", published_date=None, source_type="web")
-    )
+    undated = format_reference(_web("pim_cxl-M2-01", published_date=None, source_type="web"))
     assert undated.startswith("Samsung Semiconductor(n.d., 확인일 2026-09-20). ")
 
 
@@ -120,3 +120,9 @@ def test_reference_merges_same_paper_and_skips_uncited_and_inference():
     assert "pp. 1, 13" in lines[0]
     assert set(reference_ids(section)) == {"mla-T1-01", "mla-D1-01", "pim_cxl-M2-01"}
     assert "mla-UNUSED-01" not in section
+
+
+def test_citations_use_one_id_per_bracket():
+    """E의 judge는 `[E: id]` 한 괄호 한 id만 읽는다. 출력은 항상 이 형식으로 맞춘다."""
+    assert format_citations(["mla-T1-01", "mla-T1-02", "mla-T1-01"]) == "[E: mla-T1-01][E: mla-T1-02]"
+    assert normalize_citations("근거[E: mla-T1-01, mla-T2-01].") == "근거[E: mla-T1-01][E: mla-T2-01]."

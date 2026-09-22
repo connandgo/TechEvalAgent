@@ -2,6 +2,7 @@
 
 import logging
 
+from techeval.report.citation import format_citations
 from techeval.schemas import PERSPECTIVE_CRITERIA, CriterionResult, Measurement, TechRef
 
 logger = logging.getLogger(__name__)
@@ -63,10 +64,10 @@ def criterion_table(
                 logger.warning("요약표: %s × %s 결과 없음", tid, cid)
                 rows.append(f"| {label} | {_cell(tech)} | 결과 없음 | — | — | — |")
                 continue
-            cites = ", ".join(e.evidence_id for e in r.evidence)
+            cites = format_citations([e.evidence_id for e in r.evidence])
             rows.append(
                 f"| {label} | {_cell(tech)} | {_cell(_level(r))} | {r.confidence} "
-                f"| {UNIT_KO[r.evidence_unit]} | [E: {cites}] |"
+                f"| {UNIT_KO[r.evidence_unit]} | {cites} |"
             )
     return "\n".join(rows)
 
@@ -85,7 +86,7 @@ def perspective_table(
         [r for r in results if r.perspective == perspective],
         tech_names={t.tech_id: t.name for t in technologies},
     )
-    note = "레벨은 기준별 판정 단계이며 관점·기준 간 합산하지 않는다."
+    note = "레벨은 기준별 판정 단계일 뿐이며, 관점·기준이 다른 레벨끼리 더하거나 묶어 하나의 값으로 만들지 않는다."
     return f"{caption}\n\n{table}\n\n{note}"
 
 

@@ -172,7 +172,7 @@ TechEvalAgent/
 │   └── report/                        # (D) test_citation.py, test_lint.py, test_pdf.py, test_tables.py
 │       ├── d_fixtures.py              #   D 테스트용 픽스처 로더
 │       ├── make_d_fixtures.py         #   synthesis.json / report_md.md 재생성 스크립트
-│       └── upstream_samples/          #   B·C 픽스처가 main에 오기 전까지 D가 쓰는 샘플 (B·C 픽스처 머지 후 삭제)
+│       └── upstream_samples/          #   C 픽스처(market/stakeholder)가 main에 오기 전까지 D가 쓰는 샘플 (머지 후 삭제)
 ├── assets/fonts/                      # (D) PDF 한글 폰트 (선택)
 ├── data/
 │   ├── papers/
