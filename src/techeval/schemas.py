@@ -305,7 +305,8 @@ def get_tech(tech_id: str) -> TechRef:
 def _source_key(e: Evidence) -> str | None:
     """독립 출처 판별 키. 논문은 doc_id, 웹류는 URL/locator의 도메인."""
     if e.source_type == "paper":
-        return f"doc:{e.doc_id}" if e.doc_id else f"loc:{e.locator}"
+        # 코퍼스 논문은 doc_id, 웹에서 얻은 논문은 URL(=논문 1편) 단위. arxiv.org 같은 저장소 도메인은 출처가 아니다.
+        return f"doc:{e.doc_id}" if e.doc_id else f"paper:{e.url or e.locator}"
     raw = e.url or e.locator
     host = urlparse(raw).netloc.lower() if "://" in raw else ""
     if host:

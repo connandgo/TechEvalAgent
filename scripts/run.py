@@ -59,18 +59,22 @@ def main(argv: list[str] | None = None) -> int:
     node_counts: Counter[str] = Counter()
     step = 0
     final_state: dict = {}
+    pending: list[str] = []  # 이번 슈퍼스텝에서 실행된 노드들 — 다음 values 이벤트(실행 후 State)와 함께 덤프
     t0 = time.perf_counter()
     for mode, chunk in graph.stream({}, config=invoke_config(cfg), stream_mode=["updates", "values"]):
         if mode == "updates":
             for node in chunk:
                 step += 1
                 node_counts[node] += 1
-                if args.dump_state:
-                    state_dir = out_dir / "state"
-                    state_dir.mkdir(exist_ok=True)
-                    (state_dir / f"{step:03d}_{node}.json").write_text(state_to_json(final_state), encoding="utf-8")
+                pending.append(f"{step:03d}_{node}")
         else:
             final_state = chunk
+            if args.dump_state and pending:
+                state_dir = out_dir / "state"
+                state_dir.mkdir(exist_ok=True)
+                for name in pending:
+                    (state_dir / f"{name}.json").write_text(state_to_json(final_state), encoding="utf-8")
+                pending.clear()
     elapsed = time.perf_counter() - t0
 
     llm_calls = getattr(deps.llm, "call_count", None)

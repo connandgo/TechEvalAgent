@@ -92,6 +92,60 @@ def make_web_search(n: int = 2) -> Callable[..., list[WebResult]]:
 
 # --- 근거/결과 팩토리 -------------------------------------------------------------
 
+# 기준별 유효 level 예시 (CRITERIA §2)
+VALID_LEVEL: dict[str, str] = {
+    "T1": "TRL 4-6",
+    "T2": "L2",
+    "T3": "L2",
+    "T4": "narrative",
+    "M1": "L2",
+    "M2": "L2",
+    "M3": "L2",
+    "S1": "assigned",
+    "S2": "narrative",
+    "S3": "narrative",
+    "S4": "narrative",
+    "D1": "L2",
+    "D2": "L2",
+    "D3": "L2",
+    "D4": "checklist",
+}
+
+
+def valid_details(cid: str, evidence_id: str = "x") -> dict:
+    """CONTRACTS §2 필수 키를 갖춘 최소 details (V4 만족)."""
+    from techeval.schemas import STAKEHOLDERS
+
+    entry = [{"text": "t", "evidence_id": evidence_id, "is_inference": False}]
+    match cid:
+        case "T1":
+            return {"trl_band": "4-6", "estimate": 5, "why_not_higher": "실서비스 근거 없음"}
+        case "T2":
+            return {"env_level": "L2"}
+        case "T3" | "M3" | "D4":
+            return {"checklist": {"code": "Y"}}
+        case "T4":
+            return {"remaining_tasks": ["a"], "not_public_items": []}
+        case "M1":
+            return {
+                "market_figures": [
+                    {"figure": "f", "publisher": "p", "published_date": "2025", "evidence_id": evidence_id}
+                ]
+            }
+        case "M2":
+            return {"adopters": [{"name": "n", "stage": "PoC", "evidence_id": evidence_id}]}
+        case "S1":
+            return {"roles": {s: "affected" for s in STAKEHOLDERS}}
+        case "S2":
+            return {"benefits": {s: entry for s in STAKEHOLDERS}}
+        case "S3":
+            return {"burdens": {s: entry for s in STAKEHOLDERS}}
+        case "S4":
+            return {"tradeoffs": [{"beneficiary": "a", "burdened": "b", "text": "t", "evidence_ids": [evidence_id]}]}
+        case "D1" | "D2" | "D3":
+            return {"directness": "L2", "extrapolation_logic": "logic"}
+    return {}
+
 
 def paper_evidence(evidence_id: str, chunk: Chunk, *, quote: str | None = None, unit: str = "paper") -> Evidence:
     return Evidence(
@@ -136,7 +190,7 @@ def result(
     perspective: str,
     evidence: list[Evidence],
     *,
-    level: str = "L2",
+    level: str | None = None,
     details: dict | None = None,
     measurements: list[Measurement] | None = None,
     confidence: str | None = None,
@@ -144,6 +198,10 @@ def result(
 ) -> CriterionResult:
     from techeval.schemas import compute_confidence
 
+    if level is None:
+        level = VALID_LEVEL[cid]
+    if details is None:
+        details = valid_details(cid, evidence[0].evidence_id)
     if measurements is None and cid in ("D1", "D2", "D3") and level in ("L2", "L3"):
         measurements = [Measurement(metric="m", value="1", evidence_id=evidence[0].evidence_id)]
     return CriterionResult(
@@ -156,7 +214,7 @@ def result(
         confidence=confidence or compute_confidence(evidence),
         evidence_unit="paper" if perspective in ("trl", "domain") else "family",
         measurements=measurements or [],
-        details=details or {},
+        details=details,
         generated_at=generated_at,
     )
 

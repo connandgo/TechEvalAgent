@@ -235,3 +235,14 @@ def test_collect_stub_overrides_merges_agent_modules(monkeypatch):
     llm = FakeStructuredLLM(overrides=overrides)
     assert llm.with_structured_output(DraftA).invoke("아무 프롬프트").x == 1
     assert llm.with_structured_output(DraftB).invoke("아무 프롬프트").y == 2
+
+
+def test_explicit_missing_criteria_label_wins_over_mentions(llm):
+    """'M2만 재생성' 프롬프트에 이전 결과(M1/M3)가 실려 있어도 명시 표기만 따른다 (Codex M5)."""
+    prompt = 'tech_id: pim_cxl\nmissing_criteria: ["M2"]\n이전 결과: M1 L2, M3 L2, M1 근거 ...'
+    out = llm.with_structured_output(list[CriterionResult]).invoke(prompt)
+    assert [r.criterion_id for r in out] == ["M2"]
+    single = llm.with_structured_output(CriterionResult).invoke("tech_id: mla\ncriterion_id: T2\n참고: T1 T1 T1 T3")
+    assert single.criterion_id == "T2"
+    with pytest.raises(FixtureLookupError, match="explicit"):
+        llm.with_structured_output(CriterionResult).invoke("tech_id: mla\nmissing_criteria: M1, M3")

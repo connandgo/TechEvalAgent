@@ -238,12 +238,14 @@ def test_e_judge_failure_regenerates_once(h: Harness):
 
 
 def test_f_duplicates_removed_before_synthesis(h: Harness):
-    def drop_t3(inp, out, n):
+    def drop_t3_but_return_everything(inp, out, n):
+        """missing_criteria를 무시하고 항상 T1/T2/T4를 다시 돌려주는(계약 위반) 에이전트를 흉내 낸다."""
         if inp.tech.tech_id == "mla":
-            out.trl_eval = [r for r in out.trl_eval if r.criterion_id != "T3"]
+            full = stub_agents.run_tech_research(inp.model_copy(update={"missing_criteria": None}), h.deps)
+            out.trl_eval = [r for r in full.trl_eval if r.criterion_id != "T3"]
         return out
 
-    h.overrides["run_tech_research"] = drop_t3
+    h.overrides["run_tech_research"] = drop_t3_but_return_everything
     final, _ = h.run()
 
     # State에는 재시도분이 누적된다 (mla T1/T2/T4 × 3회 + pim_cxl 4 + not_public 1)
