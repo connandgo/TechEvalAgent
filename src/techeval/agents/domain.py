@@ -53,21 +53,22 @@ class D4Checklist(BaseModel):
 
 
 _PAPER_QUERIES: dict[str, list[str]] = {
+    # 별칭+영문(정확도) 와 "{name}"+한국어(다양성) 를 섞는다 (tech_research._PAPER_QUERIES 주석 참조).
     "D1": [
-        "{alias} KV cache size memory footprint long context",
-        "{name} 장문맥 KV cache 메모리 부담",
+        "{alias} KV cache per token elements context length",
+        "{name} 장문맥 KV cache 메모리 부담 long context",
     ],
     "D2": [
-        "{alias} batch size throughput concurrent requests",
-        "{name} 배치 크기 동시 처리 처리량",
+        "{alias} batch size throughput tokens per second",
+        "{name} 동시 처리 처리량 concurrent requests generation throughput",
     ],
     "D3": [
-        "{alias} latency energy per token cost overhead",
-        "{name} 지연 시간 에너지 비용",
+        "{alias} latency energy per token cost",
+        "{name} 지연 시간 에너지 비용 operating cost electricity hardware cost",
     ],
     "D4": [
         "{alias} deployment requirements training serving hardware",
-        "{name} 도입 시 변경 범위",
+        "{name} 도입 시 변경 범위 integration serving framework memory expansion",
     ],
 }
 _FAMILY_QUERIES = [
@@ -115,7 +116,7 @@ def gather_domain_context(
         queries += _fmt(_PAPER_QUERIES[cid], tech, inp.retry_count)
     for q in dict.fromkeys(queries):
         ctx.add_chunks(
-            deps.retriever.search(q, top_k=6, doc_ids=[tech.primary_doc_id]),
+            deps.retriever.search(q, top_k=8, doc_ids=[tech.primary_doc_id]),
             unit="paper",
         )
         ctx.queries.append(q)
