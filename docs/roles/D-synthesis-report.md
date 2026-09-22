@@ -19,11 +19,14 @@ src/techeval/report/citation.py          # format_reference, collect_cited_ids, 
 src/techeval/report/pdf.py               # render_pdf
 src/techeval/report/tables.py            # 기술 × 기준 요약표 생성 (마크다운 표)
 src/techeval/report/lint.py              # 금칙어·필수 챕터·REFERENCE 일치 검사 (judge 전 자체 검사)
+src/techeval/report/sections.py          # 챕터·절 분리/조립 (lint, 문제 챕터만 재생성)
+src/techeval/report/templates.py         # 1·2장 고정 텍스트
 src/techeval/prompts/synthesis/          # system.md, agreements.md, conflicts.md, gaps.md
-src/techeval/prompts/report/             # system.md, summary.md, ch1~ch6.md, revision.md
+src/techeval/prompts/report/             # system.md, summary.md, ch1~ch6.md, ch4_{trl,market,stakeholder,domain}.md, revision.md
 tests/agents/test_synthesis.py
 tests/agents/test_report.py
-tests/report/test_citation.py, test_lint.py, test_pdf.py
+tests/report/test_citation.py, test_lint.py, test_pdf.py, test_tables.py
+tests/report/d_fixtures.py, make_d_fixtures.py, upstream_samples/   # 픽스처 로더·재생성 스크립트·B·C 샘플
 tests/fixtures/synthesis.json
 tests/fixtures/report_md.md
 ```

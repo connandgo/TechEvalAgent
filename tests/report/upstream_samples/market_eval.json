@@ -1,0 +1,369 @@
+[
+  {
+    "tech_id": "mla",
+    "perspective": "market",
+    "criterion_id": "M1",
+    "level": "not_public",
+    "level_estimate": null,
+    "content": "MLA 계열을 따로 구분한 정량 시장 전망은 확인되지 않았다.",
+    "evidence": [
+      {
+        "evidence_id": "mla-M1-01",
+        "source_type": "not_public",
+        "unit": "family",
+        "quote": "",
+        "locator": "not_found",
+        "title": null,
+        "authors": null,
+        "publisher": null,
+        "published_date": null,
+        "url": null,
+        "accessed_date": null,
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": "Multi-head Latent Attention market forecast",
+        "searched_at": "2026-09-20T09:30:00",
+        "search_scope": "시장조사 기관 보고서·뉴스 2024-2026"
+      }
+    ],
+    "confidence": "low",
+    "evidence_unit": "family",
+    "measurements": [],
+    "details": {
+      "market_figures": []
+    },
+    "generated_at": "2026-09-20T10:00:00",
+    "retry_count": 0
+  },
+  {
+    "tech_id": "mla",
+    "perspective": "market",
+    "criterion_id": "M2",
+    "level": "L4",
+    "level_estimate": null,
+    "content": "DeepSeek는 MLA를 적용한 모델을 자사 API로 상용 운영하고 있으며, 후속 모델 DeepSeek-V3도 MLA를 채택했다.",
+    "evidence": [
+      {
+        "evidence_id": "mla-M2-01",
+        "source_type": "paper",
+        "unit": "family",
+        "quote": "In order to efficiently deploy DeepSeek-V2 for service, we first convert its parameters into the precision of FP8.",
+        "locator": "deepseek_v2 p.13 §3.2.3 Inference Efficiency",
+        "title": "DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model",
+        "authors": "DeepSeek-AI",
+        "publisher": "arXiv:2405.04434",
+        "published_date": "2024-06-19",
+        "url": "https://arxiv.org/abs/2405.04434",
+        "accessed_date": null,
+        "doc_id": "deepseek_v2",
+        "page": 13,
+        "section": "3.2.3 Inference Efficiency",
+        "chunk_id": "deepseek_v2:013:04",
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "mla-M2-02",
+        "source_type": "paper",
+        "unit": "family",
+        "quote": "DeepSeek-V3 adopts Multi-head Latent Attention (MLA) and DeepSeekMoE architectures",
+        "locator": "https://arxiv.org/abs/2412.19437",
+        "title": "DeepSeek-V3 Technical Report",
+        "authors": "DeepSeek-AI",
+        "publisher": "arXiv",
+        "published_date": "2024-12-27",
+        "url": "https://arxiv.org/abs/2412.19437",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "high",
+    "evidence_unit": "family",
+    "measurements": [],
+    "details": {
+      "adopters": [
+        {
+          "name": "DeepSeek",
+          "stage": "상용 운영",
+          "evidence_id": "mla-M2-01"
+        },
+        {
+          "name": "DeepSeek (V3)",
+          "stage": "상용 운영",
+          "evidence_id": "mla-M2-02"
+        }
+      ]
+    },
+    "generated_at": "2026-09-20T10:00:00",
+    "retry_count": 0
+  },
+  {
+    "tech_id": "mla",
+    "perspective": "market",
+    "criterion_id": "M3",
+    "level": "L2",
+    "level_estimate": null,
+    "content": "서빙 프레임워크(SGLang)의 MLA 최적화와 제3자 변환 연구(TransMLA)가 확인된다. 벤더 제품·표준화 사례는 확인되지 않았다.",
+    "evidence": [
+      {
+        "evidence_id": "mla-M3-01",
+        "source_type": "web",
+        "unit": "family",
+        "quote": "SGLang v0.3 ... up to 7x faster DeepSeek MLA",
+        "locator": "https://lmsys.org/blog/2024-09-04-sglang-v0-3/",
+        "title": "SGLang v0.3 Release",
+        "authors": null,
+        "publisher": "LMSYS Org",
+        "published_date": "2024-09-04",
+        "url": "https://lmsys.org/blog/2024-09-04-sglang-v0-3/",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "mla-M3-02",
+        "source_type": "paper",
+        "unit": "family",
+        "quote": "TransMLA ... converts GQA-based pre-trained models into MLA-based models",
+        "locator": "https://arxiv.org/abs/2502.07864",
+        "title": "TransMLA: Multi-Head Latent Attention Is All You Need",
+        "authors": null,
+        "publisher": "arXiv",
+        "published_date": "2025-02",
+        "url": "https://arxiv.org/abs/2502.07864",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "high",
+    "evidence_unit": "family",
+    "measurements": [],
+    "details": {
+      "checklist": {
+        "framework": "Y",
+        "vendor_product": "N",
+        "standardization": "N",
+        "third_party_research_tools": "Y"
+      }
+    },
+    "generated_at": "2026-09-20T10:00:00",
+    "retry_count": 0
+  },
+  {
+    "tech_id": "pim_cxl",
+    "perspective": "market",
+    "criterion_id": "M1",
+    "level": "L2",
+    "level_estimate": null,
+    "content": "CXL 메모리 시장은 시장조사 기관이 성장 전망을 내놓은 형성 단계다. 전망 수치는 단일 기관 발표로 사실로 단정하지 않는다.",
+    "evidence": [
+      {
+        "evidence_id": "pim_cxl-M1-01",
+        "source_type": "web",
+        "unit": "family",
+        "quote": "(fixture) The CXL memory market is expected to grow to about $15 billion by 2028",
+        "locator": "https://www.yolegroup.com/press-release/cxl-market/",
+        "title": "CXL market outlook",
+        "authors": null,
+        "publisher": "Yole Group",
+        "published_date": "2024-03",
+        "url": "https://www.yolegroup.com/press-release/cxl-market/",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "medium",
+    "evidence_unit": "family",
+    "measurements": [],
+    "details": {
+      "market_figures": [
+        {
+          "figure": "약 150억 달러(2028년)",
+          "publisher": "Yole Group",
+          "published_date": "2024-03",
+          "evidence_id": "pim_cxl-M1-01"
+        }
+      ]
+    },
+    "generated_at": "2026-09-20T10:00:00",
+    "retry_count": 0
+  },
+  {
+    "tech_id": "pim_cxl",
+    "perspective": "market",
+    "criterion_id": "M2",
+    "level": "L3",
+    "level_estimate": null,
+    "content": "CXL 메모리 확장 모듈은 메모리 벤더가 제품으로 출시했다. 다만 LLM KV cache용 PNM 채택은 연구 단계로, 계열 단위 제품화와 구분된다.",
+    "evidence": [
+      {
+        "evidence_id": "pim_cxl-M2-01",
+        "source_type": "official",
+        "unit": "family",
+        "quote": "(fixture) Samsung CMM-D expands server memory capacity over the CXL interface",
+        "locator": "https://semiconductor.samsung.com/news-events/tech-blog/cxl-memory-module-cmm-d/",
+        "title": "Samsung CXL Memory Module (CMM-D)",
+        "authors": null,
+        "publisher": "Samsung Semiconductor",
+        "published_date": "2024-05",
+        "url": "https://semiconductor.samsung.com/news-events/tech-blog/cxl-memory-module-cmm-d/",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "pim_cxl-M2-02",
+        "source_type": "official",
+        "unit": "family",
+        "quote": "(fixture) SK hynix CMM-DDR5 is a CXL-based memory expansion module",
+        "locator": "https://news.skhynix.com/sk-hynix-cxl-memory/",
+        "title": "SK hynix CXL memory (CMM-DDR5)",
+        "authors": null,
+        "publisher": "SK hynix Newsroom",
+        "published_date": "2024-09",
+        "url": "https://news.skhynix.com/sk-hynix-cxl-memory/",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "high",
+    "evidence_unit": "family",
+    "measurements": [],
+    "details": {
+      "adopters": [
+        {
+          "name": "Samsung",
+          "stage": "제품화",
+          "evidence_id": "pim_cxl-M2-01"
+        },
+        {
+          "name": "SK hynix",
+          "stage": "제품화",
+          "evidence_id": "pim_cxl-M2-02"
+        }
+      ]
+    },
+    "generated_at": "2026-09-20T10:00:00",
+    "retry_count": 0
+  },
+  {
+    "tech_id": "pim_cxl",
+    "perspective": "market",
+    "criterion_id": "M3",
+    "level": "L3",
+    "level_estimate": null,
+    "content": "CXL 표준(CXL Consortium), 벤더 제품, 서베이·후속 연구가 확인된다. KV cache용 PNM 전용 서빙 프레임워크는 확인되지 않았다.",
+    "evidence": [
+      {
+        "evidence_id": "pim_cxl-M3-01",
+        "source_type": "official",
+        "unit": "family",
+        "quote": "(fixture) CXL 3.1 specification",
+        "locator": "https://computeexpresslink.org/cxl-specification/",
+        "title": "CXL Specification",
+        "authors": null,
+        "publisher": "CXL Consortium",
+        "published_date": "2023-11",
+        "url": "https://computeexpresslink.org/cxl-specification/",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "pim_cxl-M3-02",
+        "source_type": "official",
+        "unit": "family",
+        "quote": "(fixture) Samsung CMM-D expands server memory capacity over the CXL interface",
+        "locator": "https://semiconductor.samsung.com/news-events/tech-blog/cxl-memory-module-cmm-d/",
+        "title": "Samsung CXL Memory Module (CMM-D)",
+        "authors": null,
+        "publisher": "Samsung Semiconductor",
+        "published_date": "2024-05",
+        "url": "https://semiconductor.samsung.com/news-events/tech-blog/cxl-memory-module-cmm-d/",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "pim_cxl-M3-03",
+        "source_type": "paper",
+        "unit": "family",
+        "quote": "(fixture) CXL-attached memory expands capacity for KV cache at the cost of higher access latency than local DRAM.",
+        "locator": "io_survey p.14 §5.2 Memory Expansion with CXL",
+        "title": "I/O for LLM inference: a survey of storage and memory bottlenecks",
+        "authors": "Survey authors",
+        "publisher": "arXiv",
+        "published_date": "2026-07",
+        "url": null,
+        "accessed_date": null,
+        "doc_id": "io_survey",
+        "page": 14,
+        "section": "5.2 Memory Expansion with CXL",
+        "chunk_id": "io_survey:014:02",
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "high",
+    "evidence_unit": "family",
+    "measurements": [],
+    "details": {
+      "checklist": {
+        "framework": "N",
+        "vendor_product": "Y",
+        "standardization": "Y",
+        "third_party_research_tools": "Y"
+      }
+    },
+    "generated_at": "2026-09-20T10:00:00",
+    "retry_count": 0
+  }
+]

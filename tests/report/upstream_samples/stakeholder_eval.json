@@ -1,0 +1,692 @@
+[
+  {
+    "tech_id": "mla",
+    "perspective": "stakeholder",
+    "criterion_id": "S1",
+    "level": "assigned",
+    "level_estimate": null,
+    "content": "모델 개발사가 어텐션 구조를 정하므로 결정권자이고, 서빙 운영사는 그 결과를 운영하는 영향받는 자다. 메모리 벤더·투자 업계는 수요 변화로 영향을 받는다(추론).",
+    "evidence": [
+      {
+        "evidence_id": "mla-S1-01",
+        "source_type": "paper",
+        "unit": "family",
+        "quote": "DeepSeek-V2 adopts innovative architectures including Multi-head Latent Attention (MLA) and DeepSeekMoE.",
+        "locator": "deepseek_v2 p.1 §Abstract",
+        "title": "DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model",
+        "authors": "DeepSeek-AI",
+        "publisher": "arXiv:2405.04434",
+        "published_date": "2024-06-19",
+        "url": "https://arxiv.org/abs/2405.04434",
+        "accessed_date": null,
+        "doc_id": "deepseek_v2",
+        "page": 1,
+        "section": "Abstract",
+        "chunk_id": "deepseek_v2:001:03",
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "mla-S1-02",
+        "source_type": "inference",
+        "unit": "family",
+        "quote": "메모리 벤더와 투자 업계는 MLA 도입 결정에 직접 관여하지 않고 수요 변화로 영향을 받는다(S2·S3 근거 기반 추론).",
+        "locator": "inference: mla-S2-01, mla-S3-01",
+        "title": null,
+        "authors": null,
+        "publisher": null,
+        "published_date": null,
+        "url": null,
+        "accessed_date": null,
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "low",
+    "evidence_unit": "family",
+    "measurements": [],
+    "details": {
+      "roles": {
+        "model_developer": "decision_maker",
+        "cloud_serving_operator": "affected",
+        "memory_semiconductor_vendor": "affected",
+        "investor": "affected"
+      }
+    },
+    "generated_at": "2026-09-20T10:00:00",
+    "retry_count": 0
+  },
+  {
+    "tech_id": "mla",
+    "perspective": "stakeholder",
+    "criterion_id": "S2",
+    "level": "narrative",
+    "level_estimate": null,
+    "content": "운영사는 요청당 KV cache 감소로 더 큰 배치를 처리하고, 모델 개발사는 추론 비용 구조를 개선할 수 있다. 투자 업계 편익은 추론이다.",
+    "evidence": [
+      {
+        "evidence_id": "mla-S2-01",
+        "source_type": "paper",
+        "unit": "family",
+        "quote": "actually deployed DeepSeek-V2 requires significantly less KV cache than DeepSeek 67B, and thus can serve a much larger batch size.",
+        "locator": "deepseek_v2 p.13 §3.2.3 Inference Efficiency",
+        "title": "DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model",
+        "authors": "DeepSeek-AI",
+        "publisher": "arXiv:2405.04434",
+        "published_date": "2024-06-19",
+        "url": "https://arxiv.org/abs/2405.04434",
+        "accessed_date": null,
+        "doc_id": "deepseek_v2",
+        "page": 13,
+        "section": "3.2.3 Inference Efficiency",
+        "chunk_id": "deepseek_v2:013:05",
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "mla-S2-02",
+        "source_type": "web",
+        "unit": "family",
+        "quote": "SGLang v0.3 ... up to 7x faster DeepSeek MLA",
+        "locator": "https://lmsys.org/blog/2024-09-04-sglang-v0-3/",
+        "title": "SGLang v0.3 Release",
+        "authors": null,
+        "publisher": "LMSYS Org",
+        "published_date": "2024-09-04",
+        "url": "https://lmsys.org/blog/2024-09-04-sglang-v0-3/",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "mla-S2-03",
+        "source_type": "inference",
+        "unit": "family",
+        "quote": "GPU당 수용 배치가 늘면 같은 메모리로 더 많은 요청을 처리할 수 있어 메모리 증설 없이 처리량 확대가 가능하다는 편익이 투자 판단 근거가 될 수 있다.",
+        "locator": "inference: mla-S2-01",
+        "title": null,
+        "authors": null,
+        "publisher": null,
+        "published_date": null,
+        "url": null,
+        "accessed_date": null,
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "low",
+    "evidence_unit": "family",
+    "measurements": [],
+    "details": {
+      "benefits": {
+        "model_developer": [
+          {
+            "text": "서비스 배포 시 KV cache 부담 감소",
+            "evidence_id": "mla-S2-01",
+            "is_inference": false
+          }
+        ],
+        "cloud_serving_operator": [
+          {
+            "text": "더 큰 배치 크기 처리",
+            "evidence_id": "mla-S2-01",
+            "is_inference": false
+          }
+        ],
+        "memory_semiconductor_vendor": [
+          {
+            "text": "서빙 프레임워크 최적화 수요",
+            "evidence_id": "mla-S2-02",
+            "is_inference": false
+          }
+        ],
+        "investor": [
+          {
+            "text": "메모리 증설 없는 처리량 확대 여지(추론)",
+            "evidence_id": "mla-S2-03",
+            "is_inference": true
+          }
+        ]
+      }
+    },
+    "generated_at": "2026-09-20T10:00:00",
+    "retry_count": 0
+  },
+  {
+    "tech_id": "mla",
+    "perspective": "stakeholder",
+    "criterion_id": "S3",
+    "level": "narrative",
+    "level_estimate": null,
+    "content": "기존 모델을 MLA로 바꾸려면 변환 연구가 필요할 만큼 모델 구조 변경 부담이 있다. 운영사는 전용 커널 지원이, 메모리 벤더는 용량 수요 감소 가능성이 부담이다(추론).",
+    "evidence": [
+      {
+        "evidence_id": "mla-S3-01",
+        "source_type": "paper",
+        "unit": "family",
+        "quote": "TransMLA ... converts GQA-based pre-trained models into MLA-based models",
+        "locator": "https://arxiv.org/abs/2502.07864",
+        "title": "TransMLA: Multi-Head Latent Attention Is All You Need",
+        "authors": null,
+        "publisher": "arXiv",
+        "published_date": "2025-02",
+        "url": "https://arxiv.org/abs/2502.07864",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "mla-S3-02",
+        "source_type": "inference",
+        "unit": "family",
+        "quote": "요청당 KV cache 감소는 동일 처리량에 필요한 메모리 용량 수요를 줄일 수 있어 메모리 벤더의 용량 판매와 충돌할 수 있다.",
+        "locator": "inference: mla-S2-01",
+        "title": null,
+        "authors": null,
+        "publisher": null,
+        "published_date": null,
+        "url": null,
+        "accessed_date": null,
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "mla-S3-03",
+        "source_type": "inference",
+        "unit": "family",
+        "quote": "서빙 엔진이 MLA 전용 커널을 지원해야 하므로 운영사에 엔진 업데이트·검증 부담이 생긴다.",
+        "locator": "inference: mla-S2-02",
+        "title": null,
+        "authors": null,
+        "publisher": null,
+        "published_date": null,
+        "url": null,
+        "accessed_date": null,
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "low",
+    "evidence_unit": "family",
+    "measurements": [],
+    "details": {
+      "burdens": {
+        "model_developer": [
+          {
+            "text": "기존 모델의 구조 변환·재학습 부담",
+            "evidence_id": "mla-S3-01",
+            "is_inference": false
+          }
+        ],
+        "cloud_serving_operator": [
+          {
+            "text": "MLA 전용 커널 지원·검증(추론)",
+            "evidence_id": "mla-S3-03",
+            "is_inference": true
+          }
+        ],
+        "memory_semiconductor_vendor": [
+          {
+            "text": "메모리 용량 수요 감소 가능성(추론)",
+            "evidence_id": "mla-S3-02",
+            "is_inference": true
+          }
+        ],
+        "investor": [
+          {
+            "text": "구조 변경 비용 대비 효과 불확실성(추론)",
+            "evidence_id": "mla-S3-02",
+            "is_inference": true
+          }
+        ]
+      }
+    },
+    "generated_at": "2026-09-20T10:00:00",
+    "retry_count": 0
+  },
+  {
+    "tech_id": "mla",
+    "perspective": "stakeholder",
+    "criterion_id": "S4",
+    "level": "narrative",
+    "level_estimate": null,
+    "content": "서빙 운영사가 얻는 배치 확대 편익은 모델 개발사가 모델 구조를 MLA로 설계·변환하는 부담 위에서 성립한다.",
+    "evidence": [
+      {
+        "evidence_id": "mla-S4-01",
+        "source_type": "paper",
+        "unit": "family",
+        "quote": "actually deployed DeepSeek-V2 requires significantly less KV cache than DeepSeek 67B, and thus can serve a much larger batch size.",
+        "locator": "deepseek_v2 p.13 §3.2.3 Inference Efficiency",
+        "title": "DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model",
+        "authors": "DeepSeek-AI",
+        "publisher": "arXiv:2405.04434",
+        "published_date": "2024-06-19",
+        "url": "https://arxiv.org/abs/2405.04434",
+        "accessed_date": null,
+        "doc_id": "deepseek_v2",
+        "page": 13,
+        "section": "3.2.3 Inference Efficiency",
+        "chunk_id": "deepseek_v2:013:06",
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "mla-S4-02",
+        "source_type": "paper",
+        "unit": "family",
+        "quote": "TransMLA ... converts GQA-based pre-trained models into MLA-based models",
+        "locator": "https://arxiv.org/abs/2502.07864",
+        "title": "TransMLA: Multi-Head Latent Attention Is All You Need",
+        "authors": null,
+        "publisher": "arXiv",
+        "published_date": "2025-02",
+        "url": "https://arxiv.org/abs/2502.07864",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "high",
+    "evidence_unit": "family",
+    "measurements": [],
+    "details": {
+      "tradeoffs": [
+        {
+          "beneficiary": "cloud_serving_operator",
+          "burdened": "model_developer",
+          "text": "운영사의 배치 확대 편익은 개발사의 모델 구조 변경·재학습 부담을 전제로 한다",
+          "evidence_ids": [
+            "mla-S4-01",
+            "mla-S4-02"
+          ]
+        }
+      ]
+    },
+    "generated_at": "2026-09-20T10:00:00",
+    "retry_count": 0
+  },
+  {
+    "tech_id": "pim_cxl",
+    "perspective": "stakeholder",
+    "criterion_id": "S1",
+    "level": "assigned",
+    "level_estimate": null,
+    "content": "메모리·반도체 벤더는 공급자이고, 서빙 운영사는 서버 구성 변경을 결정하는 결정권자다. 모델 개발사는 영향받는 자에 가깝다(추론).",
+    "evidence": [
+      {
+        "evidence_id": "pim_cxl-S1-01",
+        "source_type": "official",
+        "unit": "family",
+        "quote": "(fixture) CXL 3.1 specification",
+        "locator": "https://computeexpresslink.org/cxl-specification/",
+        "title": "CXL Specification",
+        "authors": null,
+        "publisher": "CXL Consortium",
+        "published_date": "2023-11",
+        "url": "https://computeexpresslink.org/cxl-specification/",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "pim_cxl-S1-02",
+        "source_type": "inference",
+        "unit": "family",
+        "quote": "모델 개발사는 모델 구조를 바꾸지 않아도 되므로 도입 결정에서 영향받는 자에 가깝다.",
+        "locator": "inference: pim_cxl-D4-01",
+        "title": null,
+        "authors": null,
+        "publisher": null,
+        "published_date": null,
+        "url": null,
+        "accessed_date": null,
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "low",
+    "evidence_unit": "family",
+    "measurements": [],
+    "details": {
+      "roles": {
+        "model_developer": "affected",
+        "cloud_serving_operator": "decision_maker",
+        "memory_semiconductor_vendor": "supplier",
+        "investor": "affected"
+      }
+    },
+    "generated_at": "2026-09-20T10:00:00",
+    "retry_count": 0
+  },
+  {
+    "tech_id": "pim_cxl",
+    "perspective": "stakeholder",
+    "criterion_id": "S2",
+    "level": "narrative",
+    "level_estimate": null,
+    "content": "메모리 벤더는 CXL 모듈 판매 기회를, 운영사는 HBM 용량을 넘는 장문맥 수용 여지를 얻는다. 모델 개발사·투자 업계 편익은 추론이다.",
+    "evidence": [
+      {
+        "evidence_id": "pim_cxl-S2-01",
+        "source_type": "official",
+        "unit": "family",
+        "quote": "(fixture) Samsung CMM-D expands server memory capacity over the CXL interface",
+        "locator": "https://semiconductor.samsung.com/news-events/tech-blog/cxl-memory-module-cmm-d/",
+        "title": "Samsung CXL Memory Module (CMM-D)",
+        "authors": null,
+        "publisher": "Samsung Semiconductor",
+        "published_date": "2024-05",
+        "url": "https://semiconductor.samsung.com/news-events/tech-blog/cxl-memory-module-cmm-d/",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "pim_cxl-S2-02",
+        "source_type": "paper",
+        "unit": "family",
+        "quote": "(fixture) Our simulated system sustains inference at a context length of 1M tokens, which exceeds the HBM capacity of the GPU baseline.",
+        "locator": "pim_cxl_1m p.9 §6 Evaluation",
+        "title": "1M-Token LLM Inference with PIM/CXL Memory Expansion",
+        "authors": "(픽스처) 저자 확인 필요",
+        "publisher": "arXiv",
+        "published_date": "2025-10",
+        "url": null,
+        "accessed_date": null,
+        "doc_id": "pim_cxl_1m",
+        "page": 9,
+        "section": "6 Evaluation",
+        "chunk_id": "pim_cxl_1m:009:03",
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "pim_cxl-S2-03",
+        "source_type": "inference",
+        "unit": "family",
+        "quote": "메모리 계층 확장 수요는 CXL 모듈 공급 벤더와 관련 투자에 새 시장을 연다.",
+        "locator": "inference: pim_cxl-S2-01, pim_cxl-M1-01",
+        "title": null,
+        "authors": null,
+        "publisher": null,
+        "published_date": null,
+        "url": null,
+        "accessed_date": null,
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "low",
+    "evidence_unit": "family",
+    "measurements": [],
+    "details": {
+      "benefits": {
+        "model_developer": [
+          {
+            "text": "모델 구조 변경 없이 긴 컨텍스트 지원 여지(추론)",
+            "evidence_id": "pim_cxl-S2-03",
+            "is_inference": true
+          }
+        ],
+        "cloud_serving_operator": [
+          {
+            "text": "HBM 용량을 넘는 컨텍스트 수용",
+            "evidence_id": "pim_cxl-S2-02",
+            "is_inference": false
+          }
+        ],
+        "memory_semiconductor_vendor": [
+          {
+            "text": "CXL 메모리 모듈 판매 기회",
+            "evidence_id": "pim_cxl-S2-01",
+            "is_inference": false
+          }
+        ],
+        "investor": [
+          {
+            "text": "메모리 계층 확장 시장 진입 기회(추론)",
+            "evidence_id": "pim_cxl-S2-03",
+            "is_inference": true
+          }
+        ]
+      }
+    },
+    "generated_at": "2026-09-20T10:00:00",
+    "retry_count": 0
+  },
+  {
+    "tech_id": "pim_cxl",
+    "perspective": "stakeholder",
+    "criterion_id": "S3",
+    "level": "narrative",
+    "level_estimate": null,
+    "content": "운영사는 CXL 서버·모듈 도입과 서빙 경로 변경 부담을 진다. CXL 메모리의 추가 지연은 모든 주체가 감수해야 할 성능 제약이다.",
+    "evidence": [
+      {
+        "evidence_id": "pim_cxl-S3-01",
+        "source_type": "paper",
+        "unit": "family",
+        "quote": "(fixture) CXL-attached memory expands capacity for KV cache at the cost of higher access latency than local DRAM.",
+        "locator": "io_survey p.14 §5.2 Memory Expansion with CXL",
+        "title": "I/O for LLM inference: a survey of storage and memory bottlenecks",
+        "authors": "Survey authors",
+        "publisher": "arXiv",
+        "published_date": "2026-07",
+        "url": null,
+        "accessed_date": null,
+        "doc_id": "io_survey",
+        "page": 14,
+        "section": "5.2 Memory Expansion with CXL",
+        "chunk_id": "io_survey:014:03",
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "pim_cxl-S3-02",
+        "source_type": "inference",
+        "unit": "family",
+        "quote": "운영사는 CXL 지원 서버·메모리 모듈을 새로 들이고 서빙 경로를 바꿔야 하는 설비·전환 부담을 진다.",
+        "locator": "inference: pim_cxl-D4-01",
+        "title": null,
+        "authors": null,
+        "publisher": null,
+        "published_date": null,
+        "url": null,
+        "accessed_date": null,
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "pim_cxl-S3-03",
+        "source_type": "inference",
+        "unit": "family",
+        "quote": "시장 전망이 단일 기관 발표에 기대고 있어 투자 업계는 수요 불확실성을 부담한다.",
+        "locator": "inference: pim_cxl-M1-01",
+        "title": null,
+        "authors": null,
+        "publisher": null,
+        "published_date": null,
+        "url": null,
+        "accessed_date": null,
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "low",
+    "evidence_unit": "family",
+    "measurements": [],
+    "details": {
+      "burdens": {
+        "model_developer": [
+          {
+            "text": "CXL 지연이 생성 지연에 주는 영향(추론)",
+            "evidence_id": "pim_cxl-S3-02",
+            "is_inference": true
+          }
+        ],
+        "cloud_serving_operator": [
+          {
+            "text": "설비 도입·서빙 경로 변경(추론)",
+            "evidence_id": "pim_cxl-S3-02",
+            "is_inference": true
+          }
+        ],
+        "memory_semiconductor_vendor": [
+          {
+            "text": "CXL 추가 지연을 줄이는 설계 부담",
+            "evidence_id": "pim_cxl-S3-01",
+            "is_inference": false
+          }
+        ],
+        "investor": [
+          {
+            "text": "단일 전망에 기댄 수요 불확실성(추론)",
+            "evidence_id": "pim_cxl-S3-03",
+            "is_inference": true
+          }
+        ]
+      }
+    },
+    "generated_at": "2026-09-20T10:00:00",
+    "retry_count": 0
+  },
+  {
+    "tech_id": "pim_cxl",
+    "perspective": "stakeholder",
+    "criterion_id": "S4",
+    "level": "narrative",
+    "level_estimate": null,
+    "content": "메모리 벤더의 CXL 모듈 판매 편익은 서빙 운영사의 설비 교체와 추가 지연 감수라는 부담과 맞물린다.",
+    "evidence": [
+      {
+        "evidence_id": "pim_cxl-S4-01",
+        "source_type": "official",
+        "unit": "family",
+        "quote": "(fixture) Samsung CMM-D expands server memory capacity over the CXL interface",
+        "locator": "https://semiconductor.samsung.com/news-events/tech-blog/cxl-memory-module-cmm-d/",
+        "title": "Samsung CXL Memory Module (CMM-D)",
+        "authors": null,
+        "publisher": "Samsung Semiconductor",
+        "published_date": "2024-05",
+        "url": "https://semiconductor.samsung.com/news-events/tech-blog/cxl-memory-module-cmm-d/",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "pim_cxl-S4-02",
+        "source_type": "paper",
+        "unit": "family",
+        "quote": "(fixture) CXL-attached memory expands capacity for KV cache at the cost of higher access latency than local DRAM.",
+        "locator": "io_survey p.14 §5.2 Memory Expansion with CXL",
+        "title": "I/O for LLM inference: a survey of storage and memory bottlenecks",
+        "authors": "Survey authors",
+        "publisher": "arXiv",
+        "published_date": "2026-07",
+        "url": null,
+        "accessed_date": null,
+        "doc_id": "io_survey",
+        "page": 14,
+        "section": "5.2 Memory Expansion with CXL",
+        "chunk_id": "io_survey:014:04",
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "high",
+    "evidence_unit": "family",
+    "measurements": [],
+    "details": {
+      "tradeoffs": [
+        {
+          "beneficiary": "memory_semiconductor_vendor",
+          "burdened": "cloud_serving_operator",
+          "text": "벤더의 CXL 메모리 판매 편익은 운영사의 서버·메모리 교체와 지연 증가 부담으로 이어진다",
+          "evidence_ids": [
+            "pim_cxl-S4-01",
+            "pim_cxl-S4-02"
+          ]
+        }
+      ]
+    },
+    "generated_at": "2026-09-20T10:00:00",
+    "retry_count": 0
+  }
+]

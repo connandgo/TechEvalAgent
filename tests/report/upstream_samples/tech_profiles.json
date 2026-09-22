@@ -1,0 +1,273 @@
+[
+  {
+    "tech_id": "mla",
+    "principle": "MLA는 Key·Value를 저차원 잠재 벡터로 함께 압축(low-rank key-value joint compression)해 추론 시 KV cache에 잠재 벡터만 저장한다. RoPE와 저랭크 압축이 양립하지 않아 위치 정보는 분리된 RoPE 키(decoupled RoPE)로 따로 둔다.",
+    "scope": "DeepSeek-V2(총 236B, 토큰당 21B 활성 MoE, 128K 컨텍스트)의 사전학습 단계부터 적용된 어텐션 구조.",
+    "limitations": [
+      "RoPE는 저랭크 KV 압축과 양립하지 않아 decoupled RoPE라는 별도 설계가 필요하다(원문 §2.1.3).",
+      "보고된 효율 수치는 DeepSeek 67B(MHA) 대비이며 동일 규모 모델 간 비교가 아니다."
+    ],
+    "measurements": [
+      {
+        "metric": "KV cache reduction",
+        "value": "93.3%",
+        "unit": null,
+        "model_size": "236B total (21B active)",
+        "context_length": "128K 지원 모델",
+        "hardware": null,
+        "baseline": "DeepSeek 67B (MHA)",
+        "batch_size": null,
+        "condition_note": null,
+        "evidence_id": "mla-PROFILE-02"
+      },
+      {
+        "metric": "maximum generation throughput",
+        "value": "5.76x",
+        "unit": null,
+        "model_size": "236B total (21B active)",
+        "context_length": null,
+        "hardware": "8x H800 (single node)",
+        "baseline": "DeepSeek 67B",
+        "batch_size": null,
+        "condition_note": "FP8 파라미터 + KV cache 평균 6-bit 양자화, 실서비스 prompt/generation 길이 분포",
+        "evidence_id": "mla-PROFILE-04"
+      }
+    ],
+    "validation_env": "단일 노드 8x H800에서 실서비스 요청 길이 분포로 생성 처리량 측정. 모델은 공개 API 서비스에 배포.",
+    "public_artifacts": {
+      "code": "Y",
+      "model_or_design": "Y",
+      "eval_scripts_data": "N",
+      "third_party_reproduction": "Y"
+    },
+    "public_artifact_urls": {
+      "code": "https://github.com/deepseek-ai/DeepSeek-V2"
+    },
+    "evidence": [
+      {
+        "evidence_id": "mla-PROFILE-01",
+        "source_type": "paper",
+        "unit": "paper",
+        "quote": "MLA guarantees efficient inference through significantly compressing the Key-Value (KV) cache into a latent vector",
+        "locator": "deepseek_v2 p.1 §Abstract",
+        "title": "DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model",
+        "authors": "DeepSeek-AI",
+        "publisher": "arXiv:2405.04434",
+        "published_date": "2024-06-19",
+        "url": "https://arxiv.org/abs/2405.04434",
+        "accessed_date": null,
+        "doc_id": "deepseek_v2",
+        "page": 1,
+        "section": "Abstract",
+        "chunk_id": "deepseek_v2:001:01",
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "mla-PROFILE-02",
+        "source_type": "paper",
+        "unit": "paper",
+        "quote": "Compared with DeepSeek 67B, DeepSeek-V2 achieves significantly stronger performance, and meanwhile saves 42.5% of training costs, reduces the KV cache by 93.3%, and boosts the maximum generation throughput to 5.76 times.",
+        "locator": "deepseek_v2 p.1 §Abstract",
+        "title": "DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model",
+        "authors": "DeepSeek-AI",
+        "publisher": "arXiv:2405.04434",
+        "published_date": "2024-06-19",
+        "url": "https://arxiv.org/abs/2405.04434",
+        "accessed_date": null,
+        "doc_id": "deepseek_v2",
+        "page": 1,
+        "section": "Abstract",
+        "chunk_id": "deepseek_v2:001:02",
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "mla-PROFILE-03",
+        "source_type": "paper",
+        "unit": "paper",
+        "quote": "RoPE is incompatible with low-rank KV compression.",
+        "locator": "deepseek_v2 p.7 §2.1.3 Decoupled Rotary Position Embedding",
+        "title": "DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model",
+        "authors": "DeepSeek-AI",
+        "publisher": "arXiv:2405.04434",
+        "published_date": "2024-06-19",
+        "url": "https://arxiv.org/abs/2405.04434",
+        "accessed_date": null,
+        "doc_id": "deepseek_v2",
+        "page": 7,
+        "section": "2.1.3 Decoupled Rotary Position Embedding",
+        "chunk_id": "deepseek_v2:007:01",
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "mla-PROFILE-04",
+        "source_type": "paper",
+        "unit": "paper",
+        "quote": "On a single node with 8 H800 GPUs, DeepSeek-V2 achieves a generation throughput exceeding 50K tokens per second, which is 5.76 times the maximum generation throughput of DeepSeek 67B.",
+        "locator": "deepseek_v2 p.13 §3.2.3 Inference Efficiency",
+        "title": "DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model",
+        "authors": "DeepSeek-AI",
+        "publisher": "arXiv:2405.04434",
+        "published_date": "2024-06-19",
+        "url": "https://arxiv.org/abs/2405.04434",
+        "accessed_date": null,
+        "doc_id": "deepseek_v2",
+        "page": 13,
+        "section": "3.2.3 Inference Efficiency",
+        "chunk_id": "deepseek_v2:013:01",
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "mla-PROFILE-05",
+        "source_type": "official",
+        "unit": "paper",
+        "quote": "DeepSeek-V2 ... model checkpoints and inference code",
+        "locator": "https://github.com/deepseek-ai/DeepSeek-V2",
+        "title": "deepseek-ai/DeepSeek-V2",
+        "authors": "DeepSeek-AI",
+        "publisher": "GitHub",
+        "published_date": null,
+        "url": "https://github.com/deepseek-ai/DeepSeek-V2",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "search_queries_used": [
+      "DeepSeek-V2 MLA KV cache compression",
+      "Multi-head Latent Attention decoupled RoPE"
+    ],
+    "generated_at": "2026-09-20T10:00:00",
+    "retry_count": 0
+  },
+  {
+    "tech_id": "pim_cxl",
+    "principle": "장문맥 요청의 KV cache를 GPU HBM 밖의 CXL 연결 메모리로 옮기고, 어텐션에 필요한 토큰 페이지 선택 연산을 메모리 근처 연산 장치(PNM)에서 수행해 GPU로 옮기는 데이터 양을 줄인다.",
+    "scope": "1M 토큰급 장문맥 추론. CXL 메모리 확장과 PNM 장치를 갖춘 서버 구성을 전제한다.",
+    "limitations": [
+      "CXL 링크의 추가 지연은 페이지 선택 정확도가 낮을 때 병목으로 남는다(원문 §7).",
+      "평가는 시뮬레이션 기반이며 실물 시제품 측정이 아니다."
+    ],
+    "measurements": [
+      {
+        "metric": "supported context length",
+        "value": "1M tokens",
+        "unit": null,
+        "model_size": null,
+        "context_length": null,
+        "hardware": "시뮬레이션: GPU + CXL-PNM",
+        "baseline": "GPU HBM only",
+        "batch_size": null,
+        "condition_note": "픽스처용 예시 값 — 원문 확인 필요",
+        "evidence_id": "pim_cxl-PROFILE-02"
+      }
+    ],
+    "validation_env": "사이클 수준 시뮬레이터로 CXL 메모리·PNM 장치를 모델링해 평가(실물 시제품 아님).",
+    "public_artifacts": {
+      "code": "N",
+      "model_or_design": "N",
+      "eval_scripts_data": "N",
+      "third_party_reproduction": "N"
+    },
+    "public_artifact_urls": {},
+    "evidence": [
+      {
+        "evidence_id": "pim_cxl-PROFILE-01",
+        "source_type": "paper",
+        "unit": "paper",
+        "quote": "(fixture) We offload the KV cache of long-context requests to CXL-attached memory and execute token-page selection with processing-near-memory units.",
+        "locator": "pim_cxl_1m p.2 §1 Introduction",
+        "title": "1M-Token LLM Inference with PIM/CXL Memory Expansion",
+        "authors": "(픽스처) 저자 확인 필요",
+        "publisher": "arXiv",
+        "published_date": "2025-10",
+        "url": null,
+        "accessed_date": null,
+        "doc_id": "pim_cxl_1m",
+        "page": 2,
+        "section": "1 Introduction",
+        "chunk_id": "pim_cxl_1m:002:01",
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "pim_cxl-PROFILE-02",
+        "source_type": "paper",
+        "unit": "paper",
+        "quote": "(fixture) Our simulated system sustains inference at a context length of 1M tokens, which exceeds the HBM capacity of the GPU baseline.",
+        "locator": "pim_cxl_1m p.9 §6 Evaluation",
+        "title": "1M-Token LLM Inference with PIM/CXL Memory Expansion",
+        "authors": "(픽스처) 저자 확인 필요",
+        "publisher": "arXiv",
+        "published_date": "2025-10",
+        "url": null,
+        "accessed_date": null,
+        "doc_id": "pim_cxl_1m",
+        "page": 9,
+        "section": "6 Evaluation",
+        "chunk_id": "pim_cxl_1m:009:01",
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "pim_cxl-PROFILE-03",
+        "source_type": "paper",
+        "unit": "paper",
+        "quote": "(fixture) The additional latency of the CXL link remains a bottleneck when page selection accuracy is low.",
+        "locator": "pim_cxl_1m p.11 §7 Discussion",
+        "title": "1M-Token LLM Inference with PIM/CXL Memory Expansion",
+        "authors": "(픽스처) 저자 확인 필요",
+        "publisher": "arXiv",
+        "published_date": "2025-10",
+        "url": null,
+        "accessed_date": null,
+        "doc_id": "pim_cxl_1m",
+        "page": 11,
+        "section": "7 Discussion",
+        "chunk_id": "pim_cxl_1m:011:01",
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "pim_cxl-PROFILE-04",
+        "source_type": "paper",
+        "unit": "family",
+        "quote": "(fixture) CXL-attached memory expands capacity for KV cache at the cost of higher access latency than local DRAM.",
+        "locator": "io_survey p.14 §5.2 Memory Expansion with CXL",
+        "title": "I/O for LLM inference: a survey of storage and memory bottlenecks",
+        "authors": "Survey authors",
+        "publisher": "arXiv",
+        "published_date": "2026-07",
+        "url": null,
+        "accessed_date": null,
+        "doc_id": "io_survey",
+        "page": 14,
+        "section": "5.2 Memory Expansion with CXL",
+        "chunk_id": "io_survey:014:01",
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "search_queries_used": [
+      "CXL processing near memory KV cache 1M token"
+    ],
+    "generated_at": "2026-09-20T10:00:00",
+    "retry_count": 0
+  }
+]

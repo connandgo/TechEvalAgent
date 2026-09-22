@@ -132,6 +132,8 @@ TechEvalAgent/
 │   │   ├── citation.py                #   format_reference(), build_reference_section()
 │   │   ├── tables.py                  #   기술 × 기준 요약표
 │   │   ├── lint.py                    #   금칙어·챕터·인용 일치 검사
+│   │   ├── sections.py                #   보고서 챕터·절 분리/조립 (lint·문제 챕터 재생성 공용)
+│   │   ├── templates.py               #   1·2장 고정 텍스트, 4장 머리말
 │   │   └── pdf.py                     #   render_pdf()
 │   └── prompts/                       # 마크다운 프롬프트, 소유자 = 해당 에이전트 소유자
 │       ├── tech_research/             # (B) system.md, profile.md, T1.md ~ T4.md
@@ -139,7 +141,7 @@ TechEvalAgent/
 │       ├── market/                    # (C) system.md, M1.md ~ M3.md
 │       ├── stakeholder/               # (C) system.md, S1.md ~ S4.md
 │       ├── synthesis/                 # (D) system.md, agreements.md, conflicts.md, gaps.md
-│       ├── report/                    # (D) system.md, summary.md, ch1.md ~ ch6.md, revision.md
+│       ├── report/                    # (D) system.md, summary.md, ch1.md ~ ch6.md, ch4_{trl,market,stakeholder,domain}.md, revision.md
 │       └── control/                   # (E) query_rewrite.md, judge.md
 ├── scripts/
 │   ├── ingest.py                      # (A) 코퍼스 인덱싱 CLI
@@ -167,7 +169,10 @@ TechEvalAgent/
 │   ├── tools/                         # (C)
 │   ├── agents/                        # (B, C, D) test_tech_research.py, test_domain.py, test_market.py, test_stakeholder.py, test_synthesis.py, test_report.py
 │   ├── control/                       # (E)
-│   └── report/                        # (D) test_citation.py, test_lint.py, test_pdf.py
+│   └── report/                        # (D) test_citation.py, test_lint.py, test_pdf.py, test_tables.py
+│       ├── d_fixtures.py              #   D 테스트용 픽스처 로더
+│       ├── make_d_fixtures.py         #   synthesis.json / report_md.md 재생성 스크립트
+│       └── upstream_samples/          #   B·C 픽스처가 main에 오기 전까지 D가 쓰는 샘플 (B·C 픽스처 머지 후 삭제)
 ├── assets/fonts/                      # (D) PDF 한글 폰트 (선택)
 ├── data/
 │   ├── papers/
