@@ -153,15 +153,15 @@ def test_banned_terms_in_cause_rejected(inp):
 def test_detect_gaps_rules(inp):
     results = [*inp.trl_eval, *inp.market_eval, *inp.stakeholder_eval, *inp.domain_eval]
     gaps = {(g.tech_id, g.criterion_id, g.gap_type) for g in detect_gaps(results)}
-    assert ("mla", "M1", "not_public") in gaps  # level=not_public
-    assert (
-        "mla",
-        "T4",
-        "not_public",
-    ) in gaps  # B가 details.not_public_items에 적은 미공개 항목
-    assert ("pim_cxl", "M1", "single_source") in gaps  # 출처 1개, medium
+    assert ("mla", "T4", "not_public") in gaps  # B가 details.not_public_items에 적은 미공개 항목
+    assert ("pim_cxl", "T4", "not_public") in gaps
     assert ("mla", "T4", "single_source") not in gaps  # not_public과 중복 표시하지 않음
-    assert not any(t == "unit_mismatch" for *_, t in gaps)
+    assert ("mla", "D2", "single_source") in gaps  # 출처 1개, medium
+    assert ("mla", "M3", "unit_mismatch") in gaps  # 계열(family) 판정에 논문(paper) 근거 혼합
+    m3 = next(
+        g for g in detect_gaps(results) if (g.tech_id, g.criterion_id, g.gap_type) == ("mla", "M3", "unit_mismatch")
+    )
+    assert m3.description == "M3 family 단위 판정에 paper 단위 근거가 섞임"
 
     m2 = next(r for r in inp.market_eval if r.tech_id == "mla" and r.criterion_id == "M2")
     shifted = m2.model_copy(update={"evidence_unit": "paper"})  # 시장 판정을 논문 단위로 → 기대 단위(family)와 불일치

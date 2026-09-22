@@ -40,8 +40,38 @@ def _cell(text: str) -> str:
     return text.replace("|", "\\|").replace("\n", " ").strip()
 
 
+D4_ITEMS = {
+    "model_retrain": "재학습",
+    "model_convert": "모델 변환",
+    "serving_engine_change": "서빙 엔진 수정",
+    "hw_replace": "HW 교체",
+    "memory_add": "메모리 추가",
+    "other": "기타",
+}
+S1_ROLES = {"decision_maker": "결정권자", "affected": "영향", "supplier": "공급자", "unrelated": "무관"}
+STAKEHOLDER_KO = {
+    "model_developer": "모델 개발사",
+    "cloud_serving_operator": "서빙 운영사",
+    "memory_semiconductor_vendor": "메모리 벤더",
+    "investor": "투자 업계",
+}
+
+
 def _level(r: CriterionResult) -> str:
-    return f"{r.level} (추정: {r.level_estimate})" if r.level_estimate else r.level
+    """레벨 + 레벨 문자열만으로 판정이 안 보이는 기준(D4 checklist, S1 assigned)의 요지."""
+    if r.level_estimate:
+        return f"{r.level} (추정: {r.level_estimate})"
+    if r.criterion_id == "D4" and isinstance(r.details.get("checklist"), dict):
+        marks = {k: v for k, v in r.details["checklist"].items() if k in D4_ITEMS}
+        by = {mark: [D4_ITEMS[k] for k, v in marks.items() if v == mark] for mark in ("Y", "unknown")}
+        parts = [f"필요: {', '.join(by['Y']) or '없음'}"] + (
+            [f"미확인: {', '.join(by['unknown'])}"] if by["unknown"] else []
+        )
+        return f"{r.level} ({'; '.join(parts)})"
+    if r.criterion_id == "S1" and isinstance(r.details.get("roles"), dict):
+        roles = ", ".join(f"{STAKEHOLDER_KO.get(k, k)} {S1_ROLES.get(v, v)}" for k, v in r.details["roles"].items())
+        return f"{r.level} ({roles})"
+    return r.level
 
 
 def criterion_table(
@@ -64,7 +94,7 @@ def criterion_table(
                 logger.warning("요약표: %s × %s 결과 없음", tid, cid)
                 rows.append(f"| {label} | {_cell(tech)} | 결과 없음 | — | — | — |")
                 continue
-            cites = format_citations([e.evidence_id for e in r.evidence])
+            cites = format_citations([e.evidence_id for e in r.evidence], sep=" ")
             rows.append(
                 f"| {label} | {_cell(tech)} | {_cell(_level(r))} | {r.confidence} "
                 f"| {UNIT_KO[r.evidence_unit]} | {cites} |"

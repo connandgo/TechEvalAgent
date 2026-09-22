@@ -35,9 +35,10 @@ def build_evidence_index(
     return index
 
 
-def format_citations(ids: list[str]) -> str:
-    """인용 표기. CRITERIA §5 형식대로 id마다 괄호 하나: `[E: a][E: b]` (E의 judge도 이 형식만 읽는다)."""
-    return "".join(f"[E: {i}]" for i in dict.fromkeys(ids))
+def format_citations(ids: list[str], sep: str = "") -> str:
+    """인용 표기. CRITERIA §5 형식대로 id마다 괄호 하나: `[E: a][E: b]` (E의 judge도 이 형식만 읽는다).
+    표 셀에서는 sep=" "로 괄호 사이에 공백을 둬 PDF 표가 줄바꿈할 수 있게 한다."""
+    return sep.join(f"[E: {i}]" for i in dict.fromkeys(ids))
 
 
 def normalize_citations(text: str) -> str:
@@ -78,7 +79,7 @@ def _pages(pages: list[int]) -> str | None:
 
 def _format_paper(e: Evidence, pages: list[int]) -> str:
     # 저자(YYYY). 제목. 학술지/arXiv, 권(호), 페이지.  — 권(호)는 Evidence에 필드가 없어 생략
-    head = f"{e.authors or e.publisher or '저자 미상'}({_year(e)})."
+    head = f"{e.authors or '저자 미상'}({_year(e)})."  # 발행처(arXiv 등)를 저자 자리에 쓰지 않는다
     tail = [x for x in (e.publisher, _pages(pages), _url(e)) if x]
     parts = [head]
     if e.title:
@@ -123,29 +124,87 @@ def format_reference(e: Evidence, *, pages: list[int] | None = None) -> str:
     return _format_web(e)
 
 
-def _merge_key(e: Evidence) -> str:
+def _norm_url(url: str | None) -> str | None:
+    """비교용 URL: 스킴·www·끝 슬래시·arXiv 버전(v2)·abs/pdf 차이를 없앤다."""
+    if not url or not url.startswith("http"):
+        return None
+    u = re.sub(r"^https?://(www\.)?", "", url.strip().lower()).rstrip("/")
+    u = re.sub(r"arxiv\.org/(abs|pdf)/([\d.]+)(v\d+)?(\.pdf)?", r"arxiv.org/\2", u)
+    return u
+
+
+def _norm_title(title: str | None) -> str | None:
+    t = re.sub(r"[^0-9a-z가-힣]", "", (title or "").lower())
+    return t or None
+
+
+def _merge_keys(e: Evidence) -> set[str]:
+    """이 evidence가 가리키는 문헌을 식별하는 키들. 키가 하나라도 겹치면 같은 문헌이다."""
+    kind = "paper" if e.source_type == "paper" else e.source_type
+    keys = {f"{kind}:url:{u}" for u in (_norm_url(e.url), _norm_url(e.locator)) if u}
     if e.source_type == "paper":
         if e.doc_id:
-            return f"paper:{e.doc_id}"
-        return f"paper:{e.title}|{e.authors}"
-    return f"{e.source_type}:{_url(e) or e.locator}|{e.title}"
+            keys.add(f"paper:doc:{e.doc_id}")
+        if t := _norm_title(e.title):
+            keys.add(f"paper:title:{t}")
+    if not keys:
+        keys.add(f"{kind}:loc:{e.locator}|{e.title}")
+    return keys
+
+
+def _group_same_source(evs: list[Evidence]) -> list[list[Evidence]]:
+    """키를 공유하는 evidence를 한 문헌으로 묶는다(연결 요소). 첫 인용 순서를 유지한다."""
+    parent = list(range(len(evs)))
+
+    def find(i: int) -> int:
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+
+    owner: dict[str, int] = {}
+    for i, e in enumerate(evs):
+        for k in _merge_keys(e):
+            if k in owner:
+                parent[find(i)] = find(owner[k])
+            else:
+                owner[k] = i
+    groups: dict[int, list[Evidence]] = {}
+    for i, e in enumerate(evs):
+        groups.setdefault(find(i), []).append(e)
+    return sorted(groups.values(), key=lambda g: evs.index(g[0]))
+
+
+def _representative(group: list[Evidence]) -> Evidence:
+    """병합된 문헌의 대표 메타데이터: 저자·코퍼스 doc_id·날짜·제목이 있는 쪽을 우선한다."""
+    return max(
+        group,
+        key=lambda e: (bool(e.authors), bool(e.doc_id), bool(e.published_date), bool(e.url), len(e.title or "")),
+    )
 
 
 def reference_entries(cited_ids: list[str], evidence_index: dict[str, Evidence]) -> list[tuple[str, list[str]]]:
-    """(참고문헌 문자열, 병합된 evidence_id 목록) 리스트. 인용 순서 유지, inference/not_public 제외."""
-    groups: dict[str, list[Evidence]] = {}
+    """(참고문헌 문자열, 병합된 evidence_id 목록) 리스트. 인용 순서 유지, inference/not_public 제외.
+
+    같은 논문을 코퍼스 PDF(doc_id)와 웹(arXiv URL)으로 따로 인용해도, doc_id·정규화 URL·정규화 제목 중
+    하나라도 겹치면 1항목으로 합치고 페이지를 모두 나열한다.
+    """
+    evs: list[Evidence] = []
     for eid in cited_ids:
         e = evidence_index.get(eid)
         if e is None:
             logger.warning("REFERENCE: 본문 인용 id가 evidence 인덱스에 없음: %s", eid)
             continue
-        if e.source_type in NON_REFERENCE_TYPES:
-            continue
-        groups.setdefault(_merge_key(e), []).append(e)
+        if e.source_type not in NON_REFERENCE_TYPES:
+            evs.append(e)
     entries = []
-    for evs in groups.values():
-        pages = [e.page for e in evs if e.page]
-        entries.append((format_reference(evs[0], pages=pages), [e.evidence_id for e in evs]))
+    for group in _group_same_source(evs):
+        rep = _representative(group)
+        pages = [e.page for e in group if e.page]
+        if not rep.url:
+            url = next((e.url for e in group if e.url), None)
+            rep = rep.model_copy(update={"url": url}) if url else rep
+        entries.append((format_reference(rep, pages=pages), [e.evidence_id for e in group]))
     return entries
 
 

@@ -106,3 +106,23 @@ def test_summary_length_and_intro_are_warnings_not_errors(report, index):
     assert not any(i.section == "SUMMARY" for i in res.errors)
     assert "SUMMARY" in res.sections_to_fix()
     assert "SUMMARY" not in {w.section for w in lint_report(report, index).warnings}  # 픽스처 SUMMARY는 기준 안
+
+
+def test_summary_generic_opening_and_uncited_sentences_are_fixable(report, index):
+    """실제 LLM 출력에서 본 패턴: 인용 없는 총론 첫 문장, 인용 없는 일반론 마무리."""
+    body = (
+        "두 기술은 서로 다른 관점에서 상충되는 평가를 받는다. "
+        "MLA는 T1과 M2가 엇갈린다[E: mla-T1-01]. "
+        "이는 해석에 영향을 준다."
+    )
+    bad = report.replace("## SUMMARY\n", f"## SUMMARY\n\n{body}\n", 1)
+    res = lint_report(bad, index)
+    kinds = {w.kind for w in res.warnings if w.section == "SUMMARY"}
+    assert {"summary_intro", "summary_uncited"} <= kinds
+    assert "SUMMARY" in res.sections_to_fix() and res.passed  # judge가 보는 errors는 아님
+
+
+def test_uncited_number_in_body_section_is_fixable_but_not_in_ch6(report, index):
+    bad = report.replace("## 5. 시사점\n", "## 5. 시사점\n\n처리량이 3.2x 늘었다.\n", 1)
+    assert "5" in lint_report(bad, index).sections_to_fix()
+    assert "6" not in lint_report(report, index).sections_to_fix()  # 6장 벤더 비율(35.0%)은 제외

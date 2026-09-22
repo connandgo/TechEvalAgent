@@ -4,33 +4,36 @@
       "tech_id": "mla",
       "perspectives": [
         "trl",
-        "domain"
+        "market"
       ],
       "criterion_ids": [
         "T3",
-        "D4"
+        "M3"
       ],
-      "statement": "제3자 서빙 구현(vLLM의 MLA 백엔드)이 T3의 제3자 재현 Y와 D4의 서빙 엔진 수정 N을 함께 뒷받침한다.",
+      "statement": "제3자 서빙 구현(vLLM·SGLang의 MLA 백엔드)이 T3의 제3자 재현 Y와 M3의 프레임워크 Y를 함께 뒷받침한다.",
       "evidence_ids": [
         "mla-T3-04",
-        "mla-D4-01"
+        "mla-M3-01",
+        "mla-M3-02"
       ]
     },
     {
       "tech_id": "pim_cxl",
       "perspectives": [
-        "stakeholder",
-        "domain"
+        "trl",
+        "market",
+        "stakeholder"
       ],
       "criterion_ids": [
-        "S3",
-        "D4"
+        "T1",
+        "M2",
+        "S3"
       ],
-      "statement": "운영사의 설비 도입·서빙 경로 변경 부담(S3)과 D4의 서빙 엔진 수정 Y·메모리 추가 Y가 같은 지점을 가리킨다.",
+      "statement": "PIM/PNM 부품이 벤더 샘플링 단계에 머문다는 근거가 T1(상위 단계로 올리지 못한 이유), M2(PoC 단계), S3(투자 회수 시점 불확실)에서 같은 방향을 가리킨다.",
       "evidence_ids": [
-        "pim_cxl-S3-02",
-        "pim_cxl-D4-01",
-        "pim_cxl-D4-02"
+        "pim_cxl-T1-02",
+        "pim_cxl-M2-04",
+        "pim_cxl-S3-01"
       ]
     },
     {
@@ -59,10 +62,9 @@
       "criterion_a": "S4",
       "perspective_b": "domain",
       "criterion_b": "D4",
-      "statement": "이해관계자 관점은 운영사의 배치 확대 편익이 개발사의 모델 구조 변경·재학습 부담 위에서 성립한다고 보나(S4), 도메인 D4는 재학습·변환을 미확인으로, 서빙 엔진 수정을 N(vLLM이 MLA 백엔드 지원)으로 기록한다.",
-      "cause": "근거 유형·평가 단위 차이: S4는 기존 GQA 모델을 MLA로 바꾸는 제3자 변환 연구(계열 단위)에 기대고, D4는 선정 모델의 서빙 지원 문서(논문·구현 단위)로 판정했다.",
+      "statement": "이해관계자 관점은 모델 개발사의 구조 변경이 서빙 운영사에게 전용 백엔드를 따로 검증해야 하는 부담이 된다고 보나(S4), 도메인 D4는 vLLM이 MLA 전용 백엔드를 지원한다는 근거로 서빙 엔진 수정을 N으로 기록한다.",
+      "cause": "기준 차이: D4는 서빙 엔진 코드를 고쳐야 하는지를, S4는 이미 있는 백엔드라도 디코딩 경로가 달라 운영사가 따로 검증해야 하는 부담을 묻는다.",
       "evidence_ids": [
-        "mla-S4-01",
         "mla-S4-02",
         "mla-D4-01"
       ]
@@ -73,12 +75,11 @@
       "criterion_a": "T1",
       "perspective_b": "market",
       "criterion_b": "M2",
-      "statement": "TRL은 실서비스 트래픽 운영 근거가 공개 자료에 없어 TRL 4-6(추정 6)으로 두나, 시장 M2는 원문의 서비스 배포 서술과 후속 모델 채택을 근거로 L4(상용 운영)로 판정한다.",
-      "cause": "기준·근거 유형 차이: T1은 공개된 운영 실적(트래픽·규모)을 요구하고, M2는 채택 주체의 배포 사실 자체를 단계 판정에 쓴다.",
+      "statement": "TRL은 실서비스 트래픽 운영 근거가 공개 자료에 없어 TRL 4-6(추정 6)으로 두나, 시장 M2는 제안사가 MLA 기반 모델을 유료 API로 운영한다는 공식 가격 문서를 근거로 L4(상용 운영)로 판정한다.",
+      "cause": "기준·근거 유형 차이: T1은 논문·구현 단위의 운영 실적(트래픽·규모) 공개를 요구하고, M2는 채택 주체의 상용 운영 사실을 제안사 공식 문서(official)로 확인한다.",
       "evidence_ids": [
         "mla-T1-01",
-        "mla-M2-01",
-        "mla-M2-02"
+        "mla-M2-01"
       ]
     },
     {
@@ -87,8 +88,8 @@
       "criterion_a": "S4",
       "perspective_b": "market",
       "criterion_b": "M2",
-      "statement": "시장 관점은 CXL 메모리 모듈 제품화를 근거로 M2를 L3로 판정하나, S4는 운영사가 설비 교체와 지연 증가를 감수해야 벤더의 편익이 성립한다고 본다.",
-      "cause": "근거 유형·평가 단위 차이: M2는 벤더 발표(official)로 계열 단위 제품화를 확인한 것이고, S4는 KV cache용 PNM 도입 시 운영사 부담을 다룬다.",
+      "statement": "시장 M2는 CXL 메모리 확장 컨트롤러 양산을 근거로 L3(제품화)로 판정하나, S4는 벤더의 메모리 수요 확대가 운영사의 장비 도입 비용 부담으로 이어진다고 보며, 운영사 측 근거는 현재 CXL 메모리 확장 배포가 KV cache 오프로드가 아닌 용량 중심 워크로드를 겨냥한다고 전한다.",
+      "cause": "근거 유형·기준 차이: M2는 벤더 제품 출하(official)로 계열의 채택 단계를 보고, S4는 운영사가 KV cache 용도로 도입할 때의 비용·범위 부담을 제3자 보도(web)로 본다.",
       "evidence_ids": [
         "pim_cxl-S4-01",
         "pim_cxl-S4-02",
@@ -101,14 +102,13 @@
       "perspective_a": "trl",
       "criterion_a": "T1",
       "perspective_b": "market",
-      "criterion_b": "M3",
-      "statement": "TRL은 CXL-PNM 시스템 측정과 벤더 부품이 샘플링 단계라는 보도를 근거로 TRL 4-6(추정 4)으로 두나, 시장 M3는 CXL 표준·벤더 메모리 모듈·서베이를 근거로 생태계를 L3로 판정한다.",
-      "cause": "평가 단위 차이: T1은 선정 논문 구현(paper), M3는 CXL·PIM/PNM 계열 전체(family)를 본다.",
+      "criterion_b": "M2",
+      "statement": "TRL은 CXL-PNM 시스템 측정과 벤더 부품이 샘플링 단계라는 보도를 근거로 TRL 4-6(추정 4)으로 두나, 시장 M2는 CXL 메모리 확장 컨트롤러가 양산 출하 중이라는 벤더 발표를 근거로 L3로 판정한다.",
+      "cause": "평가 단위 차이: T1은 선정 논문의 CXL-PNM 설계(paper), M2는 CXL·PIM/PNM 계열 부품 중 메모리 확장 컨트롤러(family)의 제품화를 본다.",
       "evidence_ids": [
         "pim_cxl-T1-01",
         "pim_cxl-T1-02",
-        "pim_cxl-M3-01",
-        "pim_cxl-M3-02"
+        "pim_cxl-M2-01"
       ]
     }
   ],
@@ -139,39 +139,15 @@
     },
     {
       "tech_id": "mla",
-      "criterion_id": "M1",
-      "gap_type": "not_public",
-      "description": "M1 판정 자체가 not_public(공개 근거 미확인)"
+      "criterion_id": "M3",
+      "gap_type": "unit_mismatch",
+      "description": "M3 family 단위 판정에 paper 단위 근거가 섞임"
     },
     {
       "tech_id": "pim_cxl",
-      "criterion_id": "M1",
-      "gap_type": "single_source",
-      "description": "M1 인용 출처가 1개뿐(confidence=medium)"
-    },
-    {
-      "tech_id": "mla",
-      "criterion_id": "S1",
-      "gap_type": "single_source",
-      "description": "S1 인용 출처가 1개뿐(confidence=low)"
-    },
-    {
-      "tech_id": "mla",
-      "criterion_id": "S3",
-      "gap_type": "single_source",
-      "description": "S3 인용 출처가 1개뿐(confidence=low)"
-    },
-    {
-      "tech_id": "pim_cxl",
-      "criterion_id": "S1",
-      "gap_type": "single_source",
-      "description": "S1 인용 출처가 1개뿐(confidence=low)"
-    },
-    {
-      "tech_id": "pim_cxl",
-      "criterion_id": "S3",
-      "gap_type": "single_source",
-      "description": "S3 인용 출처가 1개뿐(confidence=low)"
+      "criterion_id": "M3",
+      "gap_type": "unit_mismatch",
+      "description": "M3 family 단위 판정에 paper 단위 근거가 섞임"
     },
     {
       "tech_id": "mla",
@@ -198,7 +174,7 @@
       "description": "동시 처리 근거가 원저자 보고뿐이다. counter_evidence(mla-COUNTER-02)는 속도 향상이 서빙 엔진의 MLA 커널 지원에 달려 있다고 지적하나, 처리량 이득이 줄어드는 조건을 측정한 제3자 근거는 없다."
     }
   ],
-  "unit_notes": "MLA는 TRL(paper)이 공개 운영 실적 부재로 TRL 4-6에 머무는 반면, 시장 M2(family)는 원개발사의 배포와 후속 모델 채택으로 L4가 나와 같은 원개발사 자료가 단위·기준에 따라 다르게 판정되었다. PIM/CXL은 선정 논문 설계가 CXL-PNM 시스템 측정 단계(TRL 4-6, 추정 4)인 반면, 시장·이해관계자는 CXL 메모리 모듈 등 계열 제품을 근거로 M2 L3·M3 L3가 나왔다. 따라서 PIM/CXL의 시장 레벨은 선정 논문 설계의 채택이 아니라 계열 단위 확장의 결과다.",
-  "evidence_asymmetry_note": "근거 수: DeepSeek-V2 MLA 36건(official 3%, inference 4건, not_public 1건), PIM/CXL 36건(official 22%, inference 4건, not_public 0건). PIM/CXL은 시장·이해관계자 근거에서 벤더(official) 발표 비중이 높고, 두 기술 모두 도메인 수치가 원저자 보고에 기댄다. 반대 근거 탐색으로 4건(서베이 2건, 웹 2건)이 추가되어 pim_cxl M2의 채택 단계 반례는 보완되었으나, mla D2의 처리량 반례는 여전히 없다.",
+  "unit_notes": "MLA는 TRL(paper)이 공개 운영 실적 부재로 TRL 4-6에 머무는 반면, 시장 M2(family)는 제안사의 유료 API 운영을 공식 문서로 확인해 L4가 나와, 같은 제안사의 기술이 단위·기준에 따라 다르게 판정되었다. PIM/CXL은 선정 논문 설계가 CXL-PNM 시스템 측정 단계(TRL 4-6, 추정 4)인 반면, 시장 M2는 CXL 메모리 확장 컨트롤러의 양산으로 L3가 나왔고 PIM/PNM 부품은 샘플링 단계로 구분 기록되었다. 따라서 PIM/CXL의 M2 L3는 선정 논문 설계의 채택이 아니라 계열 부품(컨트롤러)의 제품화다.",
+  "evidence_asymmetry_note": "근거 수: DeepSeek-V2 MLA 44건(official 25%, inference 6건, not_public 0건), PIM/CXL 45건(official 18%, inference 2건, not_public 0건). PIM/CXL은 시장·이해관계자 근거에서 벤더(official) 발표 비중이 높고, MLA의 생태계·이해관계자 근거도 서빙 프레임워크 공식 문서에 기댄다. 반대 근거 탐색으로 4건(서베이 2건, 웹 2건)이 추가되어 pim_cxl M2의 채택 단계 반례는 보완되었으나, mla D2의 처리량 반례는 여전히 없다.",
   "generated_at": "2026-09-20T10:30:00"
 }

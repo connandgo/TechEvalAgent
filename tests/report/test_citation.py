@@ -126,3 +126,30 @@ def test_citations_use_one_id_per_bracket():
     """E의 judge는 `[E: id]` 한 괄호 한 id만 읽는다. 출력은 항상 이 형식으로 맞춘다."""
     assert format_citations(["mla-T1-01", "mla-T1-02", "mla-T1-01"]) == "[E: mla-T1-01][E: mla-T1-02]"
     assert normalize_citations("근거[E: mla-T1-01, mla-T2-01].") == "근거[E: mla-T1-01][E: mla-T2-01]."
+
+
+def test_same_paper_from_corpus_and_web_is_one_reference():
+    """코퍼스 PDF(doc_id) 인용과 웹 arXiv 인용이 같은 논문이면 1항목으로 합친다. 제목 표기가 달라도 URL이 같으면 합친다."""
+    corpus = _paper("mla-D1-02", 6).model_copy(update={"url": "https://arxiv.org/abs/2405.04434"})
+    web = Evidence(
+        evidence_id="mla-T1-01",
+        source_type="paper",
+        unit="paper",
+        quote="q",
+        locator="https://arxiv.org/abs/2405.04434v5",
+        url="https://arxiv.org/abs/2405.04434v5",
+        title="DeepSeek-V2 (arXiv)",
+        publisher="arXiv",
+        published_date="2024",
+    )
+    index = {e.evidence_id: e for e in (corpus, web)}
+    section = build_reference_section("a[E: mla-T1-01] b[E: mla-D1-02]", index)
+    lines = [ln for ln in section.splitlines() if ln[:1].isdigit()]
+    assert len(lines) == 1
+    assert lines[0].startswith("1. DeepSeek-AI(2024).") and "p. 6" in lines[0]  # 저자·페이지가 있는 쪽을 대표로
+    assert set(reference_ids(section)) == {"mla-T1-01", "mla-D1-02"}
+
+
+def test_paper_without_authors_is_not_attributed_to_publisher():
+    e = _paper("mla-M3-04", 3).model_copy(update={"authors": None, "doc_id": None})
+    assert format_reference(e).startswith("저자 미상(2024).")

@@ -119,8 +119,12 @@ def detect_gaps(results: list[CriterionResult]) -> list[Gap]:
                     tech_id=r.tech_id,
                     criterion_id=r.criterion_id,
                     gap_type="unit_mismatch",
-                    description=f"{r.criterion_id} 근거 단위 {sorted(units)}, 판정 단위 {r.evidence_unit}"
-                    + (f" (관점 기대 단위 {expected})" if expected else ""),
+                    description=(
+                        f"{r.criterion_id} {r.evidence_unit} 단위 판정에 "
+                        f"{', '.join(sorted(units - {r.evidence_unit}))} 단위 근거가 섞임"
+                        if len(units) > 1
+                        else f"{r.criterion_id} 판정 단위({r.evidence_unit})가 관점 기대 단위({expected})와 다름"
+                    ),
                 )
             )
     return gaps

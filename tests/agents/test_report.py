@@ -164,8 +164,11 @@ def test_summary_intro_is_rewritten_once_and_gets_whole_report_data(inp):
     md = run_report(inp, _deps(llm)[0])
     summary_calls = [c for c in llm.calls if "SUMMARY" in c.splitlines()[0]]
     assert len(summary_calls) == 2 and "# 수정 모드" in summary_calls[1]  # 인트로 → SUMMARY만 1회 재작성
-    assert "도입 문장" in summary_calls[1]
-    assert "## 기술별 관점 판정" in summary_calls[0] and "## 해석상 한계" in summary_calls[0]  # 전체 보고서 요약 재료
+    assert "도입·총론 문장" in summary_calls[1]
+    assert "## 기술별 관점 판정" in summary_calls[0] and "## 해석상 한계" in summary_calls[0]
+    assert (
+        "[E: mla-T1-01]" in summary_calls[0].split("## 해석상 한계", 1)[1]
+    )  # 한계 문장도 인용할 수 있게 id 제공  # 전체 보고서 요약 재료
     summary = next(s for s in split_sections(md) if s.key == "SUMMARY")
     assert not summary.body.strip().startswith("본 보고서는")
 
@@ -209,19 +212,26 @@ def test_map_instructions_to_units():
 
 @pytest.mark.integration
 def test_real_llm_report_passes_lint(inp, tmp_path):
+    """.env의 에이전트별 모델(LLM_MODEL_SYNTHESIS / LLM_MODEL_REPORT)로 실제 호출 1회. 설정·패키지가 없으면 skip."""
     from techeval import config
     from techeval.agents._deps import SynthesisInput
     from techeval.agents.synthesis import run_synthesis
+    from techeval.report.lint import summary_plain_text
     from techeval.report.pdf import render_pdf
 
     try:
-        llm = config.get_llm()
-    except RuntimeError as exc:  # .env에 LLM_PROVIDER/LLM_MODEL/JUDGE_MODEL이 없으면
+        settings = config.load_settings()
+        syn_llm = config.get_llm(settings, agent="synthesis")
+        rep_llm = config.get_llm(settings, agent="report")
+    except (RuntimeError, ImportError) as exc:  # .env 미설정 또는 provider 패키지(langchain-openai 등) 없음
         pytest.skip(str(exc))
-    deps, spy = _deps(llm)
-    syn = run_synthesis(SynthesisInput(**inp.model_dump(include=set(SynthesisInput.model_fields))), deps)
-    md = run_report(inp.model_copy(update={"synthesis": syn}), deps)
+    syn_deps, syn_spy = _deps(syn_llm)
+    rep_deps, rep_spy = _deps(rep_llm)
+    syn = run_synthesis(SynthesisInput(**inp.model_dump(include=set(SynthesisInput.model_fields))), syn_deps)
+    md = run_report(inp.model_copy(update={"synthesis": syn}), rep_deps)
     res = lint_report(md, _index(inp))
-    assert not spy.called
+    assert not syn_spy.called and not rep_spy.called
     assert res.passed, (res.errors, res.missing_required)
+    summary = next(s for s in split_sections(md) if s.key == "SUMMARY")
+    assert len(summary_plain_text(summary.body)) <= 700
     assert Path(render_pdf(md, str(tmp_path / "report.pdf"))).stat().st_size > 0
