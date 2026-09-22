@@ -39,6 +39,11 @@ def parse_args() -> argparse.Namespace:
         "--chroma-dir", type=Path, required=True, help="Chroma와 BM25를 저장할 디렉터리"
     )
     parser.add_argument("--embedding-model", default="BAAI/bge-m3")
+    parser.add_argument(
+        "--rebuild",
+        action="store_true",
+        help="기존 Chroma 컬렉션과 BM25 인덱스를 비운 뒤 다시 생성",
+    )
     return parser.parse_args()
 
 
@@ -54,7 +59,10 @@ def main() -> None:
             raise FileNotFoundError(f"Missing paper for {doc_id}: {path}")
         documents.append((doc_id, title, path))
     counts = build_index(
-        documents, chroma_dir=args.chroma_dir, embedding_model=args.embedding_model
+        documents,
+        chroma_dir=args.chroma_dir,
+        embedding_model=args.embedding_model,
+        rebuild=args.rebuild,
     )
     for doc_id, count in counts.items():
         print(f"{doc_id}: {count} chunks")
