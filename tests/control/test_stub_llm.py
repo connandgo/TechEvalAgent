@@ -205,3 +205,33 @@ def test_draft_profile_model_picks_tech(fixtures_dir):
     llm = FakeStructuredLLM(fixtures_dir=fixtures_dir)
     out = llm.with_structured_output(ProfileDraft).invoke("tech_id: pim_cxl 기술 개요")
     assert out.principle == "pim_cxl principle"
+
+
+def test_collect_stub_overrides_merges_agent_modules(monkeypatch):
+    """에이전트 모듈에 stub_overrides()가 있으면 자동 등록되고, 없거나 모듈이 없으면 건너뛴다."""
+    import sys
+    import types
+
+    from techeval import stub_llm
+
+    class DraftA(BaseModel):
+        x: int
+
+    class DraftB(BaseModel):
+        y: int
+
+    mod_a = types.ModuleType("fake_agent_a")
+    mod_a.stub_overrides = lambda: {DraftA: lambda text: {"x": 1}}
+    mod_b = types.ModuleType("fake_agent_b")
+    mod_b.stub_overrides = lambda: {DraftB: lambda text: DraftB(y=2)}
+    mod_c = types.ModuleType("fake_agent_c")  # stub_overrides 없음
+    monkeypatch.setitem(sys.modules, "fake_agent_a", mod_a)
+    monkeypatch.setitem(sys.modules, "fake_agent_b", mod_b)
+    monkeypatch.setitem(sys.modules, "fake_agent_c", mod_c)
+    monkeypatch.setattr(stub_llm, "AGENT_MODULES", ("fake_agent_a", "fake_agent_b", "fake_agent_c", "fake_missing"))
+
+    overrides = stub_llm.collect_stub_overrides()
+    assert set(overrides) == {DraftA, DraftB}
+    llm = FakeStructuredLLM(overrides=overrides)
+    assert llm.with_structured_output(DraftA).invoke("아무 프롬프트").x == 1
+    assert llm.with_structured_output(DraftB).invoke("아무 프롬프트").y == 2

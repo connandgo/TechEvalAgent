@@ -19,9 +19,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[3]
 FIXTURE_PATH = _REPO_ROOT / "tests" / "fixtures" / "web_results.json"
 
 #: 키워드 매칭에서 무시하는 흔한 단어
-_STOPWORDS = frozenset(
-    {"the", "a", "an", "of", "for", "in", "on", "and", "or", "to", "with", "is"}
-)
+_STOPWORDS = frozenset({"the", "a", "an", "of", "for", "in", "on", "and", "or", "to", "with", "is"})
 
 
 def _tokenize(text: str) -> set[str]:
@@ -35,10 +33,7 @@ def load_fixture(path: str | None = None) -> dict[str, list[WebResult]]:
     """픽스처를 읽어 WebResult로 검증한다. 스키마가 깨지면 여기서 예외가 난다."""
     fixture_path = Path(path) if path else FIXTURE_PATH
     raw = json.loads(fixture_path.read_text(encoding="utf-8"))
-    return {
-        key: [WebResult.model_validate(item) for item in items]
-        for key, items in raw.items()
-    }
+    return {key: [WebResult.model_validate(item) for item in items] for key, items in raw.items()}
 
 
 def _match_key(query: str, keys: list[str]) -> str | None:
@@ -91,16 +86,11 @@ def stub_web_search(
 
     results = fixture[key]
     if site_filter:
-        allowed = tuple(
-            normalize_host(f"https://{s}") or s.lower() for s in site_filter
-        )
+        allowed = tuple(normalize_host(f"https://{s}") or s.lower() for s in site_filter)
         results = [
             r
             for r in results
-            if any(
-                normalize_host(r.url) == a or normalize_host(r.url).endswith("." + a)
-                for a in allowed
-            )
+            if any(normalize_host(r.url) == a or normalize_host(r.url).endswith("." + a) for a in allowed)
         ]
 
     updates: dict = {"query": query}

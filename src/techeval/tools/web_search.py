@@ -267,14 +267,10 @@ _META_REVERSED_RE = re.compile(
         [^>]*?(?:property|name|itemprop)\s*=\s*["']([^"']+)["']""",
     re.IGNORECASE | re.VERBOSE,
 )
-_TIME_TAG_RE = re.compile(
-    r"""<time[^>]+datetime\s*=\s*["']([^"']+)["']""", re.IGNORECASE
-)
+_TIME_TAG_RE = re.compile(r"""<time[^>]+datetime\s*=\s*["']([^"']+)["']""", re.IGNORECASE)
 
 _URL_DATE_RES = (
-    re.compile(
-        r"/(20\d{2})[/\-](0[1-9]|1[0-2])[/\-](0[1-9]|[12]\d|3[01])(?:[/\-_.]|$)"
-    ),
+    re.compile(r"/(20\d{2})[/\-](0[1-9]|1[0-2])[/\-](0[1-9]|[12]\d|3[01])(?:[/\-_.]|$)"),
     re.compile(r"[?&](?:date|d)=(20\d{2})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])"),
 )
 #: arXiv ID는 발행 연월을 담는다: 2405.04434 -> 2024-05
@@ -341,9 +337,7 @@ def _normalize_date_string(raw: str) -> str | None:
     return None
 
 
-def parse_published_date(
-    *, html: str | None = None, url: str | None = None, text: str | None = None
-) -> str | None:
+def parse_published_date(*, html: str | None = None, url: str | None = None, text: str | None = None) -> str | None:
     """발행일을 "YYYY-MM-DD"로 파싱한다. 못 찾으면 None — 추정하지 않는다.
 
     시도 순서 (역할 C 문서 §5.1): 메타태그 → <time datetime> → URL 패턴 → 본문 첫 날짜.
@@ -420,9 +414,7 @@ class WebResult(BaseModel):
         """source_kind에서 파생되는 Evidence.source_type."""
         return _SOURCE_TYPE_BY_KIND[self.source_kind]
 
-    def to_evidence(
-        self, *, evidence_id: str, quote: str, unit: EvidenceUnit
-    ) -> Evidence:
+    def to_evidence(self, *, evidence_id: str, quote: str, unit: EvidenceUnit) -> Evidence:
         """이 결과를 Evidence로 변환한다.
 
         `quote`는 snippet 또는 content의 부분 문자열이어야 한다 (역할 C 문서 §5.4).
@@ -431,9 +423,7 @@ class WebResult(BaseModel):
         if not quote or not quote.strip():
             raise ValueError(f"{evidence_id}: quote is required for a web evidence")
         if not self._contains_quote(quote):
-            raise ValueError(
-                f"{evidence_id}: quote is not a substring of snippet/content of {self.url}"
-            )
+            raise ValueError(f"{evidence_id}: quote is not a substring of snippet/content of {self.url}")
         return Evidence(
             evidence_id=evidence_id,
             source_type=self.source_type,
@@ -485,26 +475,21 @@ def build_web_result(
         snippet=snippet,
         content=content,
         publisher=publisher or extract_publisher(url),
-        published_date=published_date
-        or parse_published_date(html=html, url=url, text=content or snippet),
+        published_date=published_date or parse_published_date(html=html, url=url, text=content or snippet),
         fetched_at=fetched_at or _now_iso(),
         source_kind=classify_source_kind(url),
         query=query,
     )
 
 
-def not_public_evidence(
-    *, evidence_id: str, queries: list[str], scope: str, unit: EvidenceUnit
-) -> Evidence:
+def not_public_evidence(*, evidence_id: str, queries: list[str], scope: str, unit: EvidenceUnit) -> Evidence:
     """검색 실패 기록 헬퍼 (CONTRACTS.md §4).
 
     2회 재검색 후에도 못 찾은 정보는 추측하지 않고 이 Evidence로 남긴다
     (AGENTS.md 규칙 2). searched_at은 현재 시각으로 채운다.
     """
     if not queries or not any(q.strip() for q in queries):
-        raise ValueError(
-            f"{evidence_id}: not_public evidence requires at least one search query"
-        )
+        raise ValueError(f"{evidence_id}: not_public evidence requires at least one search query")
     if not scope.strip():
         raise ValueError(f"{evidence_id}: not_public evidence requires a search scope")
     cleaned = [q.strip() for q in queries if q.strip()]

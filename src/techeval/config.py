@@ -88,12 +88,13 @@ def build_deps(stub: bool = False, settings: Settings | None = None, *, use_cach
     stub=False: `VectorRetriever` + `web_search` + 실제 모델.
     """
     if stub:
-        from techeval.stub_llm import FakeStructuredLLM
+        from techeval.stub_llm import FakeStructuredLLM, collect_stub_overrides
 
+        overrides = collect_stub_overrides()  # B/C/D 에이전트 모듈의 stub_overrides() 자동 수집
         return Deps(
             retriever=make_stub_retriever(),
             web_search=make_stub_web_search(),
-            llm=FakeStructuredLLM(),
+            llm=FakeStructuredLLM(overrides=overrides),
             judge_llm=FakeStructuredLLM(),
             now=lambda: "2026-01-01T00:00:00",
         )
