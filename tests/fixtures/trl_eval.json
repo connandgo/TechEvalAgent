@@ -1,0 +1,479 @@
+[
+  {
+    "tech_id": "mla",
+    "perspective": "trl",
+    "criterion_id": "T1",
+    "level": "TRL 4-6",
+    "level_estimate": "TRL 6 (공개 정보 기반 추정)",
+    "content": "H800 클러스터에서 학습·서빙했고 가중치가 공개돼 관련 환경 검증 단계로 본다. 실서비스 트래픽 운영 근거는 공개 자료에 없다.",
+    "evidence": [
+      {
+        "evidence_id": "mla-T1-01",
+        "source_type": "paper",
+        "unit": "paper",
+        "quote": "trained and served on clusters of NVIDIA H800 GPUs",
+        "locator": "https://arxiv.org/abs/2405.04434",
+        "title": "DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model",
+        "authors": null,
+        "publisher": "arXiv",
+        "published_date": "2024-05",
+        "url": "https://arxiv.org/abs/2405.04434",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": "DeepSeek-V2 code release github",
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "mla-T1-02",
+        "source_type": "web",
+        "unit": "paper",
+        "quote": "Model weights and configuration for DeepSeek-V2 are published under an open licence",
+        "locator": "https://huggingface.co/deepseek-ai/DeepSeek-V2",
+        "title": "deepseek-ai/DeepSeek-V2 · Hugging Face",
+        "authors": null,
+        "publisher": "Hugging Face",
+        "published_date": "2024-06-14",
+        "url": "https://huggingface.co/deepseek-ai/DeepSeek-V2",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": "DeepSeek-V2 code release github",
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "high",
+    "evidence_unit": "paper",
+    "measurements": [],
+    "details": {
+      "trl_band": "4-6",
+      "estimate": 6,
+      "why_not_higher": "지속 트래픽 하의 실서비스 운영 실적이 공개 자료에서 확인되지 않아 7-9로 올리지 못한다."
+    },
+    "generated_at": "2026-01-01T00:00:00",
+    "retry_count": 0
+  },
+  {
+    "tech_id": "mla",
+    "perspective": "trl",
+    "criterion_id": "T2",
+    "level": "L3",
+    "level_estimate": null,
+    "content": "실물 H800 GPU 클러스터에서 학습·서빙했다고 보고한다. 실서비스 트래픽 검증은 원문에 없다.",
+    "evidence": [
+      {
+        "evidence_id": "mla-T2-01",
+        "source_type": "paper",
+        "unit": "paper",
+        "quote": "trained and served on clusters of NVIDIA H800 GPUs",
+        "locator": "https://arxiv.org/abs/2405.04434",
+        "title": "DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model",
+        "authors": null,
+        "publisher": "arXiv",
+        "published_date": "2024-05",
+        "url": "https://arxiv.org/abs/2405.04434",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": "DeepSeek-V2 code release github",
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "medium",
+    "evidence_unit": "paper",
+    "measurements": [],
+    "details": {
+      "env_level": "L3"
+    },
+    "generated_at": "2026-01-01T00:00:00",
+    "retry_count": 0
+  },
+  {
+    "tech_id": "mla",
+    "perspective": "trl",
+    "criterion_id": "T3",
+    "level": "L3",
+    "level_estimate": null,
+    "content": "공식 저장소에 추론 코드가 있고 가중치가 공개돼 있으며 vLLM이 독립 구현을 유지한다. 벤치마크 하네스는 포함되지 않는다.",
+    "evidence": [
+      {
+        "evidence_id": "mla-T3-01",
+        "source_type": "web",
+        "unit": "paper",
+        "quote": "Contains the model configuration, inference example code for the MLA attention path",
+        "locator": "https://github.com/deepseek-ai/DeepSeek-V2",
+        "title": "deepseek-ai/DeepSeek-V2",
+        "authors": null,
+        "publisher": "DeepSeek",
+        "published_date": null,
+        "url": "https://github.com/deepseek-ai/DeepSeek-V2",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": "DeepSeek-V2 code release github",
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "mla-T3-02",
+        "source_type": "web",
+        "unit": "paper",
+        "quote": "Model weights and configuration for DeepSeek-V2 are published under an open licence",
+        "locator": "https://huggingface.co/deepseek-ai/DeepSeek-V2",
+        "title": "deepseek-ai/DeepSeek-V2 · Hugging Face",
+        "authors": null,
+        "publisher": "Hugging Face",
+        "published_date": "2024-06-14",
+        "url": "https://huggingface.co/deepseek-ai/DeepSeek-V2",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": "DeepSeek-V2 code release github",
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "mla-T3-03",
+        "source_type": "web",
+        "unit": "paper",
+        "quote": "the benchmark harness used for the numbers reported in the paper are not included",
+        "locator": "https://github.com/deepseek-ai/DeepSeek-V2",
+        "title": "deepseek-ai/DeepSeek-V2",
+        "authors": null,
+        "publisher": "DeepSeek",
+        "published_date": null,
+        "url": "https://github.com/deepseek-ai/DeepSeek-V2",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": "DeepSeek-V2 code release github",
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "mla-T3-04",
+        "source_type": "web",
+        "unit": "paper",
+        "quote": "vLLM carries an independently written MLA attention backend for DeepSeek-V2 style models",
+        "locator": "https://github.com/vllm-project/vllm",
+        "title": "vllm-project/vllm — MLA attention backend source",
+        "authors": null,
+        "publisher": "vLLM",
+        "published_date": null,
+        "url": "https://github.com/vllm-project/vllm",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": "DeepSeek-V2 code release github",
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "medium",
+    "evidence_unit": "paper",
+    "measurements": [],
+    "details": {
+      "checklist": {
+        "code": "Y",
+        "model_or_design": "Y",
+        "eval_scripts_data": "N",
+        "third_party_reproduction": "Y"
+      },
+      "urls": {
+        "code": "https://github.com/deepseek-ai/DeepSeek-V2",
+        "model_or_design": "https://huggingface.co/deepseek-ai/DeepSeek-V2",
+        "third_party_reproduction": "https://github.com/vllm-project/vllm"
+      }
+    },
+    "generated_at": "2026-01-01T00:00:00",
+    "retry_count": 0
+  },
+  {
+    "tech_id": "mla",
+    "perspective": "trl",
+    "criterion_id": "T4",
+    "level": "narrative",
+    "level_estimate": null,
+    "content": "실서비스 트래픽 검증이 남아 있다. 벤치마크 하네스와 배포 규모는 공개 자료에서 확인되지 않는다.",
+    "evidence": [
+      {
+        "evidence_id": "mla-T4-01",
+        "source_type": "web",
+        "unit": "paper",
+        "quote": "the benchmark harness used for the numbers reported in the paper are not included",
+        "locator": "https://github.com/deepseek-ai/DeepSeek-V2",
+        "title": "deepseek-ai/DeepSeek-V2",
+        "authors": null,
+        "publisher": "DeepSeek",
+        "published_date": null,
+        "url": "https://github.com/deepseek-ai/DeepSeek-V2",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": "DeepSeek-V2 code release github",
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "medium",
+    "evidence_unit": "paper",
+    "measurements": [],
+    "details": {
+      "remaining_tasks": [
+        "지속 트래픽 하의 다중 테넌트 서빙 검증"
+      ],
+      "not_public_items": [
+        "벤치마크 하네스 (검색어: DeepSeek-V2 code availability github)",
+        "실서비스 배포 규모 (검색어: DeepSeek-V2 MLA production deployment)"
+      ]
+    },
+    "generated_at": "2026-01-01T00:00:00",
+    "retry_count": 0
+  },
+  {
+    "tech_id": "pim_cxl",
+    "perspective": "trl",
+    "criterion_id": "T1",
+    "level": "TRL 4-6",
+    "level_estimate": "TRL 4 (공개 정보 기반 추정)",
+    "content": "CXL-PNM 시스템에서 측정한 결과를 보고해 구성요소 검증 단계로 본다. 벤더 부품은 샘플링 단계라 상위 단계 근거가 없다.",
+    "evidence": [
+      {
+        "evidence_id": "pim_cxl-T1-01",
+        "source_type": "paper",
+        "unit": "paper",
+        "quote": "reports results measured on a CXL-PNM system",
+        "locator": "https://arxiv.org/abs/2511.00321",
+        "title": "Scalable Processing-Near-Memory for 1M-Token LLM Inference: CXL-Enabled KV-Cache Management Beyond GPU Limits",
+        "authors": null,
+        "publisher": "arXiv",
+        "published_date": "2025-10",
+        "url": "https://arxiv.org/abs/2511.00321",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": "PIM CXL prototype code availability",
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "pim_cxl-T1-02",
+        "source_type": "web",
+        "unit": "paper",
+        "quote": "evaluation is limited to vendor sampling programmes",
+        "locator": "https://www.eetimes.com/processing-in-memory-parts-remain-sampling-stage-for-ai-servers/",
+        "title": "Processing-in-memory parts remain at sampling stage for AI servers",
+        "authors": null,
+        "publisher": "EE Times",
+        "published_date": "2025-07-30",
+        "url": "https://www.eetimes.com/processing-in-memory-parts-remain-sampling-stage-for-ai-servers/",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": "PIM CXL prototype code availability",
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "high",
+    "evidence_unit": "paper",
+    "measurements": [],
+    "details": {
+      "trl_band": "4-6",
+      "estimate": 4,
+      "why_not_higher": "실제 운용 환경 시연 근거가 없고, 벤더 PIM/PNM 부품 평가가 샘플링 프로그램에 한정된다는 보도만 있어 7-9로 올리지 못한다."
+    },
+    "generated_at": "2026-01-01T00:00:00",
+    "retry_count": 0
+  },
+  {
+    "tech_id": "pim_cxl",
+    "perspective": "trl",
+    "criterion_id": "T2",
+    "level": "L3",
+    "level_estimate": null,
+    "content": "CXL-PNM 시스템에서 측정한 결과를 보고한다. 실서비스 트래픽 검증은 확인되지 않는다.",
+    "evidence": [
+      {
+        "evidence_id": "pim_cxl-T2-01",
+        "source_type": "paper",
+        "unit": "paper",
+        "quote": "reports results measured on a CXL-PNM system",
+        "locator": "https://arxiv.org/abs/2511.00321",
+        "title": "Scalable Processing-Near-Memory for 1M-Token LLM Inference: CXL-Enabled KV-Cache Management Beyond GPU Limits",
+        "authors": null,
+        "publisher": "arXiv",
+        "published_date": "2025-10",
+        "url": "https://arxiv.org/abs/2511.00321",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": "PIM CXL prototype code availability",
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "medium",
+    "evidence_unit": "paper",
+    "measurements": [],
+    "details": {
+      "env_level": "L3"
+    },
+    "generated_at": "2026-01-01T00:00:00",
+    "retry_count": 0
+  },
+  {
+    "tech_id": "pim_cxl",
+    "perspective": "trl",
+    "criterion_id": "T3",
+    "level": "L2",
+    "level_estimate": null,
+    "content": "논문이 설계를 명세하지만 저장소·RTL·시뮬레이터 설정은 링크돼 있지 않다. 독립 그룹의 재현은 보고되지 않는다.",
+    "evidence": [
+      {
+        "evidence_id": "pim_cxl-T3-01",
+        "source_type": "paper",
+        "unit": "paper",
+        "quote": "The paper specifies the PNM accelerator design, the token page selection offload, and the hybrid GPU-PNM parallelization strategy",
+        "locator": "https://arxiv.org/abs/2511.00321",
+        "title": "Scalable Processing-Near-Memory for 1M-Token LLM Inference: CXL-Enabled KV-Cache Management Beyond GPU Limits",
+        "authors": null,
+        "publisher": "arXiv",
+        "published_date": "2025-10",
+        "url": "https://arxiv.org/abs/2511.00321",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": "PIM CXL prototype code availability",
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "pim_cxl-T3-02",
+        "source_type": "paper",
+        "unit": "paper",
+        "quote": "No repository, RTL, or simulator configuration is linked from the paper.",
+        "locator": "https://arxiv.org/abs/2511.00321",
+        "title": "Scalable Processing-Near-Memory for 1M-Token LLM Inference: CXL-Enabled KV-Cache Management Beyond GPU Limits",
+        "authors": null,
+        "publisher": "arXiv",
+        "published_date": "2025-10",
+        "url": "https://arxiv.org/abs/2511.00321",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": "PIM CXL prototype code availability",
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "pim_cxl-T3-03",
+        "source_type": "web",
+        "unit": "paper",
+        "quote": "evaluation is limited to vendor sampling programmes",
+        "locator": "https://www.eetimes.com/processing-in-memory-parts-remain-sampling-stage-for-ai-servers/",
+        "title": "Processing-in-memory parts remain at sampling stage for AI servers",
+        "authors": null,
+        "publisher": "EE Times",
+        "published_date": "2025-07-30",
+        "url": "https://www.eetimes.com/processing-in-memory-parts-remain-sampling-stage-for-ai-servers/",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": "PIM CXL prototype code availability",
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "high",
+    "evidence_unit": "paper",
+    "measurements": [],
+    "details": {
+      "checklist": {
+        "code": "N",
+        "model_or_design": "Y",
+        "eval_scripts_data": "N",
+        "third_party_reproduction": "N"
+      },
+      "urls": {
+        "model_or_design": "https://arxiv.org/abs/2511.00321"
+      }
+    },
+    "generated_at": "2026-01-01T00:00:00",
+    "retry_count": 0
+  },
+  {
+    "tech_id": "pim_cxl",
+    "perspective": "trl",
+    "criterion_id": "T4",
+    "level": "narrative",
+    "level_estimate": null,
+    "content": "양산 실리콘 검증과 서빙 프레임워크 통합이 남아 있다. 구현 코드는 공개 자료에서 확인되지 않는다.",
+    "evidence": [
+      {
+        "evidence_id": "pim_cxl-T4-01",
+        "source_type": "paper",
+        "unit": "paper",
+        "quote": "No repository, RTL, or simulator configuration is linked from the paper.",
+        "locator": "https://arxiv.org/abs/2511.00321",
+        "title": "Scalable Processing-Near-Memory for 1M-Token LLM Inference: CXL-Enabled KV-Cache Management Beyond GPU Limits",
+        "authors": null,
+        "publisher": "arXiv",
+        "published_date": "2025-10",
+        "url": "https://arxiv.org/abs/2511.00321",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": "PIM CXL prototype code availability",
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "medium",
+    "evidence_unit": "paper",
+    "measurements": [],
+    "details": {
+      "remaining_tasks": [
+        "양산 CXL 메모리 확장 실리콘에서의 검증"
+      ],
+      "not_public_items": [
+        "구현 코드·시뮬레이터 설정 (검색어: PIM/CXL code availability github)"
+      ]
+    },
+    "generated_at": "2026-01-01T00:00:00",
+    "retry_count": 0
+  }
+]

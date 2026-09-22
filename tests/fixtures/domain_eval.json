@@ -1,0 +1,503 @@
+[
+  {
+    "tech_id": "mla",
+    "perspective": "domain",
+    "criterion_id": "D1",
+    "level": "L2",
+    "level_estimate": null,
+    "content": "토큰당 KV cache 93.3% 감소가 128K 컨텍스트에서 보고된다. 다중 요청 조건은 명시되지 않아 간접 근거로 본다.",
+    "evidence": [
+      {
+        "evidence_id": "mla-D1-01",
+        "source_type": "paper",
+        "unit": "paper",
+        "quote": "DeepSeek-V2 reduces KV cache per token by 93.3% compared with DeepSeek 67B while supporting a 128K context length",
+        "locator": "https://arxiv.org/abs/2405.04434",
+        "title": "DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model",
+        "authors": null,
+        "publisher": "arXiv",
+        "published_date": "2024-05",
+        "url": "https://arxiv.org/abs/2405.04434",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": "DeepSeek-V2 code release github",
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "mla-D1-02",
+        "source_type": "paper",
+        "unit": "paper",
+        "quote": "requires a significantly smaller amount of KV cache",
+        "locator": "deepseek_v2 p.6 §2.1. Multi-Head Latent Attention: Boosting Inference Efficiency",
+        "title": "DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model",
+        "authors": "DeepSeek-AI",
+        "publisher": "arXiv",
+        "published_date": "2024-06-19",
+        "url": "https://arxiv.org/abs/2405.04434",
+        "accessed_date": null,
+        "doc_id": "deepseek_v2",
+        "page": 6,
+        "section": "2.1. Multi-Head Latent Attention: Boosting Inference Efficiency",
+        "chunk_id": "deepseek_v2:006:09",
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "high",
+    "evidence_unit": "paper",
+    "measurements": [
+      {
+        "metric": "KV cache per token reduction",
+        "value": "93.3%",
+        "unit": null,
+        "model_size": "236B (21B active)",
+        "context_length": "128K",
+        "hardware": null,
+        "baseline": "DeepSeek 67B",
+        "batch_size": null,
+        "condition_note": "원문 미기재: hardware, batch_size",
+        "evidence_id": "mla-D1-01"
+      }
+    ],
+    "details": {
+      "directness": "L2",
+      "extrapolation_logic": "토큰당 캐시 감소는 요청 수와 컨텍스트 길이에 선형으로 비례하므로 다중 요청 장문맥 조건에도 같은 비율이 적용된다고 본다."
+    },
+    "generated_at": "2026-01-01T00:00:00",
+    "retry_count": 0
+  },
+  {
+    "tech_id": "mla",
+    "perspective": "domain",
+    "criterion_id": "D2",
+    "level": "L2",
+    "level_estimate": null,
+    "content": "캐시 감소가 동시 세션 수용량을 늘린다는 논리는 성립하지만 배치 크기·동시 세션 수치는 원문에 없다.",
+    "evidence": [
+      {
+        "evidence_id": "mla-D2-01",
+        "source_type": "paper",
+        "unit": "paper",
+        "quote": "DeepSeek-V2 reduces KV cache per token by 93.3% compared with DeepSeek 67B while supporting a 128K context length",
+        "locator": "https://arxiv.org/abs/2405.04434",
+        "title": "DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model",
+        "authors": null,
+        "publisher": "arXiv",
+        "published_date": "2024-05",
+        "url": "https://arxiv.org/abs/2405.04434",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": "DeepSeek-V2 code release github",
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "medium",
+    "evidence_unit": "paper",
+    "measurements": [
+      {
+        "metric": "KV cache per token reduction",
+        "value": "93.3%",
+        "unit": null,
+        "model_size": "236B (21B active)",
+        "context_length": "128K",
+        "hardware": null,
+        "baseline": "DeepSeek 67B",
+        "batch_size": null,
+        "condition_note": "원문 미기재: hardware, batch_size",
+        "evidence_id": "mla-D2-01"
+      }
+    ],
+    "details": {
+      "directness": "L2",
+      "extrapolation_logic": "토큰당 캐시가 줄면 같은 메모리에 더 많은 세션을 담을 수 있으나, 실제 배치 처리량은 원문에 미기재라 외삽이다."
+    },
+    "generated_at": "2026-01-01T00:00:00",
+    "retry_count": 0
+  },
+  {
+    "tech_id": "mla",
+    "perspective": "domain",
+    "criterion_id": "D3",
+    "level": "L2",
+    "level_estimate": null,
+    "content": "학습 GPU 시간 절감이 보고되나 추론 지연·토큰당 에너지·전송 오버헤드는 공개 자료에서 확인되지 않는다.",
+    "evidence": [
+      {
+        "evidence_id": "mla-D3-01",
+        "source_type": "paper",
+        "unit": "paper",
+        "quote": "DeepSeek 67B requires 300.6K GPU hours, while DeepSeek-V2 needs only 172.8K GPU",
+        "locator": "deepseek_v2 p.16 §3.2.3. Training and Inference Efficiency",
+        "title": "DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model",
+        "authors": "DeepSeek-AI",
+        "publisher": "arXiv",
+        "published_date": "2024-06-19",
+        "url": "https://arxiv.org/abs/2405.04434",
+        "accessed_date": null,
+        "doc_id": "deepseek_v2",
+        "page": 16,
+        "section": "3.2.3. Training and Inference Efficiency",
+        "chunk_id": "deepseek_v2:016:36",
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "medium",
+    "evidence_unit": "paper",
+    "measurements": [
+      {
+        "metric": "training GPU hours per trillion tokens",
+        "value": "172.8K",
+        "unit": "GPU hours",
+        "model_size": null,
+        "context_length": null,
+        "hardware": "H800 cluster",
+        "baseline": "DeepSeek 67B: 300.6K",
+        "batch_size": null,
+        "condition_note": "원문 미기재: model_size, context_length, batch_size",
+        "evidence_id": "mla-D3-01"
+      }
+    ],
+    "details": {
+      "directness": "L2",
+      "extrapolation_logic": "학습 비용 수치는 추론 총비용의 직접 근거가 아니며, 캐시 감소가 메모리 대역폭 요구를 줄인다는 간접 논리로만 연결된다."
+    },
+    "generated_at": "2026-01-01T00:00:00",
+    "retry_count": 0
+  },
+  {
+    "tech_id": "mla",
+    "perspective": "domain",
+    "criterion_id": "D4",
+    "level": "checklist",
+    "level_estimate": null,
+    "content": "vLLM 문서는 MLA 전용 백엔드를 지원 목록에 두고 있어 서빙 엔진 수정은 불필요하다. 재학습·변환 여부는 주어진 근거에 없다.",
+    "evidence": [
+      {
+        "evidence_id": "mla-D4-01",
+        "source_type": "official",
+        "unit": "paper",
+        "quote": "vLLM implements a dedicated MLA (Multi-head Latent Attention) backend for DeepSeek-V2 and DeepSeek-V3 style models",
+        "locator": "https://docs.vllm.ai/en/latest/models/supported_models.html",
+        "title": "Supported Models and Attention Backends — vLLM",
+        "authors": null,
+        "publisher": "vLLM",
+        "published_date": "2025-03-11",
+        "url": "https://docs.vllm.ai/en/latest/models/supported_models.html",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": "MLA vLLM support",
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "mla-D4-02",
+        "source_type": "paper",
+        "unit": "paper",
+        "quote": "trained and served on clusters of NVIDIA H800 GPUs",
+        "locator": "https://arxiv.org/abs/2405.04434",
+        "title": "DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model",
+        "authors": null,
+        "publisher": "arXiv",
+        "published_date": "2024-05",
+        "url": "https://arxiv.org/abs/2405.04434",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": "DeepSeek-V2 code release github",
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "high",
+    "evidence_unit": "paper",
+    "measurements": [],
+    "details": {
+      "checklist": {
+        "model_retrain": "unknown",
+        "model_convert": "unknown",
+        "serving_engine_change": "N",
+        "hw_replace": "N",
+        "memory_add": "N",
+        "other": "unknown"
+      }
+    },
+    "generated_at": "2026-01-01T00:00:00",
+    "retry_count": 0
+  },
+  {
+    "tech_id": "pim_cxl",
+    "perspective": "domain",
+    "criterion_id": "D1",
+    "level": "L3",
+    "level_estimate": null,
+    "content": "1M 토큰 컨텍스트에서 KV cache를 CXL 확장 메모리로 이전한 결과가 직접 보고된다.",
+    "evidence": [
+      {
+        "evidence_id": "pim_cxl-D1-01",
+        "source_type": "paper",
+        "unit": "paper",
+        "quote": "Reported gains reach up to 21.9x throughput and up to 60x lower energy per token relative to the stated baseline, for models up to 405B parameters at 1M-token context",
+        "locator": "https://arxiv.org/abs/2511.00321",
+        "title": "Scalable Processing-Near-Memory for 1M-Token LLM Inference: CXL-Enabled KV-Cache Management Beyond GPU Limits",
+        "authors": null,
+        "publisher": "arXiv",
+        "published_date": "2025-10",
+        "url": "https://arxiv.org/abs/2511.00321",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": "PIM CXL prototype code availability",
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "pim_cxl-D1-02",
+        "source_type": "paper",
+        "unit": "paper",
+        "quote": "high-bandwidth memory expansion platform tailored for the LLM inference",
+        "locator": "pim_cxl_1m p.4 §CXL Port",
+        "title": "Scalable Processing-Near-Memory for 1M-Token LLM Inference",
+        "authors": "Dowon Kim et al.",
+        "publisher": "arXiv",
+        "published_date": "2025-10-31",
+        "url": "https://arxiv.org/abs/2511.00321",
+        "accessed_date": null,
+        "doc_id": "pim_cxl_1m",
+        "page": 4,
+        "section": "CXL Port",
+        "chunk_id": "pim_cxl_1m:004:08",
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "high",
+    "evidence_unit": "paper",
+    "measurements": [
+      {
+        "metric": "throughput gain",
+        "value": "up to 21.9x",
+        "unit": null,
+        "model_size": "up to 405B",
+        "context_length": "1M",
+        "hardware": null,
+        "baseline": "stated baseline (paper)",
+        "batch_size": null,
+        "condition_note": "원문 미기재: hardware, batch_size",
+        "evidence_id": "pim_cxl-D1-01"
+      }
+    ],
+    "details": {
+      "directness": "L3"
+    },
+    "generated_at": "2026-01-01T00:00:00",
+    "retry_count": 0
+  },
+  {
+    "tech_id": "pim_cxl",
+    "perspective": "domain",
+    "criterion_id": "D2",
+    "level": "L2",
+    "level_estimate": null,
+    "content": "In-server 구성별 처리량 비교가 있으나 배치 크기·동시 세션 수는 명시되지 않는다.",
+    "evidence": [
+      {
+        "evidence_id": "pim_cxl-D2-01",
+        "source_type": "paper",
+        "unit": "paper",
+        "quote": "Reported gains reach up to 21.9x throughput and up to 60x lower energy per token relative to the stated baseline, for models up to 405B parameters at 1M-token context",
+        "locator": "https://arxiv.org/abs/2511.00321",
+        "title": "Scalable Processing-Near-Memory for 1M-Token LLM Inference: CXL-Enabled KV-Cache Management Beyond GPU Limits",
+        "authors": null,
+        "publisher": "arXiv",
+        "published_date": "2025-10",
+        "url": "https://arxiv.org/abs/2511.00321",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": "PIM CXL prototype code availability",
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "pim_cxl-D2-02",
+        "source_type": "paper",
+        "unit": "paper",
+        "quote": "Figure 10 compares the throughput across three In-server configurations",
+        "locator": "pim_cxl_1m p.9 §CXL Port",
+        "title": "Scalable Processing-Near-Memory for 1M-Token LLM Inference",
+        "authors": "Dowon Kim et al.",
+        "publisher": "arXiv",
+        "published_date": "2025-10-31",
+        "url": "https://arxiv.org/abs/2511.00321",
+        "accessed_date": null,
+        "doc_id": "pim_cxl_1m",
+        "page": 9,
+        "section": "CXL Port",
+        "chunk_id": "pim_cxl_1m:009:14",
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "high",
+    "evidence_unit": "paper",
+    "measurements": [
+      {
+        "metric": "throughput gain",
+        "value": "up to 21.9x",
+        "unit": null,
+        "model_size": "up to 405B",
+        "context_length": "1M",
+        "hardware": null,
+        "baseline": "stated baseline (paper)",
+        "batch_size": null,
+        "condition_note": "원문 미기재: hardware, batch_size",
+        "evidence_id": "pim_cxl-D2-01"
+      }
+    ],
+    "details": {
+      "directness": "L2",
+      "extrapolation_logic": "처리량 향상은 다중 요청 처리와 관련되나 배치 크기가 원문에 미기재라 외삽이다."
+    },
+    "generated_at": "2026-01-01T00:00:00",
+    "retry_count": 0
+  },
+  {
+    "tech_id": "pim_cxl",
+    "perspective": "domain",
+    "criterion_id": "D3",
+    "level": "L2",
+    "level_estimate": null,
+    "content": "토큰당 에너지 절감이 보고되나 TTFT/TPOT와 총비용은 확인되지 않는다.",
+    "evidence": [
+      {
+        "evidence_id": "pim_cxl-D3-01",
+        "source_type": "paper",
+        "unit": "paper",
+        "quote": "Reported gains reach up to 21.9x throughput and up to 60x lower energy per token relative to the stated baseline, for models up to 405B parameters at 1M-token context",
+        "locator": "https://arxiv.org/abs/2511.00321",
+        "title": "Scalable Processing-Near-Memory for 1M-Token LLM Inference: CXL-Enabled KV-Cache Management Beyond GPU Limits",
+        "authors": null,
+        "publisher": "arXiv",
+        "published_date": "2025-10",
+        "url": "https://arxiv.org/abs/2511.00321",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": "PIM CXL prototype code availability",
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "medium",
+    "evidence_unit": "paper",
+    "measurements": [
+      {
+        "metric": "energy per token reduction",
+        "value": "up to 60x lower",
+        "unit": null,
+        "model_size": "up to 405B",
+        "context_length": "1M",
+        "hardware": null,
+        "baseline": "stated baseline (paper)",
+        "batch_size": null,
+        "condition_note": "원문 미기재: hardware, batch_size",
+        "evidence_id": "pim_cxl-D3-01"
+      }
+    ],
+    "details": {
+      "directness": "L2",
+      "extrapolation_logic": "에너지 수치만 있고 지연·비용은 미기재라 도메인 총비용에는 간접적으로만 연결된다."
+    },
+    "generated_at": "2026-01-01T00:00:00",
+    "retry_count": 0
+  },
+  {
+    "tech_id": "pim_cxl",
+    "perspective": "domain",
+    "criterion_id": "D4",
+    "level": "checklist",
+    "level_estimate": null,
+    "content": "vLLM 문서는 CXL 부착 계층을 지원하지 않아 서빙 엔진 수정이 필요하고, 확장 메모리 추가를 전제한다.",
+    "evidence": [
+      {
+        "evidence_id": "pim_cxl-D4-01",
+        "source_type": "official",
+        "unit": "paper",
+        "quote": "The documented storage tiers do not include a CXL-attached or near-memory compute device",
+        "locator": "https://docs.vllm.ai/en/latest/",
+        "title": "vLLM documentation",
+        "authors": null,
+        "publisher": "vLLM",
+        "published_date": "2025-08-19",
+        "url": "https://docs.vllm.ai/en/latest/",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": "CXL memory serving engine integration vLLM",
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "pim_cxl-D4-02",
+        "source_type": "paper",
+        "unit": "paper",
+        "quote": "memory expansion platform tailored for the LLM inference",
+        "locator": "pim_cxl_1m p.4 §CXL Port",
+        "title": "Scalable Processing-Near-Memory for 1M-Token LLM Inference",
+        "authors": "Dowon Kim et al.",
+        "publisher": "arXiv",
+        "published_date": "2025-10-31",
+        "url": "https://arxiv.org/abs/2511.00321",
+        "accessed_date": null,
+        "doc_id": "pim_cxl_1m",
+        "page": 4,
+        "section": "CXL Port",
+        "chunk_id": "pim_cxl_1m:004:08",
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "high",
+    "evidence_unit": "paper",
+    "measurements": [],
+    "details": {
+      "checklist": {
+        "model_retrain": "unknown",
+        "model_convert": "unknown",
+        "serving_engine_change": "Y",
+        "hw_replace": "unknown",
+        "memory_add": "Y",
+        "other": "unknown"
+      }
+    },
+    "generated_at": "2026-01-01T00:00:00",
+    "retry_count": 0
+  }
+]
