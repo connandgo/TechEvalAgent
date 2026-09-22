@@ -558,5 +558,451 @@
       "source_kind": "news",
       "query": "PIM CXL production deployment"
     }
+  ],
+  "Multi-head Latent Attention market forecast demand drivers": [
+    {
+      "title": "The economics of long-context inference",
+      "url": "https://semianalysis.com/2025/05/12/the-economics-of-long-context-inference/",
+      "snippet": "KV cache capacity, not compute, sets the achievable batch size for long-context serving, and memory footprint per session therefore dominates cost per token at 128K contexts.",
+      "content": null,
+      "publisher": "SemiAnalysis",
+      "published_date": "2025-05-12",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "blog",
+      "query": "Multi-head Latent Attention market forecast demand drivers"
+    },
+    {
+      "title": "Cloud providers expand AI inference capacity as memory costs rise",
+      "url": "https://www.reuters.com/technology/cloud-providers-expand-ai-inference-capacity-2026-02-11/",
+      "snippet": "Operators said memory pricing has become a material input to inference service margins, and that capacity planning for long-context workloads is being revised accordingly.",
+      "content": null,
+      "publisher": "Reuters",
+      "published_date": "2026-02-11",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "news",
+      "query": "Multi-head Latent Attention market forecast demand drivers"
+    }
+  ],
+  "Multi-head Latent Attention adoption production deployment": [
+    {
+      "title": "DeepSeek API Documentation — Models and Pricing",
+      "url": "https://api-docs.deepseek.com/quick_start/pricing",
+      "snippet": "The DeepSeek platform serves MLA-based models through a commercial inference API with published per-token pricing and context caching on disk.",
+      "content": null,
+      "publisher": "DeepSeek",
+      "published_date": "2025-02-20",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "official",
+      "query": "Multi-head Latent Attention adoption production deployment"
+    },
+    {
+      "title": "deepseek-ai/DeepSeek-V2 — Hugging Face",
+      "url": "https://huggingface.co/deepseek-ai/DeepSeek-V2",
+      "snippet": "Model weights and configuration for DeepSeek-V2 are published under an open licence, and the model card documents the MLA projection dimensions required by serving frameworks.",
+      "content": "Model weights and configuration for DeepSeek-V2 are published under an open licence, and the model card documents the MLA projection dimensions required by serving frameworks. Model card for DeepSeek-V2, a 236B-parameter Mixture-of-Experts model with 21B activated parameters. Weights are released under the DeepSeek model license; the card documents the MLA configuration fields and the 128K context length.",
+      "publisher": "Hugging Face",
+      "published_date": "2024-06-14",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "other",
+      "query": "Multi-head Latent Attention adoption production deployment"
+    },
+    {
+      "title": "Open-weight MoE models move into production serving stacks",
+      "url": "https://www.nextplatform.com/2025/04/08/open-weight-moe-models-move-into-production-serving-stacks/",
+      "snippet": "Operators running long-context assistants report deploying MLA-based open-weight models in production, citing KV cache footprint as the deciding factor for batch sizing.",
+      "content": null,
+      "publisher": "The Next Platform",
+      "published_date": "2025-04-08",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "news",
+      "query": "Multi-head Latent Attention adoption production deployment"
+    }
+  ],
+  "Multi-head Latent Attention framework vendor standardization support": [
+    {
+      "title": "Supported Models and Attention Backends — vLLM",
+      "url": "https://docs.vllm.ai/en/latest/models/supported_models.html",
+      "snippet": "vLLM implements a dedicated MLA (Multi-head Latent Attention) backend for DeepSeek-V2 and DeepSeek-V3 style models. The MLA path stores the compressed latent KV representation instead of per-head key and value tensors, which reduces paged KV cache footprint relative to the standard MHA backend.",
+      "content": "vLLM implements a dedicated MLA (Multi-head Latent Attention) backend for DeepSeek-V2 and DeepSeek-V3 style models. The MLA path stores the compressed latent KV representation instead of per-head key and value tensors, which reduces paged KV cache footprint relative to the standard MHA backend. Enabling the backend requires a model config that declares MLA-specific projection dimensions; models without those fields fall back to the generic attention backend.",
+      "publisher": "vLLM",
+      "published_date": "2025-03-11",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "official",
+      "query": "Multi-head Latent Attention framework vendor standardization support"
+    },
+    {
+      "title": "Attention backends — SGLang documentation",
+      "url": "https://docs.sglang.ai/backend/attention_backend.html",
+      "snippet": "SGLang supports MLA-based models and documents the latent KV cache layout used for DeepSeek architectures, including the absorbed projection variant used during decoding.",
+      "content": null,
+      "publisher": "SGLang",
+      "published_date": "2025-06-02",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "official",
+      "query": "Multi-head Latent Attention framework vendor standardization support"
+    },
+    {
+      "title": "A Survey on LLM Acceleration based on KV Cache Management",
+      "url": "https://arxiv.org/abs/2412.19442",
+      "snippet": "Among architecture-level methods, low-rank latent compression such as Multi-head Latent Attention has been adopted in production-scale open models and is now supported by several open-source serving frameworks.",
+      "content": null,
+      "publisher": "arXiv",
+      "published_date": "2024-12",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "paper",
+      "query": "Multi-head Latent Attention framework vendor standardization support"
+    }
+  ],
+  "Multi-head Latent Attention stakeholder decision maker supplier": [
+    {
+      "title": "deepseek-ai/DeepSeek-V2 — Hugging Face",
+      "url": "https://huggingface.co/deepseek-ai/DeepSeek-V2",
+      "snippet": "Model weights and configuration for DeepSeek-V2 are published under an open licence, and the model card documents the MLA projection dimensions required by serving frameworks.",
+      "content": "Model weights and configuration for DeepSeek-V2 are published under an open licence, and the model card documents the MLA projection dimensions required by serving frameworks. Model card for DeepSeek-V2, a 236B-parameter Mixture-of-Experts model with 21B activated parameters. Weights are released under the DeepSeek model license; the card documents the MLA configuration fields and the 128K context length.",
+      "publisher": "Hugging Face",
+      "published_date": "2024-06-14",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "other",
+      "query": "Multi-head Latent Attention stakeholder decision maker supplier"
+    },
+    {
+      "title": "Supported Models and Attention Backends — vLLM",
+      "url": "https://docs.vllm.ai/en/latest/models/supported_models.html",
+      "snippet": "vLLM implements a dedicated MLA (Multi-head Latent Attention) backend for DeepSeek-V2 and DeepSeek-V3 style models. The MLA path stores the compressed latent KV representation instead of per-head key and value tensors, which reduces paged KV cache footprint relative to the standard MHA backend.",
+      "content": "vLLM implements a dedicated MLA (Multi-head Latent Attention) backend for DeepSeek-V2 and DeepSeek-V3 style models. The MLA path stores the compressed latent KV representation instead of per-head key and value tensors, which reduces paged KV cache footprint relative to the standard MHA backend. Enabling the backend requires a model config that declares MLA-specific projection dimensions; models without those fields fall back to the generic attention backend.",
+      "publisher": "vLLM",
+      "published_date": "2025-03-11",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "official",
+      "query": "Multi-head Latent Attention stakeholder decision maker supplier"
+    }
+  ],
+  "Multi-head Latent Attention benefits for operators and vendors": [
+    {
+      "title": "Supported Models and Attention Backends — vLLM",
+      "url": "https://docs.vllm.ai/en/latest/models/supported_models.html",
+      "snippet": "vLLM implements a dedicated MLA (Multi-head Latent Attention) backend for DeepSeek-V2 and DeepSeek-V3 style models. The MLA path stores the compressed latent KV representation instead of per-head key and value tensors, which reduces paged KV cache footprint relative to the standard MHA backend.",
+      "content": "vLLM implements a dedicated MLA (Multi-head Latent Attention) backend for DeepSeek-V2 and DeepSeek-V3 style models. The MLA path stores the compressed latent KV representation instead of per-head key and value tensors, which reduces paged KV cache footprint relative to the standard MHA backend. Enabling the backend requires a model config that declares MLA-specific projection dimensions; models without those fields fall back to the generic attention backend.",
+      "publisher": "vLLM",
+      "published_date": "2025-03-11",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "official",
+      "query": "Multi-head Latent Attention benefits for operators and vendors"
+    },
+    {
+      "title": "DeepSeek API Documentation — Models and Pricing",
+      "url": "https://api-docs.deepseek.com/quick_start/pricing",
+      "snippet": "The DeepSeek platform serves MLA-based models through a commercial inference API with published per-token pricing and context caching on disk.",
+      "content": null,
+      "publisher": "DeepSeek",
+      "published_date": "2025-02-20",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "official",
+      "query": "Multi-head Latent Attention benefits for operators and vendors"
+    }
+  ],
+  "Multi-head Latent Attention costs burdens migration risk": [
+    {
+      "title": "Supported Models and Attention Backends — vLLM",
+      "url": "https://docs.vllm.ai/en/latest/models/supported_models.html",
+      "snippet": "vLLM implements a dedicated MLA (Multi-head Latent Attention) backend for DeepSeek-V2 and DeepSeek-V3 style models. The MLA path stores the compressed latent KV representation instead of per-head key and value tensors, which reduces paged KV cache footprint relative to the standard MHA backend.",
+      "content": "vLLM implements a dedicated MLA (Multi-head Latent Attention) backend for DeepSeek-V2 and DeepSeek-V3 style models. The MLA path stores the compressed latent KV representation instead of per-head key and value tensors, which reduces paged KV cache footprint relative to the standard MHA backend. Enabling the backend requires a model config that declares MLA-specific projection dimensions; models without those fields fall back to the generic attention backend.",
+      "publisher": "vLLM",
+      "published_date": "2025-03-11",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "official",
+      "query": "Multi-head Latent Attention costs burdens migration risk"
+    },
+    {
+      "title": "Attention backends — SGLang documentation",
+      "url": "https://docs.sglang.ai/backend/attention_backend.html",
+      "snippet": "SGLang supports MLA-based models and documents the latent KV cache layout used for DeepSeek architectures, including the absorbed projection variant used during decoding.",
+      "content": null,
+      "publisher": "SGLang",
+      "published_date": "2025-06-02",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "official",
+      "query": "Multi-head Latent Attention costs burdens migration risk"
+    }
+  ],
+  "Multi-head Latent Attention conflicting interests tradeoffs": [
+    {
+      "title": "Supported Models and Attention Backends — vLLM",
+      "url": "https://docs.vllm.ai/en/latest/models/supported_models.html",
+      "snippet": "vLLM implements a dedicated MLA (Multi-head Latent Attention) backend for DeepSeek-V2 and DeepSeek-V3 style models. The MLA path stores the compressed latent KV representation instead of per-head key and value tensors, which reduces paged KV cache footprint relative to the standard MHA backend.",
+      "content": "vLLM implements a dedicated MLA (Multi-head Latent Attention) backend for DeepSeek-V2 and DeepSeek-V3 style models. The MLA path stores the compressed latent KV representation instead of per-head key and value tensors, which reduces paged KV cache footprint relative to the standard MHA backend. Enabling the backend requires a model config that declares MLA-specific projection dimensions; models without those fields fall back to the generic attention backend.",
+      "publisher": "vLLM",
+      "published_date": "2025-03-11",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "official",
+      "query": "Multi-head Latent Attention conflicting interests tradeoffs"
+    },
+    {
+      "title": "Attention backends — SGLang documentation",
+      "url": "https://docs.sglang.ai/backend/attention_backend.html",
+      "snippet": "SGLang supports MLA-based models and documents the latent KV cache layout used for DeepSeek architectures, including the absorbed projection variant used during decoding.",
+      "content": null,
+      "publisher": "SGLang",
+      "published_date": "2025-06-02",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "official",
+      "query": "Multi-head Latent Attention conflicting interests tradeoffs"
+    }
+  ],
+  "Processing-in-Memory market forecast demand drivers": [
+    {
+      "title": "CXL memory module shipments to grow through 2028, says TrendForce",
+      "url": "https://www.trendforce.com/presscenter/news/20250318-cxl-memory-module-outlook.html",
+      "snippet": "TrendForce projects the CXL memory module market to reach USD 2.1 billion by 2028, driven by server memory capacity demand, and notes the forecast assumes broad CPU-side CXL 2.0 enablement.",
+      "content": null,
+      "publisher": "TrendForce",
+      "published_date": "2025-03-18",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "news",
+      "query": "Processing-in-Memory market forecast demand drivers"
+    },
+    {
+      "title": "Compute Express Link market outlook 2025-2030",
+      "url": "https://www.marketsandmarkets.com/Market-Reports/compute-express-link-market.asp",
+      "snippet": "The report estimates a compound annual growth rate in the mid-thirties for CXL-attached memory through 2030, with data center memory expansion cited as the primary driver.",
+      "content": null,
+      "publisher": "marketsandmarkets.com",
+      "published_date": "2025-08-01",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "other",
+      "query": "Processing-in-Memory market forecast demand drivers"
+    },
+    {
+      "title": "Memory makers raise capital spending on AI-specific DRAM lines",
+      "url": "https://www.reuters.com/technology/memory-makers-raise-capital-spending-ai-dram-2025-12-03/",
+      "snippet": "The vendors said AI-specific DRAM products require dedicated process and packaging investment, and that demand visibility for in-memory compute parts remains limited to sampling customers.",
+      "content": null,
+      "publisher": "Reuters",
+      "published_date": "2025-12-03",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "news",
+      "query": "Processing-in-Memory market forecast demand drivers"
+    }
+  ],
+  "Processing-in-Memory adoption production deployment": [
+    {
+      "title": "Leo CXL Smart Memory Controllers",
+      "url": "https://www.astera-labs.com/products/leo-cxl-smart-memory-controllers/",
+      "snippet": "Leo CXL memory controllers are shipping in production platforms and support memory expansion and pooling for server hosts, with published bandwidth and capacity configurations.",
+      "content": "Leo CXL memory controllers are shipping in production platforms and support memory expansion and pooling for server hosts, with published bandwidth and capacity configurations. Astera Labs presents Leo controllers as memory expansion that appears to the host as additional system memory, so that applications use it without modification. The product material describes capacity and bandwidth expansion, not near-memory compute offload.",
+      "publisher": "Astera Labs",
+      "published_date": "2024-09-17",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "official",
+      "query": "Processing-in-Memory adoption production deployment"
+    },
+    {
+      "title": "CXL memory expansion in the real world: what is actually shipping",
+      "url": "https://www.servethehome.com/cxl-memory-expansion-what-is-actually-shipping/",
+      "snippet": "CXL Type-3 expansion modules are available from multiple vendors, but deployments reported so far target capacity-bound in-memory workloads rather than LLM KV cache offload.",
+      "content": null,
+      "publisher": "ServeTheHome",
+      "published_date": "2025-01-23",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "news",
+      "query": "Processing-in-Memory adoption production deployment"
+    },
+    {
+      "title": "HBM-PIM: Processing-in-Memory for AI",
+      "url": "https://semiconductor.samsung.com/dram/hbm/hbm-pim/",
+      "snippet": "Samsung describes HBM-PIM as DRAM with in-bank programmable compute units, and reports demonstrations on accelerator platforms for memory-bound AI workloads.",
+      "content": null,
+      "publisher": "Samsung",
+      "published_date": "2024-02-08",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "official",
+      "query": "Processing-in-Memory adoption production deployment"
+    },
+    {
+      "title": "Processing-in-memory parts remain sampling-stage for AI servers",
+      "url": "https://www.eetimes.com/processing-in-memory-parts-remain-sampling-stage-for-ai-servers/",
+      "snippet": "Analysts note that PIM and PNM devices are sampled to selected customers and that no vendor has disclosed volume production for LLM inference servers.",
+      "content": "Analysts note that PIM and PNM devices are sampled to selected customers and that no vendor has disclosed volume production for LLM inference servers. Reporting on PIM and PNM silicon notes that evaluation is limited to vendor sampling programmes, and that independent groups have not published reproductions of vendor-reported inference numbers on their own hardware.",
+      "publisher": "EE Times",
+      "published_date": "2025-07-30",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "news",
+      "query": "Processing-in-Memory adoption production deployment"
+    }
+  ],
+  "Processing-in-Memory framework vendor standardization support": [
+    {
+      "title": "Compute Express Link 3.1 Specification",
+      "url": "https://computeexpresslink.org/cxl-specification/",
+      "snippet": "CXL 3.1 defines Type-3 memory device semantics, fabric management and memory pooling, providing a standard path for host-attached memory expansion behind a PCIe-class link.",
+      "content": null,
+      "publisher": "CXL Consortium",
+      "published_date": "2023-11-14",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "official",
+      "query": "Processing-in-Memory framework vendor standardization support"
+    },
+    {
+      "title": "CXL Consortium and JEDEC extend collaboration agreement",
+      "url": "https://computeexpresslink.org/blog/cxl-consortium-jedec-collaboration/",
+      "snippet": "The organizations confirmed a liaison agreement covering memory device standards, so that CXL-attached memory modules align with JEDEC DRAM specifications.",
+      "content": null,
+      "publisher": "CXL Consortium",
+      "published_date": "2024-06-25",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "official",
+      "query": "Processing-in-Memory framework vendor standardization support"
+    },
+    {
+      "title": "Leo CXL Smart Memory Controllers",
+      "url": "https://www.astera-labs.com/products/leo-cxl-smart-memory-controllers/",
+      "snippet": "Leo CXL memory controllers are shipping in production platforms and support memory expansion and pooling for server hosts, with published bandwidth and capacity configurations.",
+      "content": "Leo CXL memory controllers are shipping in production platforms and support memory expansion and pooling for server hosts, with published bandwidth and capacity configurations. Astera Labs presents Leo controllers as memory expansion that appears to the host as additional system memory, so that applications use it without modification. The product material describes capacity and bandwidth expansion, not near-memory compute offload.",
+      "publisher": "Astera Labs",
+      "published_date": "2024-09-17",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "official",
+      "query": "Processing-in-Memory framework vendor standardization support"
+    }
+  ],
+  "Processing-in-Memory stakeholder decision maker supplier": [
+    {
+      "title": "Leo CXL Smart Memory Controllers",
+      "url": "https://www.astera-labs.com/products/leo-cxl-smart-memory-controllers/",
+      "snippet": "Leo CXL memory controllers are shipping in production platforms and support memory expansion and pooling for server hosts, with published bandwidth and capacity configurations.",
+      "content": "Leo CXL memory controllers are shipping in production platforms and support memory expansion and pooling for server hosts, with published bandwidth and capacity configurations. Astera Labs presents Leo controllers as memory expansion that appears to the host as additional system memory, so that applications use it without modification. The product material describes capacity and bandwidth expansion, not near-memory compute offload.",
+      "publisher": "Astera Labs",
+      "published_date": "2024-09-17",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "official",
+      "query": "Processing-in-Memory stakeholder decision maker supplier"
+    },
+    {
+      "title": "CXL memory expansion in the real world: what is actually shipping",
+      "url": "https://www.servethehome.com/cxl-memory-expansion-what-is-actually-shipping/",
+      "snippet": "CXL Type-3 expansion modules are available from multiple vendors, but deployments reported so far target capacity-bound in-memory workloads rather than LLM KV cache offload.",
+      "content": null,
+      "publisher": "ServeTheHome",
+      "published_date": "2025-01-23",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "news",
+      "query": "Processing-in-Memory stakeholder decision maker supplier"
+    },
+    {
+      "title": "Memory makers raise capital spending on AI-specific DRAM lines",
+      "url": "https://www.reuters.com/technology/memory-makers-raise-capital-spending-ai-dram-2025-12-03/",
+      "snippet": "The vendors said AI-specific DRAM products require dedicated process and packaging investment, and that demand visibility for in-memory compute parts remains limited to sampling customers.",
+      "content": null,
+      "publisher": "Reuters",
+      "published_date": "2025-12-03",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "news",
+      "query": "Processing-in-Memory stakeholder decision maker supplier"
+    }
+  ],
+  "Processing-in-Memory benefits for operators and vendors": [
+    {
+      "title": "Leo CXL Smart Memory Controllers",
+      "url": "https://www.astera-labs.com/products/leo-cxl-smart-memory-controllers/",
+      "snippet": "Leo CXL memory controllers are shipping in production platforms and support memory expansion and pooling for server hosts, with published bandwidth and capacity configurations.",
+      "content": "Leo CXL memory controllers are shipping in production platforms and support memory expansion and pooling for server hosts, with published bandwidth and capacity configurations. Astera Labs presents Leo controllers as memory expansion that appears to the host as additional system memory, so that applications use it without modification. The product material describes capacity and bandwidth expansion, not near-memory compute offload.",
+      "publisher": "Astera Labs",
+      "published_date": "2024-09-17",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "official",
+      "query": "Processing-in-Memory benefits for operators and vendors"
+    },
+    {
+      "title": "Memory makers raise capital spending on AI-specific DRAM lines",
+      "url": "https://www.reuters.com/technology/memory-makers-raise-capital-spending-ai-dram-2025-12-03/",
+      "snippet": "The vendors said AI-specific DRAM products require dedicated process and packaging investment, and that demand visibility for in-memory compute parts remains limited to sampling customers.",
+      "content": null,
+      "publisher": "Reuters",
+      "published_date": "2025-12-03",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "news",
+      "query": "Processing-in-Memory benefits for operators and vendors"
+    },
+    {
+      "title": "Investors weigh memory-centric AI hardware against accelerator roadmaps",
+      "url": "https://www.theregister.com/2026/01/19/memory_centric_ai_hardware_investment/",
+      "snippet": "Fund managers described memory-centric inference hardware as a longer-horizon position than accelerator supply, citing the absence of disclosed production deployments.",
+      "content": null,
+      "publisher": "The Register",
+      "published_date": "2026-01-19",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "news",
+      "query": "Processing-in-Memory benefits for operators and vendors"
+    }
+  ],
+  "Processing-in-Memory costs burdens migration risk": [
+    {
+      "title": "Processing-in-memory parts remain sampling-stage for AI servers",
+      "url": "https://www.eetimes.com/processing-in-memory-parts-remain-sampling-stage-for-ai-servers/",
+      "snippet": "Analysts note that PIM and PNM devices are sampled to selected customers and that no vendor has disclosed volume production for LLM inference servers.",
+      "content": "Analysts note that PIM and PNM devices are sampled to selected customers and that no vendor has disclosed volume production for LLM inference servers. Reporting on PIM and PNM silicon notes that evaluation is limited to vendor sampling programmes, and that independent groups have not published reproductions of vendor-reported inference numbers on their own hardware.",
+      "publisher": "EE Times",
+      "published_date": "2025-07-30",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "news",
+      "query": "Processing-in-Memory costs burdens migration risk"
+    },
+    {
+      "title": "CXL memory expansion in the real world: what is actually shipping",
+      "url": "https://www.servethehome.com/cxl-memory-expansion-what-is-actually-shipping/",
+      "snippet": "CXL Type-3 expansion modules are available from multiple vendors, but deployments reported so far target capacity-bound in-memory workloads rather than LLM KV cache offload.",
+      "content": null,
+      "publisher": "ServeTheHome",
+      "published_date": "2025-01-23",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "news",
+      "query": "Processing-in-Memory costs burdens migration risk"
+    },
+    {
+      "title": "Memory makers raise capital spending on AI-specific DRAM lines",
+      "url": "https://www.reuters.com/technology/memory-makers-raise-capital-spending-ai-dram-2025-12-03/",
+      "snippet": "The vendors said AI-specific DRAM products require dedicated process and packaging investment, and that demand visibility for in-memory compute parts remains limited to sampling customers.",
+      "content": null,
+      "publisher": "Reuters",
+      "published_date": "2025-12-03",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "news",
+      "query": "Processing-in-Memory costs burdens migration risk"
+    }
+  ],
+  "Processing-in-Memory conflicting interests tradeoffs": [
+    {
+      "title": "Memory makers raise capital spending on AI-specific DRAM lines",
+      "url": "https://www.reuters.com/technology/memory-makers-raise-capital-spending-ai-dram-2025-12-03/",
+      "snippet": "The vendors said AI-specific DRAM products require dedicated process and packaging investment, and that demand visibility for in-memory compute parts remains limited to sampling customers.",
+      "content": null,
+      "publisher": "Reuters",
+      "published_date": "2025-12-03",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "news",
+      "query": "Processing-in-Memory conflicting interests tradeoffs"
+    },
+    {
+      "title": "CXL memory expansion in the real world: what is actually shipping",
+      "url": "https://www.servethehome.com/cxl-memory-expansion-what-is-actually-shipping/",
+      "snippet": "CXL Type-3 expansion modules are available from multiple vendors, but deployments reported so far target capacity-bound in-memory workloads rather than LLM KV cache offload.",
+      "content": null,
+      "publisher": "ServeTheHome",
+      "published_date": "2025-01-23",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "news",
+      "query": "Processing-in-Memory conflicting interests tradeoffs"
+    },
+    {
+      "title": "Processing-in-memory parts remain sampling-stage for AI servers",
+      "url": "https://www.eetimes.com/processing-in-memory-parts-remain-sampling-stage-for-ai-servers/",
+      "snippet": "Analysts note that PIM and PNM devices are sampled to selected customers and that no vendor has disclosed volume production for LLM inference servers.",
+      "content": "Analysts note that PIM and PNM devices are sampled to selected customers and that no vendor has disclosed volume production for LLM inference servers. Reporting on PIM and PNM silicon notes that evaluation is limited to vendor sampling programmes, and that independent groups have not published reproductions of vendor-reported inference numbers on their own hardware.",
+      "publisher": "EE Times",
+      "published_date": "2025-07-30",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "news",
+      "query": "Processing-in-Memory conflicting interests tradeoffs"
+    }
   ]
 }
