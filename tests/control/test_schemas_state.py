@@ -249,3 +249,43 @@ class TestAgentModelOverride:
             stub_agents.FIXTURES_DIR = stub_agents.DEFAULT_FIXTURES_DIR
         assert set(seen["report"]) == {"strong"}
         assert all(set(v) == {"shared"} for k, v in seen.items() if k != "report")
+
+
+class TestV3Relaxed:
+    """V3: D1~D3는 L2/L3일 때만 measurements 필수. L1(근거 없음)은 evidence만 있으면 된다."""
+
+    def test_l2_l3_require_measurements(self):
+        for level in ("L2", "L3"):
+            with pytest.raises(ValidationError):
+                result(criterion_id="D3", perspective="domain", level=level)
+
+    def test_l1_without_measurements_is_valid(self):
+        r = result(criterion_id="D3", perspective="domain", level="L1")
+        assert r.measurements == [] and len(r.evidence) == 1
+
+    def test_l1_still_requires_evidence(self):
+        with pytest.raises(ValidationError):
+            result(criterion_id="D3", perspective="domain", level="L1", evidence=[])
+
+    def test_perspective_check_accepts_l1_without_measurements(self):
+        from techeval.control.perspective_check import _v4_problems
+
+        assert _v4_problems(result(criterion_id="D1", perspective="domain", level="L1")) == []
+        m = Measurement(metric="m", value="1", evidence_id="mla-D1-01")
+        assert _v4_problems(result(criterion_id="D1", perspective="domain", level="L3", measurements=[m])) == []
+        # validator를 우회해 만든 L2·수치 없음 결과는 검사 노드가 V3로 잡는다
+        broken = CriterionResult.model_construct(
+            tech_id="mla",
+            perspective="domain",
+            criterion_id="D1",
+            level="L2",
+            content="c",
+            evidence=[paper()],
+            confidence="medium",
+            evidence_unit="paper",
+            measurements=[],
+            details={"directness": "L2", "extrapolation_logic": "x"},
+            generated_at="2026-01-01T00:00:00",
+            retry_count=0,
+        )
+        assert any("V3" in p for p in _v4_problems(broken))

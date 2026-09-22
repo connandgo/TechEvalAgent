@@ -144,7 +144,7 @@ def result(
 ) -> CriterionResult:
     from techeval.schemas import compute_confidence
 
-    if measurements is None and cid in ("D1", "D2", "D3") and level != "not_public":
+    if measurements is None and cid in ("D1", "D2", "D3") and level in ("L2", "L3"):
         measurements = [Measurement(metric="m", value="1", evidence_id=evidence[0].evidence_id)]
     return CriterionResult(
         tech_id=tech.tech_id,

@@ -148,8 +148,8 @@ class CriterionResult(BaseModel):
             raise ValueError(f"{self.criterion_id} does not belong to {self.perspective}")
         if self.level == "not_public" and not any(e.source_type == "not_public" for e in self.evidence):
             raise ValueError("not_public level requires a not_public evidence record")
-        if self.criterion_id in ("D1", "D2", "D3") and self.level != "not_public" and not self.measurements:
-            raise ValueError(f"{self.criterion_id} requires measurements")
+        if self.criterion_id in ("D1", "D2", "D3") and self.level in ("L2", "L3") and not self.measurements:
+            raise ValueError(f"{self.criterion_id} level {self.level} requires measurements")
         return self
 
 
@@ -540,7 +540,7 @@ START
 |---|---|---|
 | V1 | `CriterionResult.evidence` ≥ 1 | schemas validator |
 | V2 | `not_public` 레벨 ⇒ not_public evidence(검색어·검색일) 포함 | schemas validator |
-| V3 | D1~D3 ⇒ measurements ≥ 1 (not_public 제외) | schemas validator |
+| V3 | D1~D3 & level ∈ {L2, L3} ⇒ measurements ≥ 1. L1(근거 없음)·not_public은 수치를 요구하지 않음 (L1 ≠ not_public: L1은 근거를 찾아봤으나 도메인 조건 수치가 없다는 판정, evidence ≥ 1은 V1로 여전히 필수) | schemas validator |
 | V4 | S2/S3 ⇒ 4주체 각 ≥1, S4 ⇒ ≥1쌍 | perspective_check |
 | V5 | evidence.chunk_id가 retriever에 실존, url이 web 결과에 실존 | perspective_check, tech_evidence_check |
 | V6 | evidence.quote가 해당 chunk.text의 부분 문자열(공백 정규화 후) | perspective_check (paper 출처) |
