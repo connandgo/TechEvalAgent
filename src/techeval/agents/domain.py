@@ -22,7 +22,9 @@ from .tech_research import (
     _finalize_criterion,
     invoke_structured,
     load_prompt,
+    pick_alias,
     profile_summary,
+    retry_note,
     select_targets,
 )
 
@@ -81,8 +83,8 @@ _WEB_QUERIES: dict[str, list[str]] = {
 }
 
 
-def _fmt(templates: list[str], tech) -> list[str]:
-    alias = tech.search_aliases[0] if tech.search_aliases else tech.name
+def _fmt(templates: list[str], tech, retry_count: int = 0) -> list[str]:
+    alias = pick_alias(tech, retry_count)
     return [
         t.format(name=tech.name, alias=alias, family=tech.family) for t in templates
     ]
@@ -110,21 +112,21 @@ def gather_domain_context(
     # 2) 추가 검색 (E의 재작성 질의가 있으면 우선)
     queries = list(inp.rewritten_queries)
     for cid in targets:
-        queries += _fmt(_PAPER_QUERIES[cid], tech)
+        queries += _fmt(_PAPER_QUERIES[cid], tech, inp.retry_count)
     for q in dict.fromkeys(queries):
         ctx.add_chunks(
             deps.retriever.search(q, top_k=6, doc_ids=[tech.primary_doc_id]),
             unit="paper",
         )
         ctx.queries.append(q)
-    for q in _fmt(_FAMILY_QUERIES, tech):
+    for q in _fmt(_FAMILY_QUERIES, tech, inp.retry_count):
         ctx.add_chunks(
             deps.retriever.search(q, top_k=3, doc_ids=list(SURVEY_DOC_IDS)),
             unit="family",
         )
         ctx.queries.append(q)
     for cid in targets:
-        for q in _fmt(_WEB_QUERIES.get(cid, []), tech):
+        for q in _fmt(_WEB_QUERIES.get(cid, []), tech, inp.retry_count):
             ctx.add_web(deps.web_search(q, max_results=5))
             ctx.queries.append(q)
     return ctx
@@ -171,7 +173,9 @@ def run_domain_eval(inp: AgentInput, deps: Deps) -> list[CriterionResult]:
             user = load_prompt("domain", cid).format(
                 tech_id=tech.tech_id, context=ctx.render(), profile_summary=summary
             )
-            draft = invoke_structured(deps.llm, CriterionDraft, system, user)
+            draft = invoke_structured(
+                deps.llm, CriterionDraft, system, user + retry_note(inp)
+            )
             if cid == "D4":
                 draft.level = "checklist"
                 draft.measurements = []

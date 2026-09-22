@@ -13,6 +13,7 @@
 
 import logging
 import re
+from collections.abc import Callable
 from pathlib import Path
 from typing import Literal
 
@@ -389,20 +390,49 @@ _WEB_QUERIES: dict[str, list[str]] = {
 }
 
 
-def _fmt(templates: list[str], tech: TechRef) -> list[str]:
-    alias = tech.search_aliases[0] if tech.search_aliases else tech.name
+_RETRY_EXTRA_QUERIES = [
+    "{alias} experimental setup evaluation details",
+    "{alias} reported numbers table results",
+    "{name} 측정 조건 하드웨어 배치 컨텍스트",
+]
+
+
+def pick_alias(tech: TechRef, retry_count: int = 0) -> str:
+    """재시도마다 다른 별칭으로 검색어를 만든다 (docs/roles/B §5.1: retry_count 반영)."""
+    aliases = tech.search_aliases or [tech.name]
+    return aliases[retry_count % len(aliases)]
+
+
+def _fmt(templates: list[str], tech: TechRef, retry_count: int = 0) -> list[str]:
+    alias = pick_alias(tech, retry_count)
     return [
         t.format(name=tech.name, alias=alias, family=tech.family) for t in templates
     ]
+
+
+def retry_note(inp: AgentInput) -> str:
+    """재실행일 때 프롬프트 끝에 붙이는 안내. 첫 실행이면 빈 문자열."""
+    if inp.retry_count <= 0:
+        return ""
+    missing = ", ".join(inp.missing_criteria or []) or "(전체)"
+    return (
+        f"\n\n## 재시도 안내\n\n이번은 {inp.retry_count}번째 재시도다. 이전 시도에서 근거가 부족했던 기준: {missing}. "
+        "이전과 같은 문장을 되풀이하지 말고, 다른 절·표·웹 결과에서 근거를 찾아라. "
+        "그래도 없으면 추측하지 말고 인용을 비워 두어라."
+    )
 
 
 def gather_context(inp: AgentInput, deps: Deps, targets: list[str]) -> SearchContext:
     tech = inp.tech
     ctx = SearchContext()
     # E의 질의 재작성 결과가 있으면 그것을 우선 사용한다.
-    paper_queries = list(inp.rewritten_queries) or _fmt(_PAPER_QUERIES["profile"], tech)
+    paper_queries = list(inp.rewritten_queries) or _fmt(
+        _PAPER_QUERIES["profile"], tech, inp.retry_count
+    )
     for cid in targets:
-        paper_queries += _fmt(_PAPER_QUERIES.get(cid, []), tech)
+        paper_queries += _fmt(_PAPER_QUERIES.get(cid, []), tech, inp.retry_count)
+    if inp.retry_count > 0:
+        paper_queries += _fmt(_RETRY_EXTRA_QUERIES, tech, inp.retry_count)
     for q in dict.fromkeys(paper_queries):
         ctx.add_chunks(
             deps.retriever.search(q, top_k=6, doc_ids=[tech.primary_doc_id]),
@@ -410,14 +440,14 @@ def gather_context(inp: AgentInput, deps: Deps, targets: list[str]) -> SearchCon
         )
         ctx.queries.append(q)
     # 서베이는 기술 계열 맥락·한계 보강용 2차 검색 (unit=family)
-    for q in _fmt(_FAMILY_QUERIES, tech):
+    for q in _fmt(_FAMILY_QUERIES, tech, inp.retry_count):
         ctx.add_chunks(
             deps.retriever.search(q, top_k=3, doc_ids=list(SURVEY_DOC_IDS)),
             unit="family",
         )
         ctx.queries.append(q)
     for cid in targets:
-        for q in _fmt(_WEB_QUERIES.get(cid, []), tech):
+        for q in _fmt(_WEB_QUERIES.get(cid, []), tech, inp.retry_count):
             ctx.add_web(deps.web_search(q, max_results=5))
             ctx.queries.append(q)
     return ctx
@@ -575,7 +605,7 @@ def _build_profile(
         paper_date=tech.paper_date,
         context=ctx.render(),
     )
-    draft = invoke_structured(deps.llm, ProfileDraft, system, user)
+    draft = invoke_structured(deps.llm, ProfileDraft, system, user + retry_note(inp))
     evidence, aligned = resolve_citations(
         ctx, draft.citations, prefix=f"{tech.tech_id}-PROFILE", default_unit="paper"
     )
@@ -638,7 +668,7 @@ def _eval_t3(
     user = load_prompt("tech_research", "T3").format(
         tech_id=tech.tech_id, context=ctx.render()
     )
-    draft = invoke_structured(deps.llm, ArtifactDraft, system, user)
+    draft = invoke_structured(deps.llm, ArtifactDraft, system, user + retry_note(inp))
     checklist = draft.checklist.model_dump()
     level = compute_t3_level(checklist)
     evidence, _ = resolve_citations(
@@ -721,7 +751,9 @@ def run_tech_research(inp: AgentInput, deps: Deps) -> TechResearchOutput:
                     or "(원문에 명시된 한계 없음)",
                 }
                 user = load_prompt("tech_research", cid).format(**fmt_args)
-                draft = invoke_structured(deps.llm, CriterionDraft, system, user)
+                draft = invoke_structured(
+                    deps.llm, CriterionDraft, system, user + retry_note(inp)
+                )
                 if cid == "T4":
                     draft.level = "narrative"
                 r = _finalize_criterion(
@@ -742,3 +774,122 @@ def run_tech_research(inp: AgentInput, deps: Deps) -> TechResearchOutput:
             logger.error("[%s] %s 결과 폐기: %s", tech.tech_id, cid, exc)
 
     return TechResearchOutput(tech_profile=profile, trl_eval=results)
+
+
+# ---------------------------------------------------------------------------
+# --stub 실행 지원: B 픽스처(tech_profiles/trl_eval/domain_eval.json)를 드래프트로 역변환해
+# E의 FakeStructuredLLM(overrides=...)에 꽂는다. E의 build_deps(stub=True)가 호출한다.
+# ---------------------------------------------------------------------------
+
+_STUB_TECH_ID = re.compile(r"tech_id\W{0,4}(mla|pim_cxl)", re.IGNORECASE)
+_STUB_HEADING = re.compile(r"^# (T\d|D\d|기술 개요)", re.MULTILINE)
+DEFAULT_FIXTURES_DIR = Path(__file__).resolve().parents[3] / "tests" / "fixtures"
+
+
+def _citations_from_evidence(
+    evidence: list[Evidence],
+) -> tuple[list[Citation], dict[str, int]]:
+    cits: list[Citation] = []
+    index: dict[str, int] = {}
+    for e in evidence:
+        if e.source_type == "not_public" or not e.quote:
+            continue
+        ref = e.chunk_id or e.url
+        if not ref:
+            continue
+        index[e.evidence_id] = len(cits)
+        cits.append(
+            Citation(source="chunk" if e.chunk_id else "web", ref=ref, quote=e.quote)
+        )
+    return cits, index
+
+
+def _measurement_drafts(
+    measurements: list[Measurement], index: dict[str, int]
+) -> list[MeasurementDraft]:
+    out: list[MeasurementDraft] = []
+    for m in measurements:
+        if m.evidence_id in index:
+            out.append(
+                MeasurementDraft(
+                    **m.model_dump(exclude={"evidence_id"}),
+                    citation_index=index[m.evidence_id],
+                )
+            )
+    return out
+
+
+def profile_to_draft(p: TechProfile) -> ProfileDraft:
+    cits, index = _citations_from_evidence(p.evidence)
+    return ProfileDraft(
+        principle=p.principle,
+        scope=p.scope,
+        limitations=p.limitations,
+        validation_env=p.validation_env,
+        measurements=_measurement_drafts(p.measurements, index),
+        citations=cits,
+    )
+
+
+def criterion_to_draft(r: CriterionResult) -> CriterionDraft:
+    cits, index = _citations_from_evidence(r.evidence)
+    return CriterionDraft(
+        level=r.level,
+        level_estimate=r.level_estimate,
+        content=r.content,
+        details=r.details,
+        measurements=_measurement_drafts(r.measurements, index),
+        citations=cits,
+    )
+
+
+def criterion_to_artifact_draft(r: CriterionResult) -> ArtifactDraft:
+    cits, _ = _citations_from_evidence(r.evidence)
+    checklist = r.details.get("checklist") or {k: "unknown" for k in ARTIFACT_KEYS}
+    return ArtifactDraft(
+        checklist=ArtifactChecklist(**checklist),
+        urls=r.details.get("urls", {}),
+        content=r.content,
+        citations=cits,
+    )
+
+
+def stub_overrides(
+    fixtures_dir: str | Path | None = None,
+) -> dict[type, Callable[[str], BaseModel]]:
+    """FakeStructuredLLM(overrides=stub_overrides()) 로 쓴다. 프롬프트의 `tech_id:` 표기와 첫 제목으로 항목을 고른다."""
+    import json
+
+    d = Path(fixtures_dir) if fixtures_dir else DEFAULT_FIXTURES_DIR
+    profiles = {
+        p["tech_id"]: TechProfile.model_validate(p)
+        for p in json.loads((d / "tech_profiles.json").read_text(encoding="utf-8"))
+    }
+    results: dict[tuple[str, str], CriterionResult] = {}
+    for name in ("trl_eval.json", "domain_eval.json"):
+        for raw in json.loads((d / name).read_text(encoding="utf-8")):
+            r = CriterionResult.model_validate(raw)
+            results[(r.tech_id, r.criterion_id)] = r
+
+    def _key(text: str) -> tuple[str, str]:
+        m = _STUB_TECH_ID.search(text)
+        h = _STUB_HEADING.search(text)
+        if not m or not h:
+            raise LookupError(
+                "B stub: 프롬프트에서 tech_id 또는 기준 제목을 찾을 수 없음"
+            )
+        return m.group(1).lower(), h.group(1)
+
+    def profile(text: str) -> ProfileDraft:
+        tech_id, _ = _key(text)
+        return profile_to_draft(profiles[tech_id])
+
+    def criterion(text: str) -> CriterionDraft:
+        tech_id, cid = _key(text)
+        return criterion_to_draft(results[(tech_id, cid)])
+
+    def artifact(text: str) -> ArtifactDraft:
+        tech_id, _ = _key(text)
+        return criterion_to_artifact_draft(results[(tech_id, "T3")])
+
+    return {ProfileDraft: profile, CriterionDraft: criterion, ArtifactDraft: artifact}
