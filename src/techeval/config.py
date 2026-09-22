@@ -102,10 +102,29 @@ def _model_init_kwargs(model: str, provider: str) -> dict[str, Any]:
     return kwargs
 
 
+class _ToolCallingLLM:
+    """`with_structured_output`의 기본 method를 네이티브 tool calling(`function_calling`)으로 고정하는 래퍼.
+
+    langchain-openai 1.x는 기본 method가 `json_schema`(strict)라서 에이전트 출력 스키마의 자유형 dict 필드
+    (예: `details: dict`)를 "additionalProperties is required to be false"로 거부한다. 그 밖의 속성·메서드
+    (`invoke` 등)는 원본 모델에 그대로 위임한다.
+    """
+
+    def __init__(self, llm: Any) -> None:
+        self._llm = llm
+
+    def with_structured_output(self, schema: Any, **kwargs: Any) -> Any:
+        kwargs.setdefault("method", "function_calling")
+        return self._llm.with_structured_output(schema, **kwargs)
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._llm, name)
+
+
 def _init_chat_model(model: str, provider: str) -> Any:
     from langchain.chat_models import init_chat_model
 
-    return init_chat_model(model, **_model_init_kwargs(model, provider))
+    return _ToolCallingLLM(init_chat_model(model, **_model_init_kwargs(model, provider)))
 
 
 def get_llm(settings: Settings | None = None, agent: str | None = None) -> Any:
@@ -162,8 +181,14 @@ def build_deps(stub: bool = False, settings: Settings | None = None, *, use_cach
         # C의 web_search가 캐시(outputs/web_cache/)를 건너뛰도록 환경변수로 알린다 (`run.py --no-cache`).
         os.environ["WEB_SEARCH_NO_CACHE"] = "1"
 
+    retriever = VectorRetriever(chroma_dir=s.chroma_dir, embedding_model=s.embedding_model)
+    # 임베딩 모델을 메인 스레드에서 1회 미리 적재한다. Send fan-out(mla / pim_cxl)이 병렬 스레드에서 동시에
+    # 최초 적재를 시도하면 torch MPS 커널 캐시가 경쟁해 프로세스가 SIGABRT로 죽는다 (macOS에서 재현).
+    logger.info("임베딩 모델 warm-up: %s", s.embedding_model)
+    retriever.search("KV cache", top_k=1, mode="dense")
+
     return Deps(
-        retriever=VectorRetriever(chroma_dir=s.chroma_dir, embedding_model=s.embedding_model),
+        retriever=retriever,
         web_search=web_search,
         llm=get_llm(s),
         judge_llm=get_judge_llm(s),
