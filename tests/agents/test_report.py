@@ -146,7 +146,7 @@ def test_banned_term_triggers_one_fix_pass(inp):
 
 def test_regeneration_only_changes_target_chapters(inp):
     first = run_report(inp, _deps(TextStub("v1"))[0])
-    judge = load("judge_result.json", JudgeResult)  # 지시: 5장, 4.4
+    judge = load("judge_result.json", JudgeResult)  # E 픽스처 지시: 4.1절, 4.4절
     inp2 = inp.model_copy(update={"judge_result": judge, "previous_report_md": first})
     llm2 = TextStub("v2")
     second = run_report(inp2, _deps(llm2)[0])
@@ -154,7 +154,7 @@ def test_regeneration_only_changes_target_chapters(inp):
     before = {s.key: s.text for s in split_sections(first)}
     after = {s.key: s.text for s in split_sections(second)}
     changed = {k for k in after if after[k] != before.get(k) and k != "REFERENCE"}
-    assert changed == {"5", "4.4"}
+    assert changed == {"4.1", "4.4"}
     assert len(llm2.calls) == 2 and all("# 수정 모드" in c for c in llm2.calls)
     assert "v1 " in llm2.calls[0]  # 이전 텍스트를 기반으로 수정
     assert lint_report(second, _index(inp)).passed
@@ -183,21 +183,21 @@ def test_map_instructions_to_units():
 
 @pytest.mark.integration
 def test_real_llm_report_passes_lint(inp, tmp_path):
-    config = pytest.importorskip("techeval.config")
+    from techeval import config
     from techeval.agents._deps import SynthesisInput
     from techeval.agents.synthesis import run_synthesis
     from techeval.report.pdf import render_pdf
 
-    deps = Deps(
-        retriever=None,
-        web_search=None,
-        llm=config.get_llm(),
-        now=lambda: "2026-01-01T00:00:00",
-    )
+    try:
+        llm = config.get_llm()
+    except RuntimeError as exc:  # .env에 LLM_PROVIDER/LLM_MODEL/JUDGE_MODEL이 없으면
+        pytest.skip(str(exc))
+    deps, spy = _deps(llm)
     syn = run_synthesis(
         SynthesisInput(**inp.model_dump(include=set(SynthesisInput.model_fields))), deps
     )
     md = run_report(inp.model_copy(update={"synthesis": syn}), deps)
     res = lint_report(md, _index(inp))
+    assert not spy.called
     assert res.passed, (res.errors, res.missing_required)
     assert Path(render_pdf(md, str(tmp_path / "report.pdf"))).stat().st_size > 0

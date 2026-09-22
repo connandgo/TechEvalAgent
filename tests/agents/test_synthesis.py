@@ -87,6 +87,19 @@ def test_fixture_is_valid_synthesis_result():
         )
 
 
+def test_run_synthesis_with_shared_fake_llm(inp, fake_llm):
+    """E의 FakeStructuredLLM: SynthesisDraft가 SynthesisResult의 부분집합이라 synthesis.json이 그대로 매핑된다."""
+    deps, retriever, web = _deps(fake_llm)
+    result = run_synthesis(inp, deps)
+    assert not retriever.called and not web.called
+    assert fake_llm.prompts_for(SynthesisDraft)  # 구조화 호출이 SynthesisDraft로 나갔다
+    for tid in ("mla", "pim_cxl"):
+        assert any(
+            c.tech_id == tid and "S4" in (c.criterion_a, c.criterion_b)
+            for c in result.conflicts
+        )
+
+
 def test_run_synthesis_no_search_and_s4_conflicts(inp):
     llm = StructuredStub([_draft_from_fixture()])
     deps, retriever, web = _deps(llm)
