@@ -34,8 +34,9 @@ table { border-collapse: collapse; width: 100%%; margin: 3mm 0; font-size: 8.5pt
 thead { display: table-header-group; }
 tr { break-inside: avoid; page-break-inside: avoid; }
 th, td { border: 1px solid #bbb; padding: 1.2mm 1.6mm; vertical-align: top;
-         overflow-wrap: anywhere; }
-th { background: #f0f0f0; }
+         word-break: keep-all; overflow-wrap: break-word; }
+th { background: #f0f0f0; white-space: nowrap; }
+td:first-child { white-space: nowrap; }  /* 기준명·지표명·기술명: 한글이 글자 단위로 끊기지 않게 */
 code, pre { font-family: "Menlo", "Consolas", monospace; font-size: 8.5pt; }
 pre { white-space: pre-wrap; background: #f7f7f7; padding: 2mm; }
 """

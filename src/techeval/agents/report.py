@@ -245,6 +245,16 @@ def _level_line(ctx: _Ctx, tech_id: str) -> str:
     return f"- {ctx.name(tech_id)}: " + " · ".join(rows)
 
 
+def _unit_evidence(ctx: _Ctx) -> list[str]:
+    """평가 단위 차이를 보여 주는 판정의 근거: 기술별 T1(논문 단위)·M2(계열 단위) 첫 evidence."""
+    return [
+        r.evidence[0].evidence_id
+        for t in ctx.techs
+        for r in ctx.results
+        if r.tech_id == t.tech_id and r.criterion_id in ("T1", "M2")
+    ]
+
+
 def _gen_summary(ctx: _Ctx, revision: Revision | None) -> str:
     syn = ctx.inp.synthesis
     # 상충 지점: S4 기반 상충을 먼저, 이어서 나머지 순서대로 상위 SUMMARY_CONFLICTS개
@@ -261,9 +271,9 @@ def _gen_summary(ctx: _Ctx, revision: Revision | None) -> str:
             ),
             "## 기술별 관점 판정 (필요한 레벨만 골라 인용)",
             *(_level_line(ctx, t.tech_id) for t in ctx.techs),
-            "## 해석상 한계",
-            f"- 평가 단위: {syn.unit_notes}",
-            f"- 벤더(official) 자료 비율: {ratio}",
+            "## 해석상 한계 (한계 문장은 아래 [E: id]를 인용한다)",
+            f"- 평가 단위: {syn.unit_notes} {_cite(_unit_evidence(ctx))}",
+            f"- 벤더(official) 자료 비율: {ratio} (근거 비대칭 검사 산출값이라 인용할 evidence가 없으므로 SUMMARY에서는 수치를 쓰지 않는다)",
         ]
     )
     return _llm_text(ctx, "summary.md", data, revision)
@@ -590,7 +600,7 @@ def run_report(inp: ReportInput, deps: Deps) -> str:
         report_md = _assemble(ctx, sections)
         lint = lint_report(report_md, index)
         if lint.sections_to_fix() & set(LLM_UNITS):
-            logger.warning("lint 오류 → 해당 절 1회 수정: %s", [i.message for i in lint.errors])
+            logger.warning("lint 지적 → 해당 절 1회 수정: %s", [i.message for i in lint.fix_issues()])
             report_md = _assemble(ctx, _self_fix(ctx, sections, lint))
 
     final = lint_report(report_md, index)

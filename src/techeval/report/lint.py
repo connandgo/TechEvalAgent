@@ -56,7 +56,10 @@ NEAR_CHARS = 20
 # errors가 아니라 warnings로 두고, run_report가 이 경고를 보고 SUMMARY만 1회 다시 쓴다.
 SUMMARY_MAX_CHARS = 700
 SUMMARY_INTRO_RE = re.compile(r"^(?:본|이|이번|해당)\s*(?:보고서|요약|평가|문서|절|장)|^(?:다음은|아래는|요약하면)")
-FIXABLE_WARNING_KINDS: tuple[str, ...] = ("summary_too_long", "summary_intro")
+FIXABLE_WARNING_KINDS: tuple[str, ...] = ("summary_too_long", "summary_intro", "summary_uncited")
+# 인용 없는 수치를 D가 스스로 고칠 절. 6장 벤더 비율은 evidence가 아니라 E 검사 산출값이라 제외한다.
+NUMBER_FIX_SECTIONS: tuple[str, ...] = ("SUMMARY", "3.1", "3.2", "4.1", "4.2", "4.3", "4.4", "5")
+SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+")
 
 
 class LintIssue(BaseModel):
@@ -79,8 +82,14 @@ class LintResult(BaseModel):
         return {i.section for i in self.errors}
 
     def fix_issues(self) -> list[LintIssue]:
-        """D가 스스로 고칠 문제: 오류 전부 + SUMMARY 분량·인트로 경고."""
-        return [*self.errors, *(w for w in self.warnings if w.kind in FIXABLE_WARNING_KINDS)]
+        """D가 스스로 고칠 문제: 오류 전부 + SUMMARY 분량·인트로·무인용 경고 + 본문 절의 인용 없는 수치."""
+        fixable = [
+            w
+            for w in self.warnings
+            if w.kind in FIXABLE_WARNING_KINDS
+            or (w.kind == "number_without_citation" and w.section in NUMBER_FIX_SECTIONS)
+        ]
+        return [*self.errors, *fixable]
 
     def sections_to_fix(self) -> set[str]:
         return {i.section for i in self.fix_issues()}
@@ -107,7 +116,8 @@ def _number_warnings(section: Section) -> list[LintIssue]:
                     LintIssue(
                         section=section.key,
                         kind="number_without_citation",
-                        message=f"[{section.key}] 수치 '{m.group(0)}' 근처에 [E: id] 인용이 없음",
+                        message=f"[{section.key}] 수치 '{m.group(0)}' 근처에 [E: id] 인용이 없음 — "
+                        "수치가 나온 그 문장 끝에 해당 measurement의 [E: id]를 붙여라(다음 문장으로 미루지 말 것)",
                     )
                 )
     return issues
@@ -131,12 +141,27 @@ def _summary_warnings(section: Section) -> list[LintIssue]:
                 message=f"[SUMMARY] {len(text)}자로 A4 반 페이지 기준({SUMMARY_MAX_CHARS}자)을 넘음 — 핵심 결론만 남겨 줄여라",
             )
         )
-    if SUMMARY_INTRO_RE.match(text):
+    # 문장마다 인용이 있어야 한다. 첫 문장에 인용이 없으면 총론·도입 문장으로 본다("두 기술은 … 평가를 받는다").
+    body = re.sub(r"\s+", " ", section.body).strip()
+    sentences = [s for s in SENTENCE_SPLIT_RE.split(body) if s.strip()]
+    uncited = [s for s in sentences if "[E:" not in s]
+    first_uncited = bool(sentences) and "[E:" not in sentences[0]
+    if SUMMARY_INTRO_RE.match(text) or first_uncited:
         issues.append(
             LintIssue(
                 section="SUMMARY",
                 kind="summary_intro",
-                message=f"[SUMMARY] 도입 문장으로 시작함('{text[:20]}…') — 첫 문장부터 핵심 결론을 써라",
+                message=f"[SUMMARY] 도입·총론 문장으로 시작함('{text[:30]}…') — 첫 문장부터 근거 있는 핵심 결론을 써라",
+            )
+        )
+    rest = [s for s in uncited if not (first_uncited and s == sentences[0])]
+    if rest:
+        issues.append(
+            LintIssue(
+                section="SUMMARY",
+                kind="summary_uncited",
+                message=f"[SUMMARY] 인용 없는 문장 {len(rest)}개('{summary_plain_text(rest[0])[:30]}…') — "
+                "문장마다 [E: id]를 붙이거나 근거 없는 일반론은 지워라",
             )
         )
     return issues

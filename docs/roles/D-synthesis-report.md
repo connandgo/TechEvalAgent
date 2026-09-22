@@ -26,7 +26,7 @@ src/techeval/prompts/report/             # system.md, summary.md, ch1~ch6.md, ch
 tests/agents/test_synthesis.py
 tests/agents/test_report.py
 tests/report/test_citation.py, test_lint.py, test_pdf.py, test_tables.py
-tests/report/d_fixtures.py, make_d_fixtures.py, upstream_samples/   # 픽스처 로더·재생성 스크립트·C 샘플(market/stakeholder)
+tests/report/d_fixtures.py, make_d_fixtures.py   # 픽스처 로더·D 픽스처 재생성 스크립트
 tests/fixtures/synthesis.json
 tests/fixtures/report_md.md
 ```

@@ -6,7 +6,7 @@
 
 ## SUMMARY
 
-MLA는 TRL 관점에서 H800 클러스터 학습·서빙을 근거로 TRL 4-6(추정 6)으로 판정되지만, 시장 관점은 같은 원개발사의 서비스 배포와 후속 모델 채택으로 M2를 L4로 판정해, 공개 운영 실적을 요구하는 T1과 배포 사실을 보는 M2의 기준 차이로 엇갈린다[E: mla-T1-01][E: mla-M2-01]. MLA의 이해관계자 상충(S4)은 기존 모델을 MLA로 바꾸는 개발사 부담을 짚지만, 도메인 D4는 선정 모델 기준으로 서빙 엔진 수정을 N으로 기록해 계열 단위 변환 연구와 선정 모델 서빙 문서라는 근거 유형 차이가 드러난다[E: mla-S4-02][E: mla-D4-01]. PIM/CXL은 선정 논문 설계가 CXL-PNM 시스템 측정 단계(TRL 4-6, 추정 4)이나, 시장 관점은 CXL 메모리 모듈 제품화와 표준을 근거로 M2·M3를 L3로 판정해 논문 단위와 계열 단위의 차이가 레벨 차이로 나타난다[E: pim_cxl-T1-01][E: pim_cxl-M2-01][E: pim_cxl-M3-01]. PIM/CXL의 S4 상충인 벤더 판매 편익과 운영사 설비 교체 부담은 D4의 서빙 엔진 수정·메모리 추가 항목과 같은 지점을 가리킨다[E: pim_cxl-S4-01][E: pim_cxl-D4-01]. 시장·이해관계자 판정은 기술 계열 단위로 확장한 결과이고 PIM/CXL 근거는 벤더 자료 의존이 커서, 두 기술의 시장 레벨을 선정 논문 설계의 채택 단계로 읽어서는 안 된다[E: pim_cxl-M2-02].
+MLA는 TRL 관점에서 H800 클러스터 학습·서빙을 근거로 TRL 4-6(추정 6)으로 판정되지만, 시장 관점은 제안사의 유료 API 운영을 공식 가격 문서로 확인해 M2를 L4로 판정해, 공개 운영 실적을 요구하는 T1과 상용 운영 사실을 보는 M2의 기준 차이로 엇갈린다[E: mla-T1-01][E: mla-M2-01]. MLA의 이해관계자 상충(S4)은 모델 개발사의 구조 변경이 서빙 운영사에게 전용 백엔드 검증 부담이 된다고 보지만, 도메인 D4는 vLLM의 MLA 백엔드 지원을 근거로 서빙 엔진 수정을 N으로 기록해, 코드 수정 여부와 검증 부담이라는 기준 차이가 드러난다[E: mla-S4-02][E: mla-D4-01]. PIM/CXL은 선정 논문 설계가 CXL-PNM 시스템 측정 단계(TRL 4-6, 추정 4)이나, 시장 M2는 CXL 메모리 확장 컨트롤러 양산을 근거로 L3로 판정해 논문 단위와 계열 부품 단위의 차이가 레벨 차이로 나타난다[E: pim_cxl-T1-01][E: pim_cxl-M2-01]. PIM/CXL의 S4 상충인 벤더의 메모리 수요 확대와 운영사의 장비 도입 비용 부담은, 현재 CXL 메모리 확장 배포가 KV cache 오프로드가 아닌 용량 중심 워크로드에 머문다는 보도와 함께 읽어야 한다[E: pim_cxl-S4-01][E: pim_cxl-M2-02]. 시장·이해관계자 판정은 기술 계열 단위로 확장한 결과이고 PIM/CXL 근거는 벤더 자료 의존이 커서, 두 기술의 시장 레벨을 선정 논문 설계의 채택 단계로 읽어서는 안 된다[E: pim_cxl-M2-04].
 
 ## 1. 분석 배경
 
@@ -96,12 +96,12 @@ Transformer 기반 LLM은 디코딩 단계에서 앞선 토큰의 Key·Value 벡
 
 | 기준 | 기술 | 레벨 | 신뢰도 | 근거 단위 | 근거 |
 |---|---|---|---|---|---|
-| T1 현재 TRL | DeepSeek-V2 MLA | TRL 4-6 (추정: TRL 6 (공개 정보 기반 추정)) | high | 논문·구현(paper) | [E: mla-T1-01][E: mla-T1-02] |
-| T1 현재 TRL | PIM/CXL | TRL 4-6 (추정: TRL 4 (공개 정보 기반 추정)) | high | 논문·구현(paper) | [E: pim_cxl-T1-01][E: pim_cxl-T1-02] |
+| T1 현재 TRL | DeepSeek-V2 MLA | TRL 4-6 (추정: TRL 6 (공개 정보 기반 추정)) | high | 논문·구현(paper) | [E: mla-T1-01] [E: mla-T1-02] |
+| T1 현재 TRL | PIM/CXL | TRL 4-6 (추정: TRL 4 (공개 정보 기반 추정)) | high | 논문·구현(paper) | [E: pim_cxl-T1-01] [E: pim_cxl-T1-02] |
 | T2 검증 환경 | DeepSeek-V2 MLA | L3 | medium | 논문·구현(paper) | [E: mla-T2-01] |
 | T2 검증 환경 | PIM/CXL | L3 | medium | 논문·구현(paper) | [E: pim_cxl-T2-01] |
-| T3 재현성 | DeepSeek-V2 MLA | L3 | medium | 논문·구현(paper) | [E: mla-T3-01][E: mla-T3-02][E: mla-T3-03][E: mla-T3-04] |
-| T3 재현성 | PIM/CXL | L2 | high | 논문·구현(paper) | [E: pim_cxl-T3-01][E: pim_cxl-T3-02][E: pim_cxl-T3-03] |
+| T3 재현성 | DeepSeek-V2 MLA | L3 | medium | 논문·구현(paper) | [E: mla-T3-01] [E: mla-T3-02] [E: mla-T3-03] [E: mla-T3-04] |
+| T3 재현성 | PIM/CXL | L2 | high | 논문·구현(paper) | [E: pim_cxl-T3-01] [E: pim_cxl-T3-02] [E: pim_cxl-T3-03] |
 | T4 다음 과제 | DeepSeek-V2 MLA | narrative | medium | 논문·구현(paper) | [E: mla-T4-01] |
 | T4 다음 과제 | PIM/CXL | narrative | medium | 논문·구현(paper) | [E: pim_cxl-T4-01] |
 
@@ -113,28 +113,28 @@ Transformer 기반 LLM은 디코딩 단계에서 앞선 토큰의 Key·Value 벡
 
 **DeepSeek-V2 MLA**
 
-- **M1 성장성 — not_public**: MLA 계열을 따로 구분한 정량 시장 전망은 미공개(검색어: Multi-head Latent Attention market forecast, 검색일: 2026-09-20, 범위: 시장조사 기관 보고서·뉴스 2024-2026)다[E: mla-M1-01]. 신뢰도 low.
-- **M2 채택 — L4 상용 운영**: 채택 주체는 DeepSeek로, MLA를 적용한 DeepSeek-V2를 서비스에 배포했고 후속 모델 DeepSeek-V3도 MLA를 채택했다[E: mla-M2-01][E: mla-M2-02]. 두 근거 모두 원개발사 자료다. 신뢰도 high.
-- **M3 생태계 — L2**: 프레임워크 Y(SGLang의 MLA 최적화), 벤더 제품 N, 표준화 N, 제3자 연구·도구 Y(TransMLA)다[E: mla-M3-01][E: mla-M3-02]. 신뢰도 high.
+- **M1 성장성 — L2 형성**: 128K 컨텍스트에서 세션당 메모리 점유가 토큰당 비용을 좌우한다는 매체 분석(SemiAnalysis, 2025-05-12)과, 메모리 가격이 추론 서비스 마진의 주요 변수가 되었다는 보도(Reuters, 2026-02-11)가 수요 동인으로 확인된다[E: mla-M1-01][E: mla-M1-02]. 다만 MLA를 포함한 KV cache 축소 기법 계열을 따로 집계한 정량 시장 전망은 확인되지 않았고, 단일 매체 추정이므로 사실로 단정하지 않는다. 신뢰도 medium.
+- **M2 채택 — L4 상용 운영**: 채택 주체는 DeepSeek로, MLA 기반 모델을 토큰당 가격이 공개된 유료 API로 운영하고 있다(공식 가격 문서, 2025-02-20)[E: mla-M2-01]. 오픈 웨이트 배포로 제3자 서빙 스택에서 구동한 사례도 보도되었으나 운영 주체가 명시되지 않아 별도 채택 사례로 세지 않았다[E: mla-M2-02][E: mla-M2-03]. 신뢰도 high.
+- **M3 생태계 — L2**: 프레임워크 Y(vLLM·SGLang의 MLA 전용 백엔드), 벤더 제품 N, 표준화 N, 제3자 연구·도구 Y(KV cache 관리 서베이의 분류)다[E: mla-M3-01][E: mla-M3-02][E: mla-M3-04]. 백엔드가 전제하는 압축 latent KV 표현은 원문의 저랭크 결합 압축 설명과 일치한다[E: mla-M3-03]. 신뢰도 high.
 
 **PIM/CXL**
 
-- **M1 성장성 — L2 형성**: Yole Group(2024-03)은 CXL 메모리 시장이 2028년 약 150억 달러 규모로 성장할 것으로 전망했으며, 단일 기관 전망이므로 사실로 단정하지 않는다[E: pim_cxl-M1-01]. 신뢰도 medium(단일 출처).
-- **M2 채택 — L3 제품화**: 채택 주체는 Samsung(CMM-D)과 SK hynix(CMM-DDR5)로, CXL 메모리 확장 모듈을 제품으로 출시했다[E: pim_cxl-M2-01][E: pim_cxl-M2-02]. 다만 LLM KV cache용 PNM 채택은 연구 단계로, 계열 단위 제품화와 구분된다. 신뢰도 high.
-- **M3 생태계 — L3**: 프레임워크 N, 벤더 제품 Y, 표준화 Y(CXL Consortium), 제3자 연구·도구 Y(io_survey)다[E: pim_cxl-M3-01][E: pim_cxl-M3-02][E: pim_cxl-M3-03]. 신뢰도 high.
+- **M1 성장성 — L2 형성**: TrendForce(2025-03-18)는 CXL 메모리 모듈 시장이 2028년 21억 달러에 이를 것으로 전망했고, MarketsandMarkets(2025-08-01)는 2030년까지 CXL 부착 메모리의 연평균 성장률을 30%대 중반으로 추정했다[E: pim_cxl-M1-01][E: pim_cxl-M1-02]. 두 수치 모두 발행 주체의 추정치이고 산출 근거가 공개되지 않아 사실로 단정하지 않는다. 수요 동인으로는 메모리 제조사의 설비 투자 확대 보도가 있다[E: pim_cxl-M1-03]. 신뢰도 medium.
+- **M2 채택 — L3 제품화**: CXL 메모리 확장 컨트롤러는 Astera Labs의 양산 제품으로 출하되고 있다[E: pim_cxl-M2-01]. 반면 연산 기능을 메모리에 둔 PIM/PNM 부품(Samsung HBM-PIM, SK hynix AiM)은 PoC·샘플링 단계이며, LLM 추론 서버용 양산을 밝힌 벤더는 없다[E: pim_cxl-M2-03][E: pim_cxl-M2-04]. 현재 CXL 메모리 확장 배포도 KV cache 오프로드가 아니라 용량 중심 인메모리 워크로드를 겨냥한다[E: pim_cxl-M2-02]. 선정 논문의 CXL-PNM 시제품은 계열 제품의 양산 사실과 구분해 기록한다. 신뢰도 high.
+- **M3 생태계 — L2**: 프레임워크 N(오픈소스 서빙 프레임워크가 CXL 계층을 문서화한 사례 없음), 벤더 제품 Y(메모리 확장 컨트롤러), 표준화 Y(CXL 3.1 사양, JEDEC 협업), 제3자 연구·도구 N이다[E: pim_cxl-M3-01][E: pim_cxl-M3-02][E: pim_cxl-M3-03]. 선정 논문의 CXL-PNM 확장 플랫폼은 원문 근거로 함께 기록했다[E: pim_cxl-M3-04]. 신뢰도 high.
 
-MLA 계열의 채택 근거는 원개발사 자체 운영에, PIM/CXL 계열의 채택 근거는 메모리 벤더 발표(official)에 기대고 있어, 두 기술의 시장 레벨은 근거 유형이 서로 다른 상태에서 나온 판정이다.
+MLA 계열의 채택 근거는 제안사 자체 유료 API에, PIM/CXL 계열의 채택 근거는 메모리 확장 컨트롤러라는 계열 부품의 양산에 기대고 있어, 두 기술의 시장 레벨은 서로 다른 대상의 채택 단계를 가리킨다.
 
 **표 4.2 기술 × 기준 요약 — 시장성**
 
 | 기준 | 기술 | 레벨 | 신뢰도 | 근거 단위 | 근거 |
 |---|---|---|---|---|---|
-| M1 성장성 | DeepSeek-V2 MLA | not_public | low | 기술 계열(family) | [E: mla-M1-01] |
-| M1 성장성 | PIM/CXL | L2 | medium | 기술 계열(family) | [E: pim_cxl-M1-01] |
-| M2 채택 | DeepSeek-V2 MLA | L4 | high | 기술 계열(family) | [E: mla-M2-01][E: mla-M2-02] |
-| M2 채택 | PIM/CXL | L3 | high | 기술 계열(family) | [E: pim_cxl-M2-01][E: pim_cxl-M2-02] |
-| M3 생태계 | DeepSeek-V2 MLA | L2 | high | 기술 계열(family) | [E: mla-M3-01][E: mla-M3-02] |
-| M3 생태계 | PIM/CXL | L3 | high | 기술 계열(family) | [E: pim_cxl-M3-01][E: pim_cxl-M3-02][E: pim_cxl-M3-03] |
+| M1 성장성 | DeepSeek-V2 MLA | L2 | medium | 기술 계열(family) | [E: mla-M1-01] [E: mla-M1-02] |
+| M1 성장성 | PIM/CXL | L2 | medium | 기술 계열(family) | [E: pim_cxl-M1-01] [E: pim_cxl-M1-02] [E: pim_cxl-M1-03] |
+| M2 채택 | DeepSeek-V2 MLA | L4 | high | 기술 계열(family) | [E: mla-M2-01] [E: mla-M2-02] [E: mla-M2-03] |
+| M2 채택 | PIM/CXL | L3 | high | 기술 계열(family) | [E: pim_cxl-M2-01] [E: pim_cxl-M2-02] [E: pim_cxl-M2-03] [E: pim_cxl-M2-04] |
+| M3 생태계 | DeepSeek-V2 MLA | L2 | high | 기술 계열(family) | [E: mla-M3-01] [E: mla-M3-02] [E: mla-M3-03] [E: mla-M3-04] |
+| M3 생태계 | PIM/CXL | L2 | high | 기술 계열(family) | [E: pim_cxl-M3-01] [E: pim_cxl-M3-02] [E: pim_cxl-M3-03] [E: pim_cxl-M3-04] |
 
 레벨은 기준별 판정 단계일 뿐이며, 관점·기준이 다른 레벨끼리 더하거나 묶어 하나의 값으로 만들지 않는다.
 
@@ -144,32 +144,32 @@ MLA 계열의 채택 근거는 원개발사 자체 운영에, PIM/CXL 계열의 
 
 **DeepSeek-V2 MLA**
 
-- **S1 의사결정**: 모델 개발사는 어텐션 구조를 정하는 결정권자, 서빙 운영사는 영향받는 자이며, 메모리·반도체 벤더와 투자 업계는 수요 변화로 영향받는 자로 두었다(후자 둘은 추론)[E: mla-S1-01][E: mla-S1-02].
-- **S2 편익**: 모델 개발사는 서비스 배포 시 KV cache 부담이 줄고, 운영사는 더 큰 배치를 처리할 수 있다[E: mla-S2-01]. 메모리·반도체 벤더 쪽에서는 서빙 프레임워크 최적화 수요가 확인되며[E: mla-S2-02], 투자 업계에는 메모리 증설 없이 처리량을 넓힐 여지가 편익이 될 수 있다(추론)[E: mla-S2-03].
-- **S3 부담**: 모델 개발사는 기존 모델의 구조 변환·재학습 부담을 진다[E: mla-S3-01]. 운영사는 MLA 전용 커널 지원·검증 부담을(추론)[E: mla-S3-03], 메모리·반도체 벤더와 투자 업계는 메모리 용량 수요 감소 가능성과 구조 변경 비용 대비 효과의 불확실성을 부담한다(추론)[E: mla-S3-02].
-- **S4 상충**: 클라우드·서빙 운영사가 얻는 배치 확대 편익은 모델 개발사의 모델 구조 변경·재학습 부담을 전제로 한다[E: mla-S4-01][E: mla-S4-02].
+- **S1 의사결정**: 모델 구조를 바꾸는 기법이므로 채택을 정하는 결정권자는 모델 개발사다[E: mla-S1-01]. 서빙 운영사는 MLA 전용 투영 차원을 선언한 모델 구성과 백엔드 지원 여부에 따라 영향받는 자이고[E: mla-S1-02], 메모리·반도체 벤더는 자사 부품을 요구하지 않아 무관, 투자 업계는 영향받는 자로 두었다(추론)[E: mla-S1-03].
+- **S2 편익**: 모델 개발사는 KV cache 점유를 줄여 더 긴 컨텍스트나 더 큰 배치를 다룰 여지를 얻고[E: mla-S2-01], 서빙 운영사는 지원 백엔드가 있는 스택에서 하드웨어 증설 없이 모델을 제공할 수 있다[E: mla-S2-02]. 벤더(기존 제품 라인 유지)와 투자 업계(설비 투자 없는 단가 구조 변화)의 편익은 추론이다[E: mla-S2-03][E: mla-S2-04].
+- **S3 부담**: 모델 개발사는 MLA 전용 구성이 필요해 기존 모델에 사후 적용할 수 없고[E: mla-S3-01], 서빙 운영사는 디코딩 경로가 일반 어텐션과 달라 백엔드별 검증이 필요하다[E: mla-S3-02]. 벤더(용량 증설 수요 일부의 소프트웨어 흡수)와 투자 업계(적용 시점·범위 불확실)의 부담은 추론이다[E: mla-S3-03][E: mla-S3-04].
+- **S4 상충**: 모델 개발사에게 편익인 메모리 점유 축소가 메모리·반도체 벤더에게는 용량 증설 수요가 줄어드는 부담이 되고(추론 포함)[E: mla-S4-01][E: mla-S4-03], 모델 개발사에게 편익인 구조 변경이 서빙 운영사에게는 전용 백엔드를 따로 검증해야 하는 부담이 된다[E: mla-S4-02].
 
 **PIM/CXL**
 
-- **S1 의사결정**: 서빙 운영사는 서버 구성 변경을 결정하는 결정권자, 메모리·반도체 벤더는 공급자, 모델 개발사와 투자 업계는 영향받는 자로 두었다(모델 개발사 역할은 추론)[E: pim_cxl-S1-01][E: pim_cxl-S1-02].
-- **S2 편익**: 메모리·반도체 벤더는 CXL 메모리 모듈 판매 기회를[E: pim_cxl-S2-01], 운영사는 HBM 용량을 넘는 컨텍스트 수용 여지를 얻는다[E: pim_cxl-S2-02]. 모델 개발사(구조 변경 없는 장문맥 지원)와 투자 업계(메모리 계층 확장 시장 진입)의 편익은 추론이다[E: pim_cxl-S2-03].
-- **S3 부담**: 메모리·반도체 벤더는 CXL 추가 지연을 줄이는 설계 부담을 진다[E: pim_cxl-S3-01]. 운영사의 설비 도입·서빙 경로 변경과 모델 개발사의 생성 지연 영향은 추론이며[E: pim_cxl-S3-02], 투자 업계는 단일 전망에 기댄 수요 불확실성을 부담한다(추론)[E: pim_cxl-S3-03].
-- **S4 상충**: 메모리·반도체 벤더의 CXL 메모리 판매 편익은 클라우드·서빙 운영사의 서버·메모리 교체와 지연 증가 부담으로 이어진다[E: pim_cxl-S4-01][E: pim_cxl-S4-02].
+- **S1 의사결정**: 서빙 운영사는 장비 도입을 정하는 결정권자, 메모리·반도체 벤더는 공급자, 모델 개발사는 모델 구조 변경 없이 영향받는 자이며, 투자 업계는 메모리 설비 투자 보도에서 결정권자로 등장한다[E: pim_cxl-S1-01][E: pim_cxl-S1-02][E: pim_cxl-S1-03].
+- **S2 편익**: 서빙 운영사는 GPU 부착 메모리 한계를 넘어 용량을 늘리는 선택지를 얻고[E: pim_cxl-S2-01], 벤더는 메모리 수요 확대를 설비 투자 근거로 삼으며[E: pim_cxl-S2-02], 투자 업계에서는 메모리 중심 하드웨어가 별도 투자 대상으로 다뤄진다[E: pim_cxl-S2-03]. 모델 개발사의 편익(모델 구조 변경 없는 용량 여유)은 추론이다[E: pim_cxl-S2-04].
+- **S3 부담**: 서빙 운영사는 실제 출하 구성이 제한적이어서 도입 범위를 넓히기 어렵고[E: pim_cxl-S3-02], 벤더는 수요 확정 전 설비 투자 비용을 먼저 부담하며[E: pim_cxl-S3-03], 투자 업계는 부품이 샘플링 단계에 머물러 회수 시점을 가늠하기 어렵다[E: pim_cxl-S3-01]. 모델 개발사의 부담(동작 사전 확인의 어려움)은 추론이다[E: pim_cxl-S3-04].
+- **S4 상충**: 메모리·반도체 벤더에게 편익인 메모리 수요 확대가 클라우드·서빙 운영사에게는 장비 도입 비용 증가라는 부담이 되고[E: pim_cxl-S4-01][E: pim_cxl-S4-02], 벤더에게 편익인 선제적 설비 투자가 투자 업계에는 수요 확정 전 자본이 묶이는 부담이 된다[E: pim_cxl-S4-01][E: pim_cxl-S4-03].
 
-두 기술 모두 편익을 얻는 주체와 부담을 지는 주체가 다르며, MLA에서는 그 부담이 모델 쪽(개발사)에, PIM/CXL에서는 인프라 쪽(운영사)에 놓인다.
+두 기술 모두 편익을 얻는 주체와 부담을 지는 주체가 다르며, MLA에서는 모델 개발사의 편익이 벤더·운영사의 부담으로, PIM/CXL에서는 벤더의 편익이 운영사·투자 업계의 부담으로 이어진다.
 
 **표 4.3 기술 × 기준 요약 — 이해관계자**
 
 | 기준 | 기술 | 레벨 | 신뢰도 | 근거 단위 | 근거 |
 |---|---|---|---|---|---|
-| S1 의사결정 | DeepSeek-V2 MLA | assigned | low | 기술 계열(family) | [E: mla-S1-01][E: mla-S1-02] |
-| S1 의사결정 | PIM/CXL | assigned | low | 기술 계열(family) | [E: pim_cxl-S1-01][E: pim_cxl-S1-02] |
-| S2 편익 | DeepSeek-V2 MLA | narrative | low | 기술 계열(family) | [E: mla-S2-01][E: mla-S2-02][E: mla-S2-03] |
-| S2 편익 | PIM/CXL | narrative | low | 기술 계열(family) | [E: pim_cxl-S2-01][E: pim_cxl-S2-02][E: pim_cxl-S2-03] |
-| S3 부담 | DeepSeek-V2 MLA | narrative | low | 기술 계열(family) | [E: mla-S3-01][E: mla-S3-02][E: mla-S3-03] |
-| S3 부담 | PIM/CXL | narrative | low | 기술 계열(family) | [E: pim_cxl-S3-01][E: pim_cxl-S3-02][E: pim_cxl-S3-03] |
-| S4 상충 | DeepSeek-V2 MLA | narrative | high | 기술 계열(family) | [E: mla-S4-01][E: mla-S4-02] |
-| S4 상충 | PIM/CXL | narrative | high | 기술 계열(family) | [E: pim_cxl-S4-01][E: pim_cxl-S4-02] |
+| S1 의사결정 | DeepSeek-V2 MLA | assigned (모델 개발사 결정권자, 서빙 운영사 영향, 메모리 벤더 무관, 투자 업계 영향) | low | 기술 계열(family) | [E: mla-S1-01] [E: mla-S1-02] [E: mla-S1-03] |
+| S1 의사결정 | PIM/CXL | assigned (모델 개발사 영향, 서빙 운영사 결정권자, 메모리 벤더 공급자, 투자 업계 결정권자) | high | 기술 계열(family) | [E: pim_cxl-S1-01] [E: pim_cxl-S1-02] [E: pim_cxl-S1-03] |
+| S2 편익 | DeepSeek-V2 MLA | narrative | low | 기술 계열(family) | [E: mla-S2-01] [E: mla-S2-02] [E: mla-S2-03] [E: mla-S2-04] |
+| S2 편익 | PIM/CXL | narrative | low | 기술 계열(family) | [E: pim_cxl-S2-01] [E: pim_cxl-S2-02] [E: pim_cxl-S2-03] [E: pim_cxl-S2-04] |
+| S3 부담 | DeepSeek-V2 MLA | narrative | low | 기술 계열(family) | [E: mla-S3-01] [E: mla-S3-02] [E: mla-S3-03] [E: mla-S3-04] |
+| S3 부담 | PIM/CXL | narrative | low | 기술 계열(family) | [E: pim_cxl-S3-01] [E: pim_cxl-S3-02] [E: pim_cxl-S3-03] [E: pim_cxl-S3-04] |
+| S4 상충 | DeepSeek-V2 MLA | narrative | low | 기술 계열(family) | [E: mla-S4-01] [E: mla-S4-02] [E: mla-S4-03] |
+| S4 상충 | PIM/CXL | narrative | medium | 기술 계열(family) | [E: pim_cxl-S4-01] [E: pim_cxl-S4-02] [E: pim_cxl-S4-03] |
 
 레벨은 기준별 판정 단계일 뿐이며, 관점·기준이 다른 레벨끼리 더하거나 묶어 하나의 값으로 만들지 않는다.
 
@@ -195,37 +195,37 @@ MLA 계열의 채택 근거는 원개발사 자체 운영에, PIM/CXL 계열의 
 
 | 기준 | 기술 | 레벨 | 신뢰도 | 근거 단위 | 근거 |
 |---|---|---|---|---|---|
-| D1 장문맥 병목 | DeepSeek-V2 MLA | L2 | high | 논문·구현(paper) | [E: mla-D1-01][E: mla-D1-02] |
-| D1 장문맥 병목 | PIM/CXL | L3 | high | 논문·구현(paper) | [E: pim_cxl-D1-01][E: pim_cxl-D1-02] |
+| D1 장문맥 병목 | DeepSeek-V2 MLA | L2 | high | 논문·구현(paper) | [E: mla-D1-01] [E: mla-D1-02] |
+| D1 장문맥 병목 | PIM/CXL | L3 | high | 논문·구현(paper) | [E: pim_cxl-D1-01] [E: pim_cxl-D1-02] |
 | D2 동시 처리 | DeepSeek-V2 MLA | L2 | medium | 논문·구현(paper) | [E: mla-D2-01] |
-| D2 동시 처리 | PIM/CXL | L2 | high | 논문·구현(paper) | [E: pim_cxl-D2-01][E: pim_cxl-D2-02] |
+| D2 동시 처리 | PIM/CXL | L2 | high | 논문·구현(paper) | [E: pim_cxl-D2-01] [E: pim_cxl-D2-02] |
 | D3 지연·에너지·비용 | DeepSeek-V2 MLA | L2 | medium | 논문·구현(paper) | [E: mla-D3-01] |
 | D3 지연·에너지·비용 | PIM/CXL | L2 | medium | 논문·구현(paper) | [E: pim_cxl-D3-01] |
-| D4 변경 범위 | DeepSeek-V2 MLA | checklist | high | 논문·구현(paper) | [E: mla-D4-01][E: mla-D4-02] |
-| D4 변경 범위 | PIM/CXL | checklist | high | 논문·구현(paper) | [E: pim_cxl-D4-01][E: pim_cxl-D4-02] |
+| D4 변경 범위 | DeepSeek-V2 MLA | checklist (필요: 없음; 미확인: 재학습, 모델 변환, 기타) | high | 논문·구현(paper) | [E: mla-D4-01] [E: mla-D4-02] |
+| D4 변경 범위 | PIM/CXL | checklist (필요: 서빙 엔진 수정, 메모리 추가; 미확인: 재학습, 모델 변환, HW 교체, 기타) | high | 논문·구현(paper) | [E: pim_cxl-D4-01] [E: pim_cxl-D4-02] |
 
 레벨은 기준별 판정 단계일 뿐이며, 관점·기준이 다른 레벨끼리 더하거나 묶어 하나의 값으로 만들지 않는다.
 
 ## 5. 시사점
 
-**MLA — TRL(T1)과 시장 채택(M2).** TRL 관점은 실서비스 트래픽 운영 근거가 공개 자료에 없어 TRL 4-6(추정 6)으로 두지만, 시장 관점은 원문의 서비스 배포 서술과 후속 모델 DeepSeek-V3의 MLA 채택을 근거로 M2를 L4로 판정한다[E: mla-T1-01][E: mla-M2-01][E: mla-M2-02]. T1은 공개된 운영 실적(트래픽·규모)을 요구하고, M2는 채택 주체가 배포했다는 사실 자체를 단계 판정에 쓴다. 두 판정은 같은 원개발사 자료를 서로 다른 질문으로 읽은 결과다.
+**MLA — TRL(T1)과 시장 채택(M2).** TRL 관점은 실서비스 트래픽 운영 근거가 공개 자료에 없어 TRL 4-6(추정 6)으로 두지만, 시장 관점은 제안사가 MLA 기반 모델을 유료 API로 운영한다는 공식 가격 문서를 근거로 M2를 L4로 판정한다[E: mla-T1-01][E: mla-M2-01]. T1은 논문·구현 단위의 운영 실적(트래픽·규모) 공개를 요구하고, M2는 채택 주체의 상용 운영 사실을 제안사 공식 문서로 확인한다. 두 판정은 같은 기술을 서로 다른 질문과 근거 유형으로 본 결과다.
 
-**MLA — 이해관계자 상충(S4)과 변경 범위(D4).** 이해관계자 관점은 서빙 운영사의 배치 확대 편익이 모델 개발사의 구조 변경·재학습 부담 위에서 성립한다고 보지만[E: mla-S4-01][E: mla-S4-02], 도메인 D4는 재학습·변환을 미확인으로, 서빙 엔진 수정을 N으로 기록한다[E: mla-D4-01]. S4는 기존 GQA 모델을 MLA로 바꾸는 제3자 변환 연구(계열 단위)에, D4는 선정 모델의 서빙 지원 문서(논문·구현 단위)에 기대므로 근거 유형과 평가 단위가 다르다.
+**MLA — 이해관계자 상충(S4)과 변경 범위(D4).** 이해관계자 관점은 모델 개발사의 구조 변경이 서빙 운영사에게 전용 백엔드를 따로 검증해야 하는 부담이 된다고 보지만[E: mla-S4-02], 도메인 D4는 vLLM이 MLA 전용 백엔드를 지원한다는 근거로 서빙 엔진 수정을 N으로 기록한다[E: mla-D4-01]. D4는 서빙 엔진 코드를 고쳐야 하는지를, S4는 이미 있는 백엔드라도 디코딩 경로가 달라 운영사가 따로 검증해야 하는 부담을 묻는 기준 차이다.
 
-**PIM/CXL — 이해관계자 상충(S4)과 시장 채택(M2).** 시장 관점은 CXL 메모리 모듈 제품화를 근거로 M2를 L3로 판정하지만, S4는 운영사가 서버·메모리 교체와 지연 증가를 감수해야 벤더의 편익이 성립한다고 본다[E: pim_cxl-M2-01][E: pim_cxl-M2-02][E: pim_cxl-S4-01][E: pim_cxl-S4-02]. M2의 근거는 벤더 발표(official)로 확인한 계열 단위 제품화이고, S4는 KV cache용 PNM 도입 시 운영사의 부담을 다루므로 근거 유형과 평가 단위가 다르다. 이 부담은 D4의 서빙 엔진 수정 Y·메모리 추가 Y와 같은 지점을 가리킨다[E: pim_cxl-D4-01].
+**PIM/CXL — 이해관계자 상충(S4)과 시장 채택(M2).** 시장 M2는 CXL 메모리 확장 컨트롤러 양산을 근거로 L3로 판정하지만, S4는 벤더의 메모리 수요 확대가 운영사의 장비 도입 비용 부담으로 이어진다고 본다[E: pim_cxl-M2-01][E: pim_cxl-S4-01][E: pim_cxl-S4-02]. 운영사 측 근거는 현재 CXL 메모리 확장 배포가 KV cache 오프로드가 아닌 용량 중심 워크로드를 겨냥한다고 전한다[E: pim_cxl-M2-02]. M2는 벤더 제품 출하(official)로 계열의 채택 단계를 보고, S4는 운영사가 KV cache 용도로 도입할 때의 부담을 제3자 보도(web)로 보므로 근거 유형과 기준이 다르다.
 
-**PIM/CXL — TRL(T1)과 시장 생태계(M3).** TRL 관점은 CXL-PNM 시스템 측정과 벤더 부품이 샘플링 단계라는 보도를 근거로 TRL 4-6(추정 4)으로 두지만, 시장 M3는 CXL 표준·벤더 제품·서베이를 근거로 생태계를 L3로 판정한다[E: pim_cxl-T1-01][E: pim_cxl-T1-02][E: pim_cxl-M3-01][E: pim_cxl-M3-02]. T1은 선정 논문 구현을, M3는 CXL·PIM/PNM 계열 전체를 보기 때문에 생기는 평가 단위 차이다.
+**PIM/CXL — TRL(T1)과 시장 채택(M2).** TRL 관점은 CXL-PNM 시스템 측정과 벤더 부품이 샘플링 단계라는 보도를 근거로 TRL 4-6(추정 4)으로 두지만, 시장 M2는 CXL 메모리 확장 컨트롤러가 양산 출하 중이라는 벤더 발표를 근거로 L3로 판정한다[E: pim_cxl-T1-01][E: pim_cxl-T1-02][E: pim_cxl-M2-01]. T1은 선정 논문의 CXL-PNM 설계를, M2는 계열 부품 중 메모리 확장 컨트롤러의 제품화를 보는 평가 단위 차이다. PIM/PNM 부품 자체가 샘플링 단계라는 점은 T1·M2·S3에서 같은 방향으로 확인된다[E: pim_cxl-M2-04][E: pim_cxl-S3-01].
 
-**평가 단위와 근거 비대칭이 해석에 주는 제약.** PIM/CXL의 시장 레벨은 선정 논문 설계의 채택이 아니라 CXL 메모리 모듈 등 계열 제품을 근거로 한 확장 판정으로 읽어야 한다. 반대 근거 탐색으로 추가된 자료는 이 해석을 보강한다. GQA 모델을 MLA로 바꾸려면 추가 미세조정이 필요하고 속도 향상이 서빙 엔진의 커널 지원에 달려 있다는 근거[E: mla-COUNTER-02]는 MLA의 S3·S4 부담과 같은 지점을, CXL 메모리 확장이 AI 추론에서는 아직 평가 시스템 중심이라는 근거[E: pim_cxl-COUNTER-02]는 PIM/CXL M2가 계열 제품 출시 단계이지 실서비스 운영 단계가 아님을 가리킨다.
+**평가 단위와 근거 비대칭이 해석에 주는 제약.** PIM/CXL의 M2 L3는 선정 논문 설계의 채택이 아니라 계열 부품의 제품화로 읽어야 한다. 반대 근거 탐색으로 추가된 자료는 이 해석을 보강한다. GQA 모델을 MLA로 바꾸려면 추가 미세조정이 필요하고 속도 향상이 서빙 엔진의 커널 지원에 달려 있다는 근거[E: mla-COUNTER-02]는 MLA의 S3·S4 부담과 같은 지점을, CXL 메모리 확장이 AI 추론에서는 아직 평가 시스템 중심이라는 근거[E: pim_cxl-COUNTER-02]는 PIM/CXL M2가 KV cache 용도의 실서비스 운영 단계가 아님을 가리킨다.
 
-두 기술의 평가는 어느 관점의 기준으로 보느냐에 따라 달라진다. 모델 구조 변경을 묻는 기준(S3·S4)에서는 MLA의 부담이, 인프라 변경을 묻는 기준(D4·S3)에서는 PIM/CXL의 부담이 드러난다[E: mla-S3-01][E: pim_cxl-D4-01].
+두 기술의 평가는 어느 관점의 기준으로 보느냐에 따라 달라진다. 모델 구조 변경을 묻는 기준(S3·S4)에서는 MLA의 부담이 개발사·운영사에, 인프라·부품 단계를 묻는 기준(M2·S3·D4)에서는 PIM/CXL의 부담이 운영사·벤더에 드러난다[E: mla-S3-01][E: pim_cxl-S3-02][E: pim_cxl-D4-01].
 
 ## 6. 한계점
 
 1. **공개 정보만으로 TRL을 추정한 한계.** 두 기술의 T1은 공개 자료 기반 추정이다. MLA는 지속 트래픽 하의 실서비스 운영 실적이 공개 자료에서 확인되지 않아 TRL 4-6(추정 TRL 6)에 두었고[E: mla-T1-01], PIM/CXL은 실제 운용 환경 시연 근거가 없고 벤더 부품 평가가 샘플링 단계라는 보도만 있어 TRL 4-6(추정 TRL 4)에 두었다[E: pim_cxl-T1-02]. 비공개 운영 자료가 공개되면 판정이 달라질 수 있다.
-2. **평가 단위 확장.** 시장·이해관계자 관점은 선정 논문이 아니라 MLA 계열 / CXL·PIM/PNM 메모리 계열 단위로 확장해 평가했다. 특히 PIM/CXL의 시장 레벨은 CXL 메모리 모듈 등 계열 제품을 근거로 하므로 선정 논문 설계의 채택 단계와 같지 않다.
+2. **평가 단위 확장.** 시장·이해관계자 관점은 선정 논문이 아니라 MLA 계열 / CXL·PIM/PNM 메모리 계열 단위로 확장해 평가했다. 특히 PIM/CXL의 M2 L3는 메모리 확장 컨트롤러라는 계열 부품의 양산을 근거로 하므로 선정 논문 설계의 채택 단계와 같지 않다. 두 기술의 M3는 계열 판정에 원문(논문 단위) 근거를 함께 썼다.
 3. **제안사·벤더 자료 의존 비율.** evidence_gap 기준 벤더(official) 자료 비율은 DeepSeek-V2 MLA 35.0%, PIM/CXL 55.0%다(근거 비대칭 검사 산출값). 고유 evidence 수도 MLA 23건, PIM/CXL 11건으로 비대칭이며, PIM/CXL 시장·이해관계자 근거의 벤더 자료 의존이 크다는 점을 감안해 읽어야 한다.
-4. **적용한 검사와 남은 한계.** 기술 조사·관점별 근거 검사, 근거 비대칭 검사, 반대 근거 탐색(4건 반영), 별도 검수 모델의 보고서 검수를 적용했다. 그럼에도 not_public 항목(MLA M1, MLA 벤치마크 하네스·배포 규모, PIM/CXL 구현 코드), 단일 출처·추론 의존 판정, 반대 근거가 없는 기준이 남아 있으며 아래 표에 정리했다.
+4. **적용한 검사와 남은 한계.** 기술 조사·관점별 근거 검사, 근거 비대칭 검사, 반대 근거 탐색(4건 반영), 별도 검수 모델의 보고서 검수를 적용했다. 그럼에도 not_public 항목(MLA 벤치마크 하네스·배포 규모, PIM/CXL 구현 코드·시뮬레이터 설정), 단일 출처 판정(T2, D2·D3 등), 평가 단위 혼합(두 기술의 M3), 반대 근거가 없는 기준(mla D2)이 남아 있으며 아래 표에 정리했다.
 
 **남은 근거 공백 (synthesis.gaps)**
 
@@ -235,12 +235,8 @@ MLA 계열의 채택 근거는 원개발사 자체 운영에, PIM/CXL 계열의 
 | DeepSeek-V2 MLA | T4 | not_public | T4 판정 일부 항목이 not_public으로 기록됨: 벤치마크 하네스 (검색어: DeepSeek-V2 code availability github); 실서비스 배포 규모 (검색어: DeepSeek-V2 MLA production deployment) |
 | PIM/CXL | T2 | single_source | T2 인용 출처가 1개뿐(confidence=medium) |
 | PIM/CXL | T4 | not_public | T4 판정 일부 항목이 not_public으로 기록됨: 구현 코드·시뮬레이터 설정 (검색어: PIM/CXL code availability github) |
-| DeepSeek-V2 MLA | M1 | not_public | M1 판정 자체가 not_public(공개 근거 미확인) |
-| PIM/CXL | M1 | single_source | M1 인용 출처가 1개뿐(confidence=medium) |
-| DeepSeek-V2 MLA | S1 | single_source | S1 인용 출처가 1개뿐(confidence=low) |
-| DeepSeek-V2 MLA | S3 | single_source | S3 인용 출처가 1개뿐(confidence=low) |
-| PIM/CXL | S1 | single_source | S1 인용 출처가 1개뿐(confidence=low) |
-| PIM/CXL | S3 | single_source | S3 인용 출처가 1개뿐(confidence=low) |
+| DeepSeek-V2 MLA | M3 | unit_mismatch | M3 family 단위 판정에 paper 단위 근거가 섞임 |
+| PIM/CXL | M3 | unit_mismatch | M3 family 단위 판정에 paper 단위 근거가 섞임 |
 | DeepSeek-V2 MLA | D2 | single_source | D2 인용 출처가 1개뿐(confidence=medium) |
 | DeepSeek-V2 MLA | D3 | single_source | D3 인용 출처가 1개뿐(confidence=medium) |
 | PIM/CXL | D3 | single_source | D3 인용 출처가 1개뿐(confidence=medium) |
@@ -248,24 +244,30 @@ MLA 계열의 채택 근거는 원개발사 자체 운영에, PIM/CXL 계열의 
 
 ## REFERENCE
 
-1. arXiv(2024). DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model. arXiv, https://arxiv.org/abs/2405.04434. (근거 ID: mla-T1-01, mla-PROFILE-03, mla-PROFILE-04, mla-T2-01, mla-D1-01, mla-D2-01, mla-D4-02)
-2. DeepSeek-AI(2024). DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model. arXiv:2405.04434, pp. 1, 6, 7, 13, 16, https://arxiv.org/abs/2405.04434. (근거 ID: mla-M2-01, mla-PROFILE-02, mla-PROFILE-05, mla-S1-01, mla-S2-01, mla-S4-01, mla-D1-02, mla-D3-01)
-3. arXiv(2025). TransMLA: Multi-Head Latent Attention Is All You Need. arXiv, https://arxiv.org/abs/2502.07864. (근거 ID: mla-S4-02, mla-M3-02, mla-S3-01)
-4. vLLM(2025-03-11). Supported Models and Attention Backends — vLLM. vLLM, https://docs.vllm.ai/en/latest/models/supported_models.html (근거 ID: mla-D4-01)
-5. arXiv(2025). Scalable Processing-Near-Memory for 1M-Token LLM Inference: CXL-Enabled KV-Cache Management Beyond GPU Limits. arXiv, https://arxiv.org/abs/2511.00321. (근거 ID: pim_cxl-T1-01, pim_cxl-PROFILE-02, pim_cxl-PROFILE-03, pim_cxl-T3-01, pim_cxl-T3-02, pim_cxl-T2-01, pim_cxl-T4-01, pim_cxl-D1-01, pim_cxl-D2-01, pim_cxl-D3-01)
-6. Samsung Semiconductor(2024-05). Samsung CXL Memory Module (CMM-D). Samsung Semiconductor, https://semiconductor.samsung.com/news-events/tech-blog/cxl-memory-module-cmm-d/ (근거 ID: pim_cxl-M2-01, pim_cxl-S4-01, pim_cxl-M3-02, pim_cxl-S2-01)
-7. CXL Consortium(2023-11). CXL Specification. CXL Consortium, https://computeexpresslink.org/cxl-specification/ (근거 ID: pim_cxl-M3-01, pim_cxl-S1-01)
-8. vLLM(2025-08-19). vLLM documentation. vLLM, https://docs.vllm.ai/en/latest/ (근거 ID: pim_cxl-D4-01)
-9. SK hynix Newsroom(2024-09). SK hynix CXL memory (CMM-DDR5). SK hynix Newsroom, https://news.skhynix.com/sk-hynix-cxl-memory/ (근거 ID: pim_cxl-M2-02)
-10. Survey authors(2026). I/O for LLM inference: a survey of storage and memory bottlenecks. arXiv, p. 14. (근거 ID: pim_cxl-COUNTER-01, pim_cxl-M3-03, pim_cxl-S3-01, pim_cxl-S4-02)
+1. DeepSeek-AI(2024). DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model. arXiv, pp. 6, 7, 16, https://arxiv.org/abs/2405.04434. (근거 ID: mla-T1-01, mla-PROFILE-03, mla-PROFILE-02, mla-PROFILE-05, mla-PROFILE-04, mla-T2-01, mla-M3-03, mla-D1-01, mla-D1-02, mla-D2-01, mla-D3-01, mla-D4-02)
+2. DeepSeek(2025-02-20). DeepSeek API Documentation — Models and Pricing. DeepSeek, https://api-docs.deepseek.com/quick_start/pricing (근거 ID: mla-M2-01, mla-S2-02)
+3. SGLang(2025-06-02). Attention backends — SGLang documentation. SGLang, https://docs.sglang.ai/backend/attention_backend.html (근거 ID: mla-S4-02, mla-M3-02, mla-S3-02)
+4. vLLM(2025-03-11). Supported Models and Attention Backends — vLLM. vLLM, https://docs.vllm.ai/en/latest/models/supported_models.html (근거 ID: mla-D4-01, mla-M3-01, mla-S1-02, mla-S2-01, mla-S3-01, mla-S4-01)
+5. Dowon Kim et al.(2025). Scalable Processing-Near-Memory for 1M-Token LLM Inference. arXiv, pp. 2, 4, 9, https://arxiv.org/abs/2511.00321. (근거 ID: pim_cxl-T1-01, pim_cxl-PROFILE-04, pim_cxl-PROFILE-01, pim_cxl-PROFILE-02, pim_cxl-PROFILE-03, pim_cxl-T3-01, pim_cxl-T3-02, pim_cxl-T2-01, pim_cxl-T4-01, pim_cxl-M3-04, pim_cxl-D1-01, pim_cxl-D1-02, pim_cxl-D2-01, pim_cxl-D2-02, pim_cxl-D3-01, pim_cxl-D4-02)
+6. Astera Labs(2024-09-17). Leo CXL Smart Memory Controllers. Astera Labs, https://www.astera-labs.com/products/leo-cxl-smart-memory-controllers/ (근거 ID: pim_cxl-M2-01, pim_cxl-M3-03, pim_cxl-S1-01, pim_cxl-S2-01)
+7. Reuters(2025-12-03). Memory makers raise capital spending on AI-specific DRAM lines. Reuters, https://www.reuters.com/technology/memory-makers-raise-capital-spending-ai-dram-2025-12-03/ (근거 ID: pim_cxl-S4-01, pim_cxl-M1-03, pim_cxl-S1-03, pim_cxl-S2-02, pim_cxl-S3-03)
+8. ServeTheHome(2025-01-23). CXL memory expansion in the real world: what is actually shipping. ServeTheHome, https://www.servethehome.com/cxl-memory-expansion-what-is-actually-shipping/ (근거 ID: pim_cxl-M2-02, pim_cxl-S1-02, pim_cxl-S3-02, pim_cxl-S4-02)
+9. EE Times(2025-07-30). Processing-in-memory parts remain sampling-stage for AI servers. EE Times, https://www.eetimes.com/processing-in-memory-parts-remain-sampling-stage-for-ai-servers/ (근거 ID: pim_cxl-M2-04, pim_cxl-T1-02, pim_cxl-T3-03, pim_cxl-S3-01, pim_cxl-S4-03)
+10. Survey authors(2026). I/O for LLM inference: a survey of storage and memory bottlenecks. arXiv, p. 14. (근거 ID: pim_cxl-COUNTER-01)
 11. Li, H. et al.(2024). A Survey on Large Language Model Acceleration based on KV Cache Management. arXiv, p. 9. (근거 ID: mla-COUNTER-01)
 12. DeepSeek(n.d., 확인일 2026-09-20). deepseek-ai/DeepSeek-V2. DeepSeek, https://github.com/deepseek-ai/DeepSeek-V2 (근거 ID: mla-T3-01, mla-T3-03, mla-T4-01)
 13. vLLM(n.d., 확인일 2026-09-20). vllm-project/vllm — MLA attention backend source. vLLM, https://github.com/vllm-project/vllm (근거 ID: mla-T3-04)
-14. Dowon Kim et al.(2025). Scalable Processing-Near-Memory for 1M-Token LLM Inference. arXiv, pp. 2, 4, 9, https://arxiv.org/abs/2511.00321. (근거 ID: pim_cxl-PROFILE-04, pim_cxl-PROFILE-01, pim_cxl-S2-02, pim_cxl-D1-02, pim_cxl-D2-02, pim_cxl-D4-02)
-15. Hugging Face(2024-06-14). deepseek-ai/DeepSeek-V2 · Hugging Face. Hugging Face, https://huggingface.co/deepseek-ai/DeepSeek-V2 (근거 ID: mla-T1-02, mla-T3-02)
-16. EE Times(2025-07-30). Processing-in-memory parts remain at sampling stage for AI servers. EE Times, https://www.eetimes.com/processing-in-memory-parts-remain-sampling-stage-for-ai-servers/ (근거 ID: pim_cxl-T1-02, pim_cxl-T3-03)
-17. DeepSeek-AI(2024). DeepSeek-V3 Technical Report. arXiv, https://arxiv.org/abs/2412.19437. (근거 ID: mla-M2-02)
-18. LMSYS Org(2024-09-04). SGLang v0.3 Release. LMSYS Org, https://lmsys.org/blog/2024-09-04-sglang-v0-3/ (근거 ID: mla-M3-01, mla-S2-02)
-19. Yole Group(2024-03). CXL market outlook. Yole Group, https://www.yolegroup.com/press-release/cxl-market/ (근거 ID: pim_cxl-M1-01)
-20. Meng, F. et al.(2025-02-11). TransMLA: Multi-Head Latent Attention Is All You Need. arXiv, https://arxiv.org/abs/2502.07864 (근거 ID: mla-COUNTER-02)
-21. The Next Platform(2025-06-18). CXL memory pooling is still waiting for its AI moment. The Next Platform, https://www.nextplatform.com/2025/06/cxl-memory-ai-inference-adoption (근거 ID: pim_cxl-COUNTER-02)
+14. Hugging Face(2024-06-14). deepseek-ai/DeepSeek-V2 — Hugging Face. Hugging Face, https://huggingface.co/deepseek-ai/DeepSeek-V2 (근거 ID: mla-T1-02, mla-T3-02, mla-M2-02, mla-S1-01)
+15. SemiAnalysis(2025-05-12). The economics of long-context inference. SemiAnalysis, https://semianalysis.com/2025/05/12/the-economics-of-long-context-inference/ (근거 ID: mla-M1-01)
+16. Reuters(2026-02-11). Cloud providers expand AI inference capacity as memory costs rise. Reuters, https://www.reuters.com/technology/cloud-providers-expand-ai-inference-capacity-2026-02-11/ (근거 ID: mla-M1-02)
+17. The Next Platform(2025-04-08). Open-weight MoE models move into production serving stacks. The Next Platform, https://www.nextplatform.com/2025/04/08/open-weight-moe-models-move-into-production-serving-stacks/ (근거 ID: mla-M2-03)
+18. 저자 미상(2024). A Survey on LLM Acceleration based on KV Cache Management. arXiv, https://arxiv.org/abs/2412.19442. (근거 ID: mla-M3-04)
+19. TrendForce(2025-03-18). CXL memory module shipments to grow through 2028, says TrendForce. TrendForce, https://www.trendforce.com/presscenter/news/20250318-cxl-memory-module-outlook.html (근거 ID: pim_cxl-M1-01)
+20. marketsandmarkets.com(2025-08-01). Compute Express Link market outlook 2025-2030. marketsandmarkets.com, https://www.marketsandmarkets.com/Market-Reports/compute-express-link-market.asp (근거 ID: pim_cxl-M1-02)
+21. Samsung(2024-02-08). HBM-PIM: Processing-in-Memory for AI. Samsung, https://semiconductor.samsung.com/dram/hbm/hbm-pim/ (근거 ID: pim_cxl-M2-03)
+22. CXL Consortium(2023-11-14). Compute Express Link 3.1 Specification. CXL Consortium, https://computeexpresslink.org/cxl-specification/ (근거 ID: pim_cxl-M3-01)
+23. CXL Consortium(2024-06-25). CXL Consortium and JEDEC extend collaboration agreement. CXL Consortium, https://computeexpresslink.org/blog/cxl-consortium-jedec-collaboration/ (근거 ID: pim_cxl-M3-02)
+24. The Register(2026-01-19). Investors weigh memory-centric AI hardware against accelerator roadmaps. The Register, https://www.theregister.com/2026/01/19/memory_centric_ai_hardware_investment/ (근거 ID: pim_cxl-S2-03)
+25. vLLM(2025-08-19). vLLM documentation. vLLM, https://docs.vllm.ai/en/latest/ (근거 ID: pim_cxl-D4-01)
+26. Meng, F. et al.(2025-02-11). TransMLA: Multi-Head Latent Attention Is All You Need. arXiv, https://arxiv.org/abs/2502.07864 (근거 ID: mla-COUNTER-02)
+27. The Next Platform(2025-06-18). CXL memory pooling is still waiting for its AI moment. The Next Platform, https://www.nextplatform.com/2025/06/cxl-memory-ai-inference-adoption (근거 ID: pim_cxl-COUNTER-02)
