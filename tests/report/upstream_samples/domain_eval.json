@@ -1,0 +1,422 @@
+[
+  {
+    "tech_id": "mla",
+    "perspective": "domain",
+    "criterion_id": "D1",
+    "level": "L2",
+    "level_estimate": null,
+    "content": "KV cache 93.3% 감소는 토큰당 저장 원소 수를 줄이는 구조적 효과이므로 컨텍스트 길이에 비례해 적용된다. 다만 128K 장문맥에서의 메모리 실측은 제시되지 않아 간접 근거다.",
+    "evidence": [
+      {
+        "evidence_id": "mla-D1-01",
+        "source_type": "paper",
+        "unit": "paper",
+        "quote": "Compared with DeepSeek 67B, DeepSeek-V2 achieves significantly stronger performance, and meanwhile saves 42.5% of training costs, reduces the KV cache by 93.3%, and boosts the maximum generation throughput to 5.76 times.",
+        "locator": "deepseek_v2 p.1 §Abstract",
+        "title": "DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model",
+        "authors": "DeepSeek-AI",
+        "publisher": "arXiv:2405.04434",
+        "published_date": "2024-06-19",
+        "url": "https://arxiv.org/abs/2405.04434",
+        "accessed_date": null,
+        "doc_id": "deepseek_v2",
+        "page": 1,
+        "section": "Abstract",
+        "chunk_id": "deepseek_v2:001:04",
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "medium",
+    "evidence_unit": "paper",
+    "measurements": [
+      {
+        "metric": "KV cache reduction",
+        "value": "93.3%",
+        "unit": null,
+        "model_size": "236B total (21B active)",
+        "context_length": null,
+        "hardware": null,
+        "baseline": "DeepSeek 67B (MHA)",
+        "batch_size": null,
+        "condition_note": "토큰당 KV cache 기준, 컨텍스트별 실측 아님",
+        "evidence_id": "mla-D1-01"
+      }
+    ],
+    "details": {
+      "directness": "L2",
+      "extrapolation_logic": "토큰당 KV 원소 수 감소는 컨텍스트 길이와 무관한 비율이므로 128K 장문맥에도 같은 비율을 적용할 수 있다고 외삽했다."
+    },
+    "generated_at": "2026-09-20T10:00:00",
+    "retry_count": 0
+  },
+  {
+    "tech_id": "mla",
+    "perspective": "domain",
+    "criterion_id": "D2",
+    "level": "L3",
+    "level_estimate": null,
+    "content": "실서비스 요청 길이 분포로 측정한 생성 처리량이 단일 노드 8x H800에서 50K tokens/s를 넘었다. 데이터센터 서빙 조건과 직접 연결된다.",
+    "evidence": [
+      {
+        "evidence_id": "mla-D2-01",
+        "source_type": "paper",
+        "unit": "paper",
+        "quote": "On a single node with 8 H800 GPUs, DeepSeek-V2 achieves a generation throughput exceeding 50K tokens per second, which is 5.76 times the maximum generation throughput of DeepSeek 67B.",
+        "locator": "deepseek_v2 p.13 §3.2.3 Inference Efficiency",
+        "title": "DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model",
+        "authors": "DeepSeek-AI",
+        "publisher": "arXiv:2405.04434",
+        "published_date": "2024-06-19",
+        "url": "https://arxiv.org/abs/2405.04434",
+        "accessed_date": null,
+        "doc_id": "deepseek_v2",
+        "page": 13,
+        "section": "3.2.3 Inference Efficiency",
+        "chunk_id": "deepseek_v2:013:07",
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "medium",
+    "evidence_unit": "paper",
+    "measurements": [
+      {
+        "metric": "generation throughput",
+        "value": ">50K tokens/s",
+        "unit": null,
+        "model_size": "236B total (21B active)",
+        "context_length": null,
+        "hardware": "8x H800 (single node)",
+        "baseline": "DeepSeek 67B 대비 5.76x",
+        "batch_size": null,
+        "condition_note": "FP8 + KV 6-bit 양자화, 실서비스 길이 분포",
+        "evidence_id": "mla-D2-01"
+      }
+    ],
+    "details": {
+      "directness": "L3"
+    },
+    "generated_at": "2026-09-20T10:00:00",
+    "retry_count": 0
+  },
+  {
+    "tech_id": "mla",
+    "perspective": "domain",
+    "criterion_id": "D3",
+    "level": "L2",
+    "level_estimate": null,
+    "content": "prompt 입력 처리량이 100K tokens/s를 넘는다는 보고는 있으나 TTFT/TPOT, 토큰당 에너지, 총비용은 보고되지 않았다. 처리량에서 지연·비용을 외삽한 간접 근거다.",
+    "evidence": [
+      {
+        "evidence_id": "mla-D3-01",
+        "source_type": "paper",
+        "unit": "paper",
+        "quote": "In addition, the prompt input throughput of DeepSeek-V2 exceeds 100K tokens per second.",
+        "locator": "deepseek_v2 p.13 §3.2.3 Inference Efficiency",
+        "title": "DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model",
+        "authors": "DeepSeek-AI",
+        "publisher": "arXiv:2405.04434",
+        "published_date": "2024-06-19",
+        "url": "https://arxiv.org/abs/2405.04434",
+        "accessed_date": null,
+        "doc_id": "deepseek_v2",
+        "page": 13,
+        "section": "3.2.3 Inference Efficiency",
+        "chunk_id": "deepseek_v2:013:08",
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "medium",
+    "evidence_unit": "paper",
+    "measurements": [
+      {
+        "metric": "prompt input throughput",
+        "value": ">100K tokens/s",
+        "unit": null,
+        "model_size": "236B total (21B active)",
+        "context_length": null,
+        "hardware": "8x H800 (single node)",
+        "baseline": null,
+        "batch_size": null,
+        "condition_note": null,
+        "evidence_id": "mla-D3-01"
+      }
+    ],
+    "details": {
+      "directness": "L2",
+      "extrapolation_logic": "입력 처리량이 높으면 같은 하드웨어에서 prefill 지연과 토큰당 비용이 낮아질 수 있다고 외삽했으나 직접 측정은 없다."
+    },
+    "generated_at": "2026-09-20T10:00:00",
+    "retry_count": 0
+  },
+  {
+    "tech_id": "mla",
+    "perspective": "domain",
+    "criterion_id": "D4",
+    "level": "checklist",
+    "level_estimate": null,
+    "content": "MLA는 사전학습 단계의 어텐션 구조이므로 모델 재학습이 필요하고, 서빙 엔진은 MLA 커널을 지원해야 한다. HW 교체·메모리 추가는 필요하지 않다.",
+    "evidence": [
+      {
+        "evidence_id": "mla-D4-01",
+        "source_type": "paper",
+        "unit": "paper",
+        "quote": "DeepSeek-V2 adopts innovative architectures including Multi-head Latent Attention (MLA) and DeepSeekMoE.",
+        "locator": "deepseek_v2 p.1 §Abstract",
+        "title": "DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model",
+        "authors": "DeepSeek-AI",
+        "publisher": "arXiv:2405.04434",
+        "published_date": "2024-06-19",
+        "url": "https://arxiv.org/abs/2405.04434",
+        "accessed_date": null,
+        "doc_id": "deepseek_v2",
+        "page": 1,
+        "section": "Abstract",
+        "chunk_id": "deepseek_v2:001:05",
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      },
+      {
+        "evidence_id": "mla-D4-02",
+        "source_type": "web",
+        "unit": "paper",
+        "quote": "SGLang v0.3 ... up to 7x faster DeepSeek MLA",
+        "locator": "https://lmsys.org/blog/2024-09-04-sglang-v0-3/",
+        "title": "SGLang v0.3 Release",
+        "authors": null,
+        "publisher": "LMSYS Org",
+        "published_date": "2024-09-04",
+        "url": "https://lmsys.org/blog/2024-09-04-sglang-v0-3/",
+        "accessed_date": "2026-09-20",
+        "doc_id": null,
+        "page": null,
+        "section": null,
+        "chunk_id": null,
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "high",
+    "evidence_unit": "paper",
+    "measurements": [],
+    "details": {
+      "checklist": {
+        "model_retrain": "Y",
+        "model_convert": "unknown",
+        "serving_engine_change": "Y",
+        "hw_replace": "N",
+        "memory_add": "N",
+        "other": "N"
+      }
+    },
+    "generated_at": "2026-09-20T10:00:00",
+    "retry_count": 0
+  },
+  {
+    "tech_id": "pim_cxl",
+    "perspective": "domain",
+    "criterion_id": "D1",
+    "level": "L3",
+    "level_estimate": null,
+    "content": "1M 토큰 컨텍스트의 KV cache를 CXL 메모리 계층으로 이전해 GPU HBM 용량 한계를 넘는 추론을 시뮬레이션으로 보였다. 장문맥 병목과 직접 연결된다.",
+    "evidence": [
+      {
+        "evidence_id": "pim_cxl-D1-01",
+        "source_type": "paper",
+        "unit": "paper",
+        "quote": "(fixture) Our simulated system sustains inference at a context length of 1M tokens, which exceeds the HBM capacity of the GPU baseline.",
+        "locator": "pim_cxl_1m p.9 §6 Evaluation",
+        "title": "1M-Token LLM Inference with CXL-based Processing-Near-Memory",
+        "authors": "(픽스처) 저자 확인 필요",
+        "publisher": "arXiv",
+        "published_date": "2025-10",
+        "url": null,
+        "accessed_date": null,
+        "doc_id": "pim_cxl_1m",
+        "page": 9,
+        "section": "6 Evaluation",
+        "chunk_id": "pim_cxl_1m:009:04",
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "medium",
+    "evidence_unit": "paper",
+    "measurements": [
+      {
+        "metric": "supported context length",
+        "value": "1M tokens",
+        "unit": null,
+        "model_size": null,
+        "context_length": null,
+        "hardware": "시뮬레이션: GPU + CXL-PNM",
+        "baseline": "GPU HBM only",
+        "batch_size": null,
+        "condition_note": "픽스처용 예시 값 — 원문 확인 필요",
+        "evidence_id": "pim_cxl-D1-01"
+      }
+    ],
+    "details": {
+      "directness": "L3"
+    },
+    "generated_at": "2026-09-20T10:00:00",
+    "retry_count": 0
+  },
+  {
+    "tech_id": "pim_cxl",
+    "perspective": "domain",
+    "criterion_id": "D2",
+    "level": "L2",
+    "level_estimate": null,
+    "content": "메모리 용량 확장으로 동시 세션 수를 늘릴 수 있다는 시뮬레이션 결과가 있으나 실제 서빙 배치 측정은 없다.",
+    "evidence": [
+      {
+        "evidence_id": "pim_cxl-D2-01",
+        "source_type": "paper",
+        "unit": "paper",
+        "quote": "(fixture) Expanding KV capacity with CXL memory allows a larger number of concurrent requests in simulation.",
+        "locator": "pim_cxl_1m p.10 §6.3 Throughput",
+        "title": "1M-Token LLM Inference with CXL-based Processing-Near-Memory",
+        "authors": "(픽스처) 저자 확인 필요",
+        "publisher": "arXiv",
+        "published_date": "2025-10",
+        "url": null,
+        "accessed_date": null,
+        "doc_id": "pim_cxl_1m",
+        "page": 10,
+        "section": "6.3 Throughput",
+        "chunk_id": "pim_cxl_1m:010:01",
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "medium",
+    "evidence_unit": "paper",
+    "measurements": [
+      {
+        "metric": "concurrent requests",
+        "value": "증가(시뮬레이션)",
+        "unit": null,
+        "model_size": null,
+        "context_length": null,
+        "hardware": "시뮬레이션: GPU + CXL-PNM",
+        "baseline": null,
+        "batch_size": null,
+        "condition_note": "픽스처용 예시 값 — 원문 확인 필요",
+        "evidence_id": "pim_cxl-D2-01"
+      }
+    ],
+    "details": {
+      "directness": "L2",
+      "extrapolation_logic": "시뮬레이션상 KV 용량 확대가 동시 요청 수 증가로 이어졌으므로 실서버에서도 같은 방향일 것으로 외삽했다."
+    },
+    "generated_at": "2026-09-20T10:00:00",
+    "retry_count": 0
+  },
+  {
+    "tech_id": "pim_cxl",
+    "perspective": "domain",
+    "criterion_id": "D3",
+    "level": "L2",
+    "level_estimate": null,
+    "content": "CXL 링크 추가 지연이 페이지 선택 정확도가 낮을 때 병목이 된다는 원문 서술이 있다. 에너지·총비용은 보고되지 않았다.",
+    "evidence": [
+      {
+        "evidence_id": "pim_cxl-D3-01",
+        "source_type": "paper",
+        "unit": "paper",
+        "quote": "(fixture) The additional latency of the CXL link remains a bottleneck when page selection accuracy is low.",
+        "locator": "pim_cxl_1m p.11 §7 Discussion",
+        "title": "1M-Token LLM Inference with CXL-based Processing-Near-Memory",
+        "authors": "(픽스처) 저자 확인 필요",
+        "publisher": "arXiv",
+        "published_date": "2025-10",
+        "url": null,
+        "accessed_date": null,
+        "doc_id": "pim_cxl_1m",
+        "page": 11,
+        "section": "7 Discussion",
+        "chunk_id": "pim_cxl_1m:011:03",
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "medium",
+    "evidence_unit": "paper",
+    "measurements": [
+      {
+        "metric": "CXL link latency impact",
+        "value": "정확도 낮을 때 병목(정성)",
+        "unit": null,
+        "model_size": null,
+        "context_length": null,
+        "hardware": "시뮬레이션: GPU + CXL-PNM",
+        "baseline": null,
+        "batch_size": null,
+        "condition_note": "픽스처용 예시 — 원문 확인 필요",
+        "evidence_id": "pim_cxl-D3-01"
+      }
+    ],
+    "details": {
+      "directness": "L2",
+      "extrapolation_logic": "시뮬레이터의 링크 지연 모델이 실제 CXL 장치 지연과 같다고 가정했다."
+    },
+    "generated_at": "2026-09-20T10:00:00",
+    "retry_count": 0
+  },
+  {
+    "tech_id": "pim_cxl",
+    "perspective": "domain",
+    "criterion_id": "D4",
+    "level": "checklist",
+    "level_estimate": null,
+    "content": "모델 재학습·변환은 필요하지 않으나, 서빙 엔진의 KV 배치 경로 수정과 CXL 지원 HW·메모리 추가가 필요하다.",
+    "evidence": [
+      {
+        "evidence_id": "pim_cxl-D4-01",
+        "source_type": "paper",
+        "unit": "paper",
+        "quote": "(fixture) We offload the KV cache of long-context requests to CXL-attached memory and execute token-page selection with processing-near-memory units.",
+        "locator": "pim_cxl_1m p.2 §1 Introduction",
+        "title": "1M-Token LLM Inference with CXL-based Processing-Near-Memory",
+        "authors": "(픽스처) 저자 확인 필요",
+        "publisher": "arXiv",
+        "published_date": "2025-10",
+        "url": null,
+        "accessed_date": null,
+        "doc_id": "pim_cxl_1m",
+        "page": 2,
+        "section": "1 Introduction",
+        "chunk_id": "pim_cxl_1m:002:02",
+        "search_query": null,
+        "searched_at": null,
+        "search_scope": null
+      }
+    ],
+    "confidence": "medium",
+    "evidence_unit": "paper",
+    "measurements": [],
+    "details": {
+      "checklist": {
+        "model_retrain": "N",
+        "model_convert": "N",
+        "serving_engine_change": "Y",
+        "hw_replace": "Y",
+        "memory_add": "Y",
+        "other": "unknown"
+      }
+    },
+    "generated_at": "2026-09-20T10:00:00",
+    "retry_count": 0
+  }
+]

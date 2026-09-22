@@ -1,0 +1,244 @@
+{
+  "agreements": [
+    {
+      "tech_id": "mla",
+      "perspectives": [
+        "trl",
+        "market"
+      ],
+      "criterion_ids": [
+        "T1",
+        "M2"
+      ],
+      "statement": "선정 논문의 서비스 배포 서술(T1)과 계열 단위 상용 운영 사례(M2)가 모두 운용 단계의 근거를 가리킨다.",
+      "evidence_ids": [
+        "mla-T1-01",
+        "mla-M2-01"
+      ]
+    },
+    {
+      "tech_id": "pim_cxl",
+      "perspectives": [
+        "trl",
+        "domain"
+      ],
+      "criterion_ids": [
+        "T2",
+        "D2"
+      ],
+      "statement": "검증 환경이 시뮬레이션(T2 L2)이라는 판정과 동시 처리 근거의 직접성 L2(D2)가 같은 근거 한계를 가리킨다.",
+      "evidence_ids": [
+        "pim_cxl-T2-01",
+        "pim_cxl-D2-01"
+      ]
+    },
+    {
+      "tech_id": null,
+      "perspectives": [
+        "stakeholder",
+        "domain"
+      ],
+      "criterion_ids": [
+        "S3",
+        "D4"
+      ],
+      "statement": "두 기술 모두 변경 범위(D4)에서 Y로 기록된 항목이 이해관계자 부담(S3)으로 이어진다.",
+      "evidence_ids": [
+        "mla-D4-01",
+        "mla-S3-01",
+        "pim_cxl-D4-01",
+        "pim_cxl-S3-01"
+      ]
+    }
+  ],
+  "conflicts": [
+    {
+      "tech_id": "mla",
+      "perspective_a": "stakeholder",
+      "criterion_a": "S4",
+      "perspective_b": "market",
+      "criterion_b": "M2",
+      "statement": "이해관계자 관점은 운영사의 배치 확대 편익이 개발사의 구조 변경 부담 위에서 성립한다고 보나(S4), 시장 관점은 DeepSeek 자사 모델의 상용 운영을 근거로 M2를 L4로 판정한다.",
+      "cause": "평가 단위·기준 차이: M2는 계열 단위 채택 사례에 원개발사 자체 운영을 포함해 판정하고, S4는 제3자 개발사가 기존 모델을 MLA로 전환할 때의 부담을 다룬다.",
+      "evidence_ids": [
+        "mla-S4-01",
+        "mla-S4-02",
+        "mla-M2-01",
+        "mla-M2-02"
+      ]
+    },
+    {
+      "tech_id": "mla",
+      "perspective_a": "trl",
+      "criterion_a": "T1",
+      "perspective_b": "domain",
+      "criterion_b": "D1",
+      "statement": "TRL은 서비스 배포를 근거로 TRL 7-9 구간으로 추정하나, 도메인 D1은 128K 장문맥 메모리 실측이 없어 직접성 L2로 판정한다.",
+      "cause": "기준 차이·직접성 차이: T1은 구현의 검증 환경을, D1은 우리 도메인 조건에서의 수치 직접성을 묻는다.",
+      "evidence_ids": [
+        "mla-T1-01",
+        "mla-D1-01"
+      ]
+    },
+    {
+      "tech_id": "pim_cxl",
+      "perspective_a": "stakeholder",
+      "criterion_a": "S4",
+      "perspective_b": "market",
+      "criterion_b": "M2",
+      "statement": "시장 관점은 CXL 메모리 모듈 제품화를 근거로 M2를 L3로 판정하나, S4는 운영사가 설비 교체와 지연 증가를 감수해야 벤더의 편익이 성립한다고 본다.",
+      "cause": "근거 유형·평가 단위 차이: M2는 벤더 발표(official)로 계열 단위 제품화를 확인한 것이고, S4는 KV cache용 PNM 도입 시 운영사 부담을 다룬다.",
+      "evidence_ids": [
+        "pim_cxl-S4-01",
+        "pim_cxl-S4-02",
+        "pim_cxl-M2-01",
+        "pim_cxl-M2-02"
+      ]
+    },
+    {
+      "tech_id": "pim_cxl",
+      "perspective_a": "trl",
+      "criterion_a": "T1",
+      "perspective_b": "market",
+      "criterion_b": "M3",
+      "statement": "TRL은 시뮬레이션 평가를 근거로 TRL 4-6 구간 하단으로 추정하나, 시장 M3는 표준·벤더 제품·서베이를 근거로 L3로 판정한다.",
+      "cause": "평가 단위 차이: T1은 선정 논문 구현(paper), M3는 CXL·PIM/PNM 계열 전체(family)를 본다.",
+      "evidence_ids": [
+        "pim_cxl-T1-01",
+        "pim_cxl-M3-01",
+        "pim_cxl-M3-02"
+      ]
+    }
+  ],
+  "gaps": [
+    {
+      "tech_id": "mla",
+      "criterion_id": "T2",
+      "gap_type": "single_source",
+      "description": "T2 인용 출처가 1개뿐(confidence=medium)"
+    },
+    {
+      "tech_id": "mla",
+      "criterion_id": "T4",
+      "gap_type": "not_public",
+      "description": "T4 판정 일부 항목이 not_public으로 기록됨"
+    },
+    {
+      "tech_id": "pim_cxl",
+      "criterion_id": "T1",
+      "gap_type": "single_source",
+      "description": "T1 인용 출처가 1개뿐(confidence=medium)"
+    },
+    {
+      "tech_id": "pim_cxl",
+      "criterion_id": "T2",
+      "gap_type": "single_source",
+      "description": "T2 인용 출처가 1개뿐(confidence=medium)"
+    },
+    {
+      "tech_id": "pim_cxl",
+      "criterion_id": "T3",
+      "gap_type": "not_public",
+      "description": "T3 판정 일부 항목이 not_public으로 기록됨"
+    },
+    {
+      "tech_id": "pim_cxl",
+      "criterion_id": "T4",
+      "gap_type": "not_public",
+      "description": "T4 판정 일부 항목이 not_public으로 기록됨"
+    },
+    {
+      "tech_id": "mla",
+      "criterion_id": "M1",
+      "gap_type": "not_public",
+      "description": "M1 판정 자체가 not_public(공개 근거 미확인)"
+    },
+    {
+      "tech_id": "pim_cxl",
+      "criterion_id": "M1",
+      "gap_type": "single_source",
+      "description": "M1 인용 출처가 1개뿐(confidence=medium)"
+    },
+    {
+      "tech_id": "mla",
+      "criterion_id": "S1",
+      "gap_type": "single_source",
+      "description": "S1 인용 출처가 1개뿐(confidence=low)"
+    },
+    {
+      "tech_id": "mla",
+      "criterion_id": "S3",
+      "gap_type": "single_source",
+      "description": "S3 인용 출처가 1개뿐(confidence=low)"
+    },
+    {
+      "tech_id": "pim_cxl",
+      "criterion_id": "S1",
+      "gap_type": "single_source",
+      "description": "S1 인용 출처가 1개뿐(confidence=low)"
+    },
+    {
+      "tech_id": "pim_cxl",
+      "criterion_id": "S3",
+      "gap_type": "single_source",
+      "description": "S3 인용 출처가 1개뿐(confidence=low)"
+    },
+    {
+      "tech_id": "mla",
+      "criterion_id": "D1",
+      "gap_type": "single_source",
+      "description": "D1 인용 출처가 1개뿐(confidence=medium)"
+    },
+    {
+      "tech_id": "mla",
+      "criterion_id": "D2",
+      "gap_type": "single_source",
+      "description": "D2 인용 출처가 1개뿐(confidence=medium)"
+    },
+    {
+      "tech_id": "mla",
+      "criterion_id": "D3",
+      "gap_type": "single_source",
+      "description": "D3 인용 출처가 1개뿐(confidence=medium)"
+    },
+    {
+      "tech_id": "pim_cxl",
+      "criterion_id": "D1",
+      "gap_type": "single_source",
+      "description": "D1 인용 출처가 1개뿐(confidence=medium)"
+    },
+    {
+      "tech_id": "pim_cxl",
+      "criterion_id": "D2",
+      "gap_type": "single_source",
+      "description": "D2 인용 출처가 1개뿐(confidence=medium)"
+    },
+    {
+      "tech_id": "pim_cxl",
+      "criterion_id": "D3",
+      "gap_type": "single_source",
+      "description": "D3 인용 출처가 1개뿐(confidence=medium)"
+    },
+    {
+      "tech_id": "pim_cxl",
+      "criterion_id": "D4",
+      "gap_type": "single_source",
+      "description": "D4 인용 출처가 1개뿐(confidence=medium)"
+    },
+    {
+      "tech_id": "pim_cxl",
+      "criterion_id": "M2",
+      "gap_type": "opposing_missing",
+      "description": "채택 근거가 벤더 발표 자료뿐이고 채택 한계·반례 근거가 없음. counter_evidence(pim_cxl-COUNTER-01)는 인터커넥트 병목만 다룬다."
+    },
+    {
+      "tech_id": "mla",
+      "criterion_id": "D2",
+      "gap_type": "opposing_missing",
+      "description": "처리량 근거가 원저자 측정뿐이고 제3자 측정·반례가 없음."
+    }
+  ],
+  "unit_notes": "MLA는 TRL(paper)과 시장 M2(family)가 모두 원개발사 DeepSeek의 자료에 기대어 단위 차이가 판정을 크게 벌리지 않는다. PIM/CXL은 선정 논문 구현이 시뮬레이션 단계(TRL 4-6)인 반면, 시장·이해관계자는 CXL 메모리 모듈 등 계열 제품을 근거로 M2 L3·M3 L3가 나왔다. 따라서 PIM/CXL의 시장 레벨은 선정 논문 설계의 채택이 아니라 계열 단위 확장의 결과다.",
+  "evidence_asymmetry_note": "근거 수: DeepSeek-V2 MLA 33건(official 9%, inference 4건, not_public 2건), PIM/CXL 31건(official 23%, inference 4건, not_public 2건). MLA는 원저자 논문 인용 비중이 높고, PIM/CXL은 시장·이해관계자 근거에서 벤더(official) 발표 비중이 높다. 두 기술 모두 유리한 방향의 근거가 많아 반대 근거는 서베이 2건에 한정된다.",
+  "generated_at": "2026-09-20T10:30:00"
+}
