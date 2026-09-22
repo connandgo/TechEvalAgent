@@ -47,7 +47,10 @@ def test_full_run_returns_four_domain_results(tech_id):
         assert r.generated_at == FIXED_NOW
         assert r.confidence == compute_confidence(r.evidence)
     for r in results[:3]:
-        assert r.measurements, f"{r.criterion_id}: D1~D3 는 Measurement 필수"  # V3
+        if r.level in ("L2", "L3"):
+            assert r.measurements, (
+                f"{r.criterion_id}: L2/L3 는 Measurement 필수 (V3)"
+            )  # V3
         assert r.details["directness"] == r.level
 
 

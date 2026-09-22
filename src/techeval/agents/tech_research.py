@@ -448,7 +448,7 @@ def gather_context(inp: AgentInput, deps: Deps, targets: list[str]) -> SearchCon
         ctx.queries.append(q)
     for cid in targets:
         for q in _fmt(_WEB_QUERIES.get(cid, []), tech, inp.retry_count):
-            ctx.add_web(deps.web_search(q, max_results=5))
+            ctx.add_web(deps.web_search(q, max_results=5, fetch_content=True))
             ctx.queries.append(q)
     return ctx
 

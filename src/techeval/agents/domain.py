@@ -127,7 +127,7 @@ def gather_domain_context(
         ctx.queries.append(q)
     for cid in targets:
         for q in _fmt(_WEB_QUERIES.get(cid, []), tech, inp.retry_count):
-            ctx.add_web(deps.web_search(q, max_results=5))
+            ctx.add_web(deps.web_search(q, max_results=5, fetch_content=True))
             ctx.queries.append(q)
     return ctx
 
@@ -190,7 +190,9 @@ def run_domain_eval(inp: AgentInput, deps: Deps) -> list[CriterionResult]:
                 now=now,
                 retry_count=inp.retry_count,
                 scope=scope,
-                require_measurements=cid in ("D1", "D2", "D3"),
+                # V3(CONTRACT CHANGE): L2/L3만 수치 필수. L1(근거 없음)은 수치 없이 판정 가능.
+                require_measurements=cid in ("D1", "D2", "D3")
+                and draft.level in ("L2", "L3"),
             )
             _check_d_details(cid, r)
             results.append(r)
