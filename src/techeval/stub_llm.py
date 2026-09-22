@@ -79,6 +79,7 @@ _CRITERION_ID = re.compile(_ASCII_B + r"([TMSD][1-4])" + _ASCII_E)
 # 명시 표기 (우선): `criterion_id: T3`, `missing_criteria: ["M1", "M3"]` / `missing_criteria: M1, M3`
 _CRITERION_EXPLICIT = re.compile(r"criterion_id\W{0,4}([TMSD][1-4])" + _ASCII_E, re.IGNORECASE)
 _MISSING_EXPLICIT = re.compile(r"missing_criteria\W{0,4}\[?([^\]\n]+)", re.IGNORECASE)
+_CRITERION_HEADING = re.compile(r"^#\s+([TMSD][1-4])" + _ASCII_E, re.MULTILINE | re.IGNORECASE)
 
 
 class FixtureLookupError(LookupError):
@@ -111,12 +112,30 @@ def collect_stub_overrides() -> dict[type, Callable[[str], Any]]:
         if fn is None:
             continue
         overrides = fn()
+        # B·C가 공유하는 CriterionDraft는 하나의 모듈별 resolver로 등록하면
+        # 다른 관점 프롬프트를 잘못 해석한다. FakeStructuredLLM의 공통 픽스처 resolver가
+        # T/D/M/S 기준을 모두 처리하므로 자동 수집 대상에서만 제외한다.
+        overrides = {
+            schema: resolver
+            for schema, resolver in overrides.items()
+            if not _is_shared_criterion_draft(schema)
+        }
         dup = set(merged) & set(overrides)
         if dup:
             logger.warning("%s.stub_overrides 가 기존 오버라이드를 덮어씀: %s", name, [d.__name__ for d in dup])
         merged.update(overrides)
         logger.debug("stub_overrides 등록: %s -> %s", name, [k.__name__ for k in overrides])
     return merged
+
+
+def _is_shared_criterion_draft(schema: Any) -> bool:
+    """B에서 정의하고 B·C가 공유하는 기준 초안 스키마인지 확인한다."""
+    return (
+        isinstance(schema, type)
+        and issubclass(schema, BaseModel)
+        and schema.__module__ == "techeval.agents.tech_research"
+        and schema.__name__ == "CriterionDraft"
+    )
 
 
 def prompt_to_text(prompt: Any) -> str:
@@ -247,6 +266,9 @@ class FakeStructuredLLM:
             if isinstance(out, dict) and isinstance(schema, type) and issubclass(schema, BaseModel):
                 return schema.model_validate(out)
             return out
+
+        if _is_shared_criterion_draft(schema):
+            return self._resolve_criterion_draft(schema, text)
 
         origin = typing.get_origin(schema)
         if origin in (list, typing.List):  # noqa: UP006 — get_origin 비교용
@@ -389,6 +411,11 @@ class FakeStructuredLLM:
             if len(explicit) > 1:
                 raise FixtureLookupError(f"single CriterionResult requested but explicit criteria are {explicit}")
             return self._criterion_from_fixture(tech_id, explicit[0])
+        headings = list(dict.fromkeys(c.upper() for c in _CRITERION_HEADING.findall(text)))
+        if len(headings) == 1:
+            return self._criterion_from_fixture(tech_id, headings[0])
+        if len(headings) > 1:
+            raise FixtureLookupError(f"ambiguous criterion headings in prompt: {headings}")
         ids = extract_criterion_ids(text)
         if not ids:
             raise FixtureLookupError("cannot determine criterion_id from prompt")
@@ -396,6 +423,53 @@ class FakeStructuredLLM:
         if len(top) == 2 and top[0][1] == top[1][1]:
             raise FixtureLookupError(f"ambiguous criterion_id in prompt: {top[0][0]} vs {top[1][0]}")
         return self._criterion_from_fixture(tech_id, top[0][0])
+
+    def _resolve_criterion_draft(self, schema: type[BaseModel], text: str) -> BaseModel:
+        """CriterionResult 픽스처를 B·C 공용 CriterionDraft로 역변환한다.
+
+        자동 스텁은 단일 FakeStructuredLLM을 모든 에이전트에 공유하므로,
+        특정 모듈의 제목 규칙에 의존하지 않고 명시적 tech_id/criterion_id로 라우팅한다.
+        """
+        result = self._resolve_criterion(text)
+        citations: list[dict[str, str]] = []
+        citation_index: dict[str, int] = {}
+        for evidence in result.evidence:
+            if evidence.source_type == "not_public" or not evidence.quote:
+                continue
+            ref = evidence.chunk_id or evidence.url
+            if not ref:
+                continue
+            citation_index[evidence.evidence_id] = len(citations)
+            citations.append(
+                {
+                    "source": "chunk" if evidence.chunk_id else "web",
+                    "ref": ref,
+                    "quote": evidence.quote,
+                }
+            )
+
+        measurements = []
+        for measurement in result.measurements:
+            index = citation_index.get(measurement.evidence_id)
+            if index is None:
+                continue
+            measurements.append(
+                {
+                    **measurement.model_dump(exclude={"evidence_id"}),
+                    "citation_index": index,
+                }
+            )
+
+        return schema.model_validate(
+            {
+                "level": result.level,
+                "level_estimate": result.level_estimate,
+                "content": result.content,
+                "details": result.details,
+                "measurements": measurements,
+                "citations": citations,
+            }
+        )
 
     def _criterion_from_fixture(self, tech_id: str, criterion_id: str) -> CriterionResult:
         fixture = PERSPECTIVE_FIXTURE[CRITERION_PERSPECTIVE[criterion_id]]

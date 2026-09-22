@@ -6,9 +6,18 @@ import pytest
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel
 
-from techeval.agents._deps import TechResearchOutput
-from techeval.schemas import CriterionResult, JudgeResult, TechProfile
-from techeval.stub_llm import FakeStructuredLLM, FixtureLookupError, extract_tech_id
+from techeval.agents._deps import AgentInput, TechResearchOutput
+from techeval.agents.market import run_market_eval
+from techeval.agents.stakeholder import run_stakeholder_eval
+from techeval.agents.tech_research import CriterionDraft
+from techeval.config import build_deps
+from techeval.schemas import CriterionResult, JudgeResult, TechProfile, get_tech
+from techeval.stub_llm import (
+    FakeStructuredLLM,
+    FixtureLookupError,
+    collect_stub_overrides,
+    extract_tech_id,
+)
 
 EV = {
     "evidence_id": "{tech}-{cid}-01",
@@ -235,6 +244,38 @@ def test_collect_stub_overrides_merges_agent_modules(monkeypatch):
     llm = FakeStructuredLLM(overrides=overrides)
     assert llm.with_structured_output(DraftA).invoke("아무 프롬프트").x == 1
     assert llm.with_structured_output(DraftB).invoke("아무 프롬프트").y == 2
+
+
+@pytest.mark.parametrize("criterion_id", ["T1", "D2", "M3", "S4"])
+def test_shared_criterion_draft_routes_every_perspective(criterion_id):
+    """B·C가 공유하는 CriterionDraft를 자동 스텁에서 관점별 픽스처로 라우팅한다."""
+    llm = FakeStructuredLLM(overrides=collect_stub_overrides())
+    out = llm.with_structured_output(CriterionDraft).invoke(
+        f"tech_id: mla\ncriterion_id: {criterion_id}"
+    )
+    assert isinstance(out, CriterionDraft)
+    assert out.content
+
+
+def test_shared_criterion_draft_prefers_heading_over_other_mentions():
+    """시스템 지시에 여러 기준이 등장해도 사용자 프롬프트의 마크다운 제목을 우선한다."""
+    llm = FakeStructuredLLM(overrides=collect_stub_overrides())
+    out = llm.with_structured_output(CriterionDraft).invoke(
+        "tech_id: mla\nT1과 T4 규칙을 참고하라.\n# T2 검증 환경\n이 기준만 생성하라."
+    )
+    assert out.details["env_level"] == out.level
+
+
+def test_build_deps_stub_runs_real_c_agents():
+    """--stub-deps에서 실제 C 에이전트가 B의 draft resolver와 충돌하지 않는다."""
+    deps = build_deps(stub=True)
+    inp = AgentInput(tech=get_tech("mla"))
+
+    market = run_market_eval(inp, deps)
+    stakeholder = run_stakeholder_eval(inp, deps)
+
+    assert [r.criterion_id for r in market] == ["M1", "M2", "M3"]
+    assert [r.criterion_id for r in stakeholder] == ["S1", "S2", "S3", "S4"]
 
 
 def test_explicit_missing_criteria_label_wins_over_mentions(llm):
