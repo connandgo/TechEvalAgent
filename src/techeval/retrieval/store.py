@@ -39,9 +39,7 @@ class ChromaStore:
             ],
         )
 
-    def query(
-        self, embedding: list[float], *, top_k: int, doc_ids: list[str] | None = None
-    ) -> dict:
+    def query(self, embedding: list[float], *, top_k: int, doc_ids: list[str] | None = None) -> dict:
         where = {"doc_id": {"$in": doc_ids}} if doc_ids else None
         return self._collection.query(
             query_embeddings=[embedding],

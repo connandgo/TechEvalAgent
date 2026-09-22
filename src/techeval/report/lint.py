@@ -141,8 +141,7 @@ def lint_report(report_md: str, evidence_index: dict[str, Evidence]) -> LintResu
         cited = {
             eid
             for eid in collect_cited_ids(body)
-            if eid in evidence_index
-            and evidence_index[eid].source_type not in NON_REFERENCE_TYPES
+            if eid in evidence_index and evidence_index[eid].source_type not in NON_REFERENCE_TYPES
         }
         listed = set(reference_ids(ref.body))
         if CITATION_RE.search(ref.body):
@@ -173,9 +172,7 @@ def lint_report(report_md: str, evidence_index: dict[str, Evidence]) -> LintResu
     instructions = [f"{m} — 해당 챕터를 추가하라" for m in missing]
     for i in errors:
         if i.kind == "banned_term":
-            instructions.append(
-                f"{i.message}: 우열·추천·순위 표현을 지우고 기준·단위·근거 유형 차이로 다시 서술하라"
-            )
+            instructions.append(f"{i.message}: 우열·추천·순위 표현을 지우고 기준·단위·근거 유형 차이로 다시 서술하라")
         elif i.kind == "unknown_citation":
             instructions.append(f"{i.message}: 입력 evidence 목록에 있는 id만 인용하라")
         else:

@@ -345,23 +345,31 @@ def _report_input(r: MemRetriever, reg: SourceRegistry, counter=()) -> ReportInp
     )
 
 
-GOOD_MD = """# SUMMARY
+TABLE = (
+    "| 기준 | 기술 | 레벨 | 신뢰도 | 근거 단위 | 근거 |\n|---|---|---|---|---|---|\n"
+    "| T1 | mla | L2 | medium | paper | [E: mla-T1-01] |"
+)
+GOOD_MD = f"""# 보고서
+## SUMMARY
 요약 [E: mla-T1-01]
-# 1. 분석 배경
-# 2. 기술 선정
-# 3. 기술 개요
-# 4. 관점별 평가
-## 4.1 TRL
-## 4.2 시장성
-## 4.3 이해관계자
-## 4.4 도메인 적합성
-# 5. 시사점
+## 1. 분석 배경
+## 2. 기술 선정
+## 3. 기술 개요
+## 4. 관점별 평가
+### 4.1 TRL
+{TABLE}
+### 4.2 시장성
+{TABLE}
+### 4.3 이해관계자
+{TABLE}
+### 4.4 도메인 적합성
+{TABLE}
+## 5. 시사점
 [E: mla-M2-01] [E: mla-D2-01]
-# 6. 한계점
-# REFERENCE
-- mla-T1-01
-- mla-M2-01
-- mla-D2-01
+## 6. 한계점
+## REFERENCE
+1. deepseek_v2 p.1 (근거 ID: mla-T1-01, mla-D2-01)
+2. https://mla.example.com/M2 (근거 ID: mla-M2-01)
 """
 
 
@@ -374,8 +382,8 @@ def test_static_checks_pass_on_good_report():
 def test_static_checks_catch_chapter_neutrality_and_citation_violations():
     r, reg = _retriever(), SourceRegistry()
     md = (
-        GOOD_MD.replace("## 4.3 이해관계자\n", "").replace("요약", "MLA가 더 우수하다. 종합 점수 4.2")
-        + "\n[E: ghost-X1-01]\n- pim_cxl-S1-01\n"
+        GOOD_MD.replace("### 4.3 이해관계자\n", "").replace("요약", "MLA가 더 우수하다. 종합 점수 4.2")
+        + "\n[E: ghost-X1-01]\n3. x (근거 ID: pim_cxl-S1-01)\n"
     )
     missing, hits, problems = static_checks(md, _report_input(r, reg))
     assert missing == ["4.3"]

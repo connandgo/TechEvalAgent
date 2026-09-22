@@ -122,7 +122,5 @@ def measurement_table(measurements: list[Measurement]) -> str:
             m.hardware or "—",
             m.baseline or "—",
         ]
-        rows.append(
-            "| " + " | ".join(_cell(c) for c in cells) + f" | [E: {m.evidence_id}] |"
-        )
+        rows.append("| " + " | ".join(_cell(c) for c in cells) + f" | [E: {m.evidence_id}] |")
     return "\n".join(rows)

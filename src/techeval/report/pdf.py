@@ -51,21 +51,15 @@ def _local_font_faces() -> tuple[str, list[str]]:
             continue
         family = f"EmbeddedKo-{path.stem}"
         weight = "bold" if "bold" in path.stem.lower() else "normal"
-        faces.append(
-            f'@font-face {{ font-family: "{family}"; src: url("{path.as_uri()}"); font-weight: {weight}; }}'
-        )
+        faces.append(f'@font-face {{ font-family: "{family}"; src: url("{path.as_uri()}"); font-weight: {weight}; }}')
         families.append(family)
     return "\n".join(faces), families
 
 
 def build_html(report_md: str) -> str:
-    body = markdown.markdown(
-        report_md, extensions=["tables", "fenced_code", "sane_lists"]
-    )
+    body = markdown.markdown(report_md, extensions=["tables", "fenced_code", "sane_lists"])
     faces, local = _local_font_faces()
-    font_stack = (
-        ", ".join(f'"{f}"' for f in (*local, *SYSTEM_KO_FONTS)) + ", sans-serif"
-    )
+    font_stack = ", ".join(f'"{f}"' for f in (*local, *SYSTEM_KO_FONTS)) + ", sans-serif"
     css = faces + BASE_CSS % {"font_stack": font_stack}
     return (
         f'<!DOCTYPE html>\n<html lang="ko"><head><meta charset="utf-8"><style>{css}</style></head>'

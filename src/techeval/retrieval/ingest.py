@@ -11,9 +11,7 @@ from .bm25 import BM25Index
 from .embedder import BGEEmbedder
 from .store import ChromaStore
 
-HEADING_PATTERN = re.compile(
-    r"^\s*(?:\d+(?:\.\d+){0,4}|[IVXLC]+)\.?\s+[A-Z][A-Za-z0-9 ,:/()\-]{3,}$"
-)
+HEADING_PATTERN = re.compile(r"^\s*(?:\d+(?:\.\d+){0,4}|[IVXLC]+)\.?\s+[A-Z][A-Za-z0-9 ,:/()\-]{3,}$")
 TABLE_PATTERN = re.compile(r"^\s*(?:Table|TABLE)\s+\d+", re.IGNORECASE)
 
 
@@ -101,14 +99,8 @@ def _tail_tokens(text: str, tokenizer: object | None, count: int) -> str:
     return tokenizer.decode(ids[-count:], skip_special_tokens=True)
 
 
-def _split_to_token_budget(
-    text: str, tokenizer: object | None, *, max_tokens: int, overlap_tokens: int
-) -> list[str]:
-    paragraphs = [
-        paragraph.strip()
-        for paragraph in re.split(r"\n{2,}", text)
-        if paragraph.strip()
-    ]
+def _split_to_token_budget(text: str, tokenizer: object | None, *, max_tokens: int, overlap_tokens: int) -> list[str]:
+    paragraphs = [paragraph.strip() for paragraph in re.split(r"\n{2,}", text) if paragraph.strip()]
     if not paragraphs:
         return []
     chunks: list[str] = []

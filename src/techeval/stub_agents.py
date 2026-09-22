@@ -32,6 +32,10 @@ logger = logging.getLogger(__name__)
 
 FIXTURES_DIR = DEFAULT_FIXTURES_DIR
 STUB_MARK = "[stub]"
+try:  # 요약표 머리행은 D(report.tables)의 형식을 따른다
+    from techeval.report.tables import TABLE_HEADER
+except ImportError:
+    TABLE_HEADER = "| 기준 | 기술 | 레벨 | 신뢰도 | 근거 단위 | 근거 |"
 
 _LEVELS = {
     "trl": {"T1": "TRL 4-6", "T2": "L2", "T3": "L2", "T4": "narrative"},
@@ -353,12 +357,11 @@ def run_report(inp: ReportInput, deps: Deps) -> str:
         by_p[r.perspective].append(r)
 
     def table(rs: list[CriterionResult]) -> str:
-        rows = ["| 기술 | 기준 | 레벨 | 신뢰도 | 근거 |", "|---|---|---|---|---|"]
+        rows = [TABLE_HEADER, "|---|---|---|---|---|---|"]
         for r in sorted(rs, key=lambda r: (r.criterion_id, r.tech_id)):
+            cites = " ".join(f"[E: {e.evidence_id}]" for e in r.evidence)
             rows.append(
-                f"| {r.tech_id} | {r.criterion_id} | {r.level} | {r.confidence} | "
-                + " ".join(f"[E: {e.evidence_id}]" for e in r.evidence)
-                + " |"
+                f"| {r.criterion_id} | {r.tech_id} | {r.level} | {r.confidence} | {r.evidence_unit} | {cites} |"
             )
         return "\n".join(rows)
 
@@ -367,39 +370,45 @@ def run_report(inp: ReportInput, deps: Deps) -> str:
         revision = "\n\n> 재생성: " + " / ".join(inp.judge_result.revision_instructions)
 
     sections = [
-        f"# SUMMARY\n\n{STUB_MARK} 두 기술은 관점별로 근거 단위와 근거 유형이 달라 판정 단계가 다르다.{revision}",
-        "# 1. 분석 배경\n\n" + f"{STUB_MARK} KV cache 병목과 SW/HW 접근의 분기. 도메인: {inp.domain}.",
-        "# 2. 기술 선정\n\n"
+        "# KV cache 최적화 기술 다관점 평가 보고서 (stub)",
+        f"## SUMMARY\n\n{STUB_MARK} 두 기술은 관점별로 근거 단위와 근거 유형이 달라 판정 단계가 다르다.{revision}",
+        "## 1. 분석 배경\n\n" + f"{STUB_MARK} KV cache 병목과 SW/HW 접근의 분기. 도메인: {inp.domain}.",
+        "## 2. 기술 선정\n\n"
         + "\n".join(f"- {t.name} ({t.tech_id}, {t.approach}): {t.paper_title}" for t in inp.technologies),
-        "# 3. 기술 개요\n\n"
+        "## 3. 기술 개요\n\n"
         + "\n".join(
             f"- {p.tech_id}: {p.principle} " + " ".join(f"[E: {e.evidence_id}]" for e in p.evidence)
             for p in inp.tech_profiles
         ),
-        "# 4. 관점별 평가\n\n## 4.1 TRL\n\n"
+        "## 4. 관점별 평가\n\n### 4.1 기술 성숙도(TRL)\n\n"
         + table(by_p["trl"])
-        + "\n\n## 4.2 시장성\n\n"
+        + "\n\n### 4.2 시장성\n\n"
         + table(by_p["market"])
-        + "\n\n## 4.3 이해관계자\n\n"
+        + "\n\n### 4.3 이해관계자\n\n"
         + table(by_p["stakeholder"])
-        + "\n\n## 4.4 도메인 적합성\n\n"
+        + "\n\n### 4.4 도메인 적합성\n\n"
         + table(by_p["domain"]),
-        "# 5. 시사점\n\n"
+        "## 5. 시사점\n\n"
         + "\n".join(
             f"- {c.tech_id} {c.criterion_a}↔{c.criterion_b}: {c.statement} ({c.cause}) "
             + " ".join(f"[E: {i}]" for i in c.evidence_ids if i in idx)
             for c in inp.synthesis.conflicts
         ),
-        "# 6. 한계점\n\n"
+        "## 6. 한계점\n\n"
         + f"{STUB_MARK} 근거 비대칭: {inp.evidence_gap.note}. 벤더 자료 비율 {inp.evidence_gap.vendor_source_ratio}. "
         + " ".join(f"[E: {e.evidence_id}]" for e in inp.counter_evidence),
     ]
     md = "\n\n".join(sections)
-    cited = sorted(cited_ids(md))
-    md += "\n\n# REFERENCE\n\n" + "\n".join(
-        f"- {eid}: {idx[eid].title or idx[eid].locator}" for eid in cited if eid in idx
-    )
-    return md
+    try:  # REFERENCE 절은 D(report.citation)의 형식을 따른다
+        from techeval.report.citation import build_reference_section
+
+        return md + "\n\n" + build_reference_section(md, idx)
+    except ImportError:
+        cited = sorted(cited_ids(md))
+        refs = "\n".join(
+            f"{i + 1}. {idx[e].title or idx[e].locator} (근거 ID: {e})" for i, e in enumerate(cited) if e in idx
+        )
+        return md + "\n\n## REFERENCE\n\n" + refs
 
 
 def render_pdf(report_md: str, out_path: str) -> str:

@@ -122,25 +122,19 @@ def _evidence_index_text(inp: ReportInput) -> str:
     return "\n".join(lines)
 
 
-def _run_lint(report_md: str) -> list[str]:
-    """D의 `report.lint`가 있으면 결과를 합친다 (반환 형식은 문자열 목록으로 가정, 다르면 무시)."""
+def _run_lint(report_md: str, idx: dict[str, Evidence]) -> tuple[list[str], list[str]]:
+    """D의 `report.lint.lint_report(report_md, evidence_index) -> LintResult`. 없으면 빈 결과.
+
+    반환: (missing_required, errors 메시지). errors(금칙어·미인용 각주 등)는 judge 점수를 1점으로 내린다.
+    """
     try:
-        from techeval.report import lint as lint_mod
+        from techeval.report.lint import lint_report
     except ImportError:
-        return []
-    fn = getattr(lint_mod, "lint_report", None) or getattr(lint_mod, "lint", None)
-    if fn is None:
-        return []
-    try:
-        out = fn(report_md)
-    except Exception:
-        logger.exception("report.lint 호출 실패 — 무시")
-        return []
-    if isinstance(out, list):
-        return [str(x) for x in out]
-    if isinstance(out, dict):
-        return [f"{k}: {v}" for k, v in out.items() if v]
-    return []
+        return [], []
+    out = lint_report(report_md, idx)
+    missing = [str(m) for m in out.missing_required]
+    errors = [f"[{i.section}] {i.kind}: {i.message}" for i in out.errors]
+    return missing, errors
 
 
 def judge_report(report_md: str, inp: ReportInput, judge_llm: Any, now: str) -> JudgeResult:
@@ -161,10 +155,18 @@ def judge_report(report_md: str, inp: ReportInput, judge_llm: Any, now: str) -> 
     instructions = list(result.revision_instructions)
 
     static_missing, neutrality_hits, ev_problems = static_checks(report_md, inp)
-    lint_missing = _run_lint(report_md)
+    lint_missing, lint_errors = _run_lint(report_md, evidence_index(inp))
     for m in [*static_missing, *lint_missing]:
         if m not in missing:
             missing.append(m)
+    if lint_errors:
+        # D lint의 errors: banned_term → 중립성, unknown_citation/reference_mismatch → 근거성
+        banned = [e for e in lint_errors if "banned_term" in e]
+        cites = [e for e in lint_errors if "banned_term" not in e]
+        if banned:
+            neutrality_hits = [*neutrality_hits, *banned]
+        if cites:
+            ev_problems = [*ev_problems, *cites]
     if static_missing:
         scores["format"] = 1
         reasons["format"] = (reasons.get("format", "") + f" [코드 검사] 필수 챕터·기준 누락: {static_missing}").strip()
