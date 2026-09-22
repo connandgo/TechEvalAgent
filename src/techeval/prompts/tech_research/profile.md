@@ -1,6 +1,7 @@
 # 기술 개요 추출
 
-대상 기술: **{tech_name}** (`{tech_id}`)
+대상 기술: **{tech_name}**
+tech_id: {tech_id}
 선정 논문: {paper_title} ({paper_date})
 
 아래 검색 결과에서 이 기술의 개요를 추출한다.

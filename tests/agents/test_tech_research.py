@@ -282,3 +282,41 @@ def test_prompts_never_mention_the_other_technology():
         assert "pim_cxl" not in p and "PIM/CXL" not in p
     for p in prompts(llm_b):
         assert "deepseek_v2" not in p and "DeepSeek-V2" not in p and "MLA" not in p
+
+
+# ------------------------------------------------------------------ 재시도 · --stub 오버라이드
+
+
+def test_retry_changes_queries_and_adds_retry_note():
+    _, deps0, llm0 = run("mla")
+    _, deps1, llm1 = run(
+        "mla",
+        retry_count=1,
+        missing_criteria=["T2"],
+        tech_profile=run("mla")[0].tech_profile,
+    )
+    q0 = {c["query"] for c in deps0.retriever.calls}
+    q1 = {c["query"] for c in deps1.retriever.calls}
+    assert q1 - q0, "재시도인데 새 검색어가 하나도 없음"
+    assert any("재시도 안내" in p and "T2" in p for p in prompts(llm1))
+    assert not any("재시도 안내" in p for p in prompts(llm0))
+
+
+def test_stub_overrides_reproduce_fixtures_end_to_end():
+    """E의 build_deps(stub=True) 경로: 오버라이드만으로 B 픽스처가 그대로 재생산돼야 한다."""
+    from techeval.agents.domain import run_domain_eval
+    from techeval.agents.tech_research import stub_overrides
+    from techeval.stub_llm import FakeStructuredLLM
+
+    llm = FakeStructuredLLM(overrides=stub_overrides())
+    deps = make_deps(llm)
+    for tech_id in ("mla", "pim_cxl"):
+        out = run_tech_research(AgentInput(tech=TECH[tech_id]), deps)
+        assert [r.criterion_id for r in out.trl_eval] == list(TRL_CRITERIA)
+        d = run_domain_eval(
+            AgentInput(tech=TECH[tech_id], tech_profile=out.tech_profile), deps
+        )
+        assert [r.criterion_id for r in d] == ["D1", "D2", "D3", "D4"]
+        assert all(r.level != "not_public" for r in out.trl_eval + d), (
+            "픽스처 재생산 중 근거 검증 실패"
+        )
