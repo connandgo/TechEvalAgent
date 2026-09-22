@@ -82,8 +82,8 @@ docs/CONTRACTS.md
 - **`judge`**: `deps.judge_llm`(`JUDGE_MODEL`) 사용. CRITERIA §6 5차원 1/3/5. 입력에는 `report_md` + 평가 결과 요약(기준별 level/evidence_id) + evidence 인덱스를 넣어 "본문 주장 ↔ 근거" 대조가 가능하게 한다. `missing_required`는 D의 `lint` 결과와 합친다. 분량·마크다운 장식 채점 금지를 프롬프트에 명시. `passed = all(score>=3) and not missing_required`.
 
 ### 5.4 `config.py` / `.env.example`
-- `LLM_PROVIDER`, `LLM_MODEL`, `JUDGE_MODEL`(LLM_MODEL과 같으면 시작 시 경고), `EMBEDDING_MODEL`, `CHROMA_DIR`, `PAPERS_DIR`, `WEB_SEARCH_PROVIDER`, `WEB_SEARCH_API_KEY`, `OUTPUT_DIR`, `LOG_LEVEL`.
-- `get_llm()`/`get_judge_llm()`: `langchain.chat_models.init_chat_model(model, model_provider=...)`, `temperature=0`.
+- `LLM_PROVIDER`, provider API key(현재 OpenAI는 `OPENAI_API_KEY`), `LLM_MODEL`, `JUDGE_MODEL`(실효 `LLM_MODEL_REPORT`와 같으면 시작 시 경고), `EMBEDDING_MODEL`, `CHROMA_DIR`, `PAPERS_DIR`, `WEB_SEARCH_PROVIDER`, `WEB_SEARCH_API_KEY`, `OUTPUT_DIR`, `LOG_LEVEL`.
+- `get_llm()`/`get_judge_llm()`: `langchain.chat_models.init_chat_model(model, model_provider=...)`. 기본은 `temperature=0`이며, 해당 인자를 지원하지 않는 OpenAI GPT-5 계열(`gpt-5-mini` 포함)은 생략한다.
 - `build_deps(stub: bool) -> Deps`: stub=True면 `StubRetriever`, `stub_web_search`, `FakeStructuredLLM`.
 
 ### 5.5 `tests/conftest.py` — `FakeStructuredLLM`

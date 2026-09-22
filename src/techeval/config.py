@@ -6,6 +6,7 @@
 
 import logging
 import os
+import re
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -43,9 +44,11 @@ class Settings(BaseModel):
 
     @model_validator(mode="after")
     def _warn_same_judge(self):
-        if self.llm_model and self.judge_model and self.llm_model == self.judge_model:
+        report_model = self.model_for("report")
+        if report_model and self.judge_model and report_model == self.judge_model:
             logger.warning(
-                "JUDGE_MODEL(%s)이 LLM_MODEL과 같습니다. AGENTS.md 규칙 9: 생성 모델과 검수 모델은 분리해야 합니다.",
+                "JUDGE_MODEL(%s)이 실효 보고서 생성 모델과 같습니다. "
+                "AGENTS.md 규칙 9: 보고서 생성 모델과 검수 모델은 분리해야 합니다.",
                 self.judge_model,
             )
         return self
@@ -84,10 +87,25 @@ def now_iso() -> str:
     return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
+_OPENAI_GPT5_MODEL = re.compile(r"^gpt-5(?:$|[-.])", re.IGNORECASE)
+
+
+def _model_init_kwargs(model: str, provider: str) -> dict[str, Any]:
+    """모델별 `init_chat_model` 인자.
+
+    OpenAI의 GPT-5 계열(`gpt-5-mini` 포함)은 `temperature`를 전달하면 API 오류가 나므로 생략한다.
+    그 외 모델은 평가 재현성을 위해 temperature=0을 유지한다.
+    """
+    kwargs: dict[str, Any] = {"model_provider": provider}
+    if not (provider.lower() == "openai" and _OPENAI_GPT5_MODEL.match(model)):
+        kwargs["temperature"] = 0
+    return kwargs
+
+
 def _init_chat_model(model: str, provider: str) -> Any:
     from langchain.chat_models import init_chat_model
 
-    return init_chat_model(model, model_provider=provider, temperature=0)
+    return init_chat_model(model, **_model_init_kwargs(model, provider))
 
 
 def get_llm(settings: Settings | None = None, agent: str | None = None) -> Any:
@@ -102,7 +120,7 @@ def get_llm(settings: Settings | None = None, agent: str | None = None) -> Any:
 
 
 def get_judge_llm(settings: Settings | None = None) -> Any:
-    """보고서 검수용 모델 (`JUDGE_MODEL`). `LLM_MODEL`과 달라야 한다."""
+    """보고서 검수용 모델 (`JUDGE_MODEL`). 실효 보고서 생성 모델과 달라야 한다."""
     s = settings or load_settings()
     s.require_llm()
     return _init_chat_model(s.judge_model, s.llm_provider)

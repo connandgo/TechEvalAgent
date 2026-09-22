@@ -41,7 +41,7 @@
 6. **중립성.** 관점별 레벨을 합산·평균·순위화하는 코드나 프롬프트를 작성하지 않는다. "더 우수하다", "추천한다" 류 표현은 보고서에서 금지.
 7. **State 쓰기 원칙.** 각 에이전트는 자기 State 키에만 쓴다. 근거는 `CriterionResult` 내부에 포함하고 공용 evidence 키에 동시 기록하지 않는다. 같은 에이전트가 두 기술을 처리할 때만 `Send` + `operator.add` reducer를 쓴다.
 8. **Pydantic 검증 실패 = 종합 단계로 넘어가지 않는다.** 기준 ID나 근거가 빠진 결과는 예외를 내거나 `missing_criteria`에 올린다. 조용히 기본값으로 채우지 않는다.
-9. **생성 모델과 검수 모델 분리.** 보고서 생성(`LLM_MODEL`)과 보고서 검수(`JUDGE_MODEL`)는 서로 다른 모델 설정을 쓴다.
+9. **생성 모델과 검수 모델 분리.** 실효 보고서 생성 모델(`LLM_MODEL_REPORT`, 비어 있으면 `LLM_MODEL`)과 보고서 검수(`JUDGE_MODEL`)는 서로 다른 모델 설정을 쓴다. 평가 종합 등 다른 에이전트 모델이 `JUDGE_MODEL`과 같은 것은 허용한다.
 10. **공통 인터페이스 변경은 합의 후.** `src/techeval/schemas.py`, `src/techeval/state.py`, `docs/CONTRACTS.md`는 E가 관리한다. 필드를 추가·변경하려면 PR 설명에 "CONTRACT CHANGE"를 붙이고 영향받는 역할 전원의 승인을 받는다.
 
 ---
@@ -204,10 +204,13 @@ TechEvalAgent/
 `.env` 키 (E가 `config.py`에서 로드, `.env.example`로 공유):
 
 ```
-LLM_PROVIDER=            # 팀 합의로 확정 — with_structured_output이 네이티브 tool calling으로 동작해야 함
-LLM_MODEL=               # 평가·생성용 기본값
+LLM_PROVIDER=openai      # with_structured_output이 네이티브 tool calling으로 동작해야 함
+OPENAI_API_KEY=
+LLM_MODEL=gpt-5-mini     # B·C 및 별도 오버라이드가 없는 에이전트의 기본값
 LLM_MODEL_<AGENT>=       # 선택. TECH_RESEARCH/DOMAIN/MARKET/STAKEHOLDER/SYNTHESIS/REPORT 별 모델, 비우면 LLM_MODEL
-JUDGE_MODEL=             # 보고서 검수용 (LLM_MODEL과 달라야 함)
+LLM_MODEL_SYNTHESIS=gpt-5-mini
+LLM_MODEL_REPORT=gpt-4o
+JUDGE_MODEL=gpt-5-mini   # 보고서 검수용 (LLM_MODEL_REPORT 폴백 LLM_MODEL과 달라야 함)
 EMBEDDING_MODEL=BAAI/bge-m3
 CHROMA_DIR=data/chroma
 PAPERS_DIR=data/papers
