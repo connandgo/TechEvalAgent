@@ -97,6 +97,7 @@ TechEvalAgent/
 │   ├── schemas.py                     # (E) 공통 Pydantic 모델, 상수, compute_confidence()
 │   ├── state.py                       # (E) GraphState, latest_by_criterion(), build_initial_state()
 │   ├── graph.py                       # (E) build_graph(): StateGraph·Send·조건부 Edge
+│   ├── stub_llm.py                    # (E) FakeStructuredLLM — 픽스처 기반 가짜 LLM (--stub 실행·테스트 공용)
 │   ├── retrieval/                     # (A)
 │   │   ├── __init__.py
 │   │   ├── ingest.py                  #   parse_pdf(), chunk_document(), build_index()
@@ -144,7 +145,7 @@ TechEvalAgent/
 │   ├── ingest.py                      # (A) 코퍼스 인덱싱 CLI
 │   └── run.py                         # (E) 전체 파이프라인 실행 CLI
 ├── tests/
-│   ├── conftest.py                    # (E) FakeStructuredLLM, deps_stub
+│   ├── conftest.py                    # (E) deps_stub·fake_llm 픽스처 (FakeStructuredLLM은 src/techeval/stub_llm.py)
 │   ├── test_fixtures.py               # (E) 모든 픽스처 스키마 검증
 │   ├── test_graph.py                  # (E) 스텁 그래프 흐름·분기·상한
 │   ├── test_e2e.py                    # (E) integration
