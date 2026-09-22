@@ -53,17 +53,17 @@ def not_public(evidence_id="mla-T3-01") -> Evidence:
 
 
 def result(criterion_id="T1", perspective="trl", tech_id="mla", generated_at="2026-01-01T00:00:00", **kw):
-    base = dict(
-        tech_id=tech_id,
-        perspective=perspective,
-        criterion_id=criterion_id,
-        level="TRL 4-6",
-        content="평가 내용",
-        evidence=[paper(evidence_id=f"{tech_id}-{criterion_id}-01")],
-        confidence="medium",
-        evidence_unit="paper",
-        generated_at=generated_at,
-    )
+    base = {
+        "tech_id": tech_id,
+        "perspective": perspective,
+        "criterion_id": criterion_id,
+        "level": "TRL 4-6",
+        "content": "평가 내용",
+        "evidence": [paper(evidence_id=f"{tech_id}-{criterion_id}-01")],
+        "confidence": "medium",
+        "evidence_unit": "paper",
+        "generated_at": generated_at,
+    }
     base.update(kw)
     return CriterionResult(**base)
 
@@ -203,6 +203,41 @@ class TestAgentModelOverride:
         assert s.agent_overrides() == {"report": "strong"}
         with pytest.raises(KeyError):
             s.model_for("nope")
+
+    def test_rule9_compares_effective_report_model(self, caplog):
+        import logging
+
+        from techeval.config import Settings
+
+        caplog.set_level(logging.WARNING)
+        s = Settings(
+            llm_provider="openai",
+            llm_model="gpt-5-mini",
+            llm_model_synthesis="gpt-5-mini",
+            llm_model_report="gpt-4o",
+            judge_model="gpt-5-mini",
+        )
+        assert s.model_for("synthesis") == "gpt-5-mini"
+        assert s.model_for("report") == "gpt-4o"
+        assert not caplog.records
+
+        Settings(
+            llm_provider="openai",
+            llm_model="gpt-4o",
+            llm_model_report="gpt-5-mini",
+            judge_model="gpt-5-mini",
+        )
+        assert "실효 보고서 생성 모델" in caplog.text
+
+    def test_openai_gpt5_omits_temperature(self):
+        from techeval.config import _model_init_kwargs
+
+        assert _model_init_kwargs("gpt-5-mini", "openai") == {"model_provider": "openai"}
+        assert _model_init_kwargs("gpt-5.2", "openai") == {"model_provider": "openai"}
+        assert _model_init_kwargs("gpt-4o", "openai") == {
+            "model_provider": "openai",
+            "temperature": 0,
+        }
 
     def test_graph_uses_agent_specific_deps(self, tmp_path):
         """agent_deps 에 준 Deps 가 해당 노드에만 들어가고 나머지는 공용 deps 를 쓴다."""
