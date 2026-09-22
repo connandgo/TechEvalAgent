@@ -134,7 +134,8 @@ def _norm_url(url: str | None) -> str | None:
 
 
 def _norm_title(title: str | None) -> str | None:
-    t = re.sub(r"[^0-9a-z가-힣]", "", (title or "").lower())
+    t = re.sub(r"large language models?", "llm", (title or "").lower())  # "LLM"과 풀어 쓴 표기를 같게 본다
+    t = re.sub(r"[^0-9a-z가-힣]", "", t)
     return t or None
 
 
@@ -227,3 +228,55 @@ def reference_ids(reference_section: str) -> list[str]:
         if m:
             ids += [x.strip() for x in m.group(1).split(",") if x.strip()]
     return ids
+
+
+# ---------------------------------------------------------------- 독자용 번호 인용 (PDF·최종본)
+
+REF_LINE_RE = re.compile(r"^(\d+)\.\s+(.*?)\s*\(근거 ID:\s*([^)]+)\)\s*$")
+# 연속된 인용 묶음: "[E: a][E: b]" 또는 "[E: a] [E: b]"
+CITATION_RUN_RE = re.compile(r"\[E:[^\]]+\](?:[ \t]*\[E:[^\]]+\])*")
+UNREFERENCED_MARK = "*"
+UNREFERENCED_NOTE = (
+    f"[{UNREFERENCED_MARK}] 추론(inference) 또는 미공개(not_public) 근거. 참고문헌에 포함하지 않으며, "
+    "본문에 추론·미공개임을 밝혀 서술했다."
+)
+
+
+def to_numbered_citations(report_md: str) -> str:
+    """검수용 `[E: evidence_id]` 표기를 논문식 번호 인용 `[1, 3]`으로 바꾼 독자용 보고서를 만든다.
+
+    번호는 REFERENCE 항목 순번이다(보고서의 REFERENCE 절에 적힌 `(근거 ID: …)`로 id→번호를 잇는다).
+    REFERENCE에 없는 id(추론·미공개 근거)는 `[*]`로 표시하고 REFERENCE 아래에 뜻을 적는다.
+    REFERENCE의 `(근거 ID: …)` 꼬리는 지운다. REFERENCE 절이 없으면 원문을 그대로 돌려준다.
+    """
+    m = re.search(rf"^{re.escape(REFERENCE_HEADING)}\s*$", report_md, flags=re.MULTILINE)
+    if not m:
+        return report_md
+    body, ref = report_md[: m.start()], report_md[m.start() :]
+    number: dict[str, int] = {}
+    ref_lines = []
+    for line in ref.splitlines():
+        lm = REF_LINE_RE.match(line.strip())
+        if lm:
+            n = int(lm.group(1))
+            number.update({i.strip(): n for i in lm.group(3).split(",") if i.strip()})
+            ref_lines.append(f"{n}. {lm.group(2)}")
+        else:
+            ref_lines.append(line)
+    used_unreferenced = False
+
+    def repl(run: re.Match) -> str:
+        nonlocal used_unreferenced
+        ids = collect_cited_ids(run.group(0))
+        nums = sorted({number[i] for i in ids if i in number})
+        tokens = [str(n) for n in nums]
+        if any(i not in number for i in ids):
+            used_unreferenced = True
+            tokens.append(UNREFERENCED_MARK)
+        return f"[{', '.join(tokens)}]"
+
+    body = CITATION_RUN_RE.sub(repl, body)
+    ref_text = "\n".join(ref_lines).rstrip() + "\n"
+    if used_unreferenced:
+        ref_text += f"\n{UNREFERENCED_NOTE}\n"
+    return body + ref_text

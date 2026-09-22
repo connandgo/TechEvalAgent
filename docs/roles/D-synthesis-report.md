@@ -69,6 +69,7 @@ tests/fixtures/report_md.md
   - 6장: 한계점 4항목 — TRL 공개정보 추정 한계 / 계열 단위 확장 사실(`unit_notes`) / 제안사 자료 의존 비율(`evidence_gap.vendor_source_ratio`) / 적용한 검사(재검색·반대 근거 탐색·검수)와 남은 한계(`gaps`)
   - REFERENCE: `build_reference_section(report_body, evidence_index)` — 본문의 `[E: id]` 각주만 수집
 - 본문 인용 표기: `[E: mla-T1-01]`. LLM에게 이 형식을 강제하고, `lint`에서 존재하지 않는 id를 검출한다.
+  - `[E: id]`는 **검수용 내부 표기**다(E judge·D lint·문제 챕터 재생성이 사용). 독자용 최종본(PDF와 `<이름>_final.md`)은 `render_pdf`가 `to_numbered_citations()`로 REFERENCE 번호 인용 `[1, 3]`으로 바꾸고, REFERENCE의 `(근거 ID: …)`를 지운다. 추론·미공개 근거는 `[*]`로 표시한다.
 - 수치는 항상 조건 병기: "KV cache 93.3% 감소(DeepSeek-V2 236B, 128K, vs DeepSeek 67B MHA)[E: mla-PROFILE-02]".
 - 재생성(`inp.judge_result` 존재): `inp.previous_report_md`를 기반으로 `revision_instructions`를 반영해 **문제 챕터만** 재생성한다. 전체 재작성 금지.
 - 출력은 순수 마크다운 문자열. 파일 저장은 E가 한다.

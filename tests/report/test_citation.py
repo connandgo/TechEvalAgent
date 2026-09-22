@@ -7,6 +7,7 @@ from techeval.report.citation import (
     format_reference,
     normalize_citations,
     reference_ids,
+    to_numbered_citations,
 )
 from techeval.schemas import Evidence
 
@@ -153,3 +154,41 @@ def test_same_paper_from_corpus_and_web_is_one_reference():
 def test_paper_without_authors_is_not_attributed_to_publisher():
     e = _paper("mla-M3-04", 3).model_copy(update={"authors": None, "doc_id": None})
     assert format_reference(e).startswith("저자 미상(2024).")
+
+
+def test_numbered_citations_for_readers():
+    """독자용 최종본: [E: id] → REFERENCE 번호 [n], 연속 인용은 [1, 2], 추론·미공개는 [*]."""
+    md = (
+        "## SUMMARY\n\nA이다[E: mla-T1-01][E: pim_cxl-M2-01]. B이다[E: mla-T1-01]. C는 추론이다[E: mla-S2-03].\n\n"
+        "| 근거 |\n|---|\n| [E: pim_cxl-M2-01] [E: mla-T1-01] |\n\n"
+        "## REFERENCE\n\n"
+        "1. DeepSeek-AI(2024). DeepSeek-V2. arXiv, p. 13. (근거 ID: mla-T1-01)\n"
+        "2. Samsung(2024-05-02). CXL Memory Module. Samsung Semiconductor, https://example.com (근거 ID: pim_cxl-M2-01)\n"
+    )
+    out = to_numbered_citations(md)
+    assert "[E:" not in out and "근거 ID" not in out
+    assert "A이다[1, 2]. B이다[1]. C는 추론이다[*]." in out
+    assert "| [1, 2] |" in out
+    assert "1. DeepSeek-AI(2024). DeepSeek-V2. arXiv, p. 13." in out
+    assert out.rstrip().endswith("본문에 추론·미공개임을 밝혀 서술했다.") and "\n[*] 추론" in out  # [*] 주석
+    assert to_numbered_citations("REFERENCE 없음[E: a]") == "REFERENCE 없음[E: a]"
+
+
+def test_llm_abbreviation_titles_merge():
+    """'Large Language Model'과 'LLM' 표기만 다른 같은 서베이는 1항목으로 합친다."""
+    a = _paper("mla-COUNTER-01", 9).model_copy(
+        update={
+            "doc_id": "kv_survey",
+            "title": "A Survey on Large Language Model Acceleration based on KV Cache Management",
+        }
+    )
+    b = a.model_copy(
+        update={
+            "evidence_id": "mla-M3-04",
+            "doc_id": None,
+            "page": None,
+            "title": "A Survey on LLM Acceleration based on KV Cache Management",
+        }
+    )
+    section = build_reference_section("x[E: mla-COUNTER-01] y[E: mla-M3-04]", {e.evidence_id: e for e in (a, b)})
+    assert len([ln for ln in section.splitlines() if ln[:1].isdigit()]) == 1
