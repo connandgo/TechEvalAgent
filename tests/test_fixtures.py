@@ -4,10 +4,12 @@
 """
 
 import json
+import os
 from pathlib import Path
 
 import pytest
 
+from techeval.control.perspective_check import CRITERION_LEVELS, REQUIRED_DETAILS
 from techeval.schemas import (
     PERSPECTIVE_CRITERIA,
     STAKEHOLDERS,
@@ -25,30 +27,17 @@ from techeval.stub_llm import FIXTURE_OWNERS
 FIXTURES = Path(__file__).parent / "fixtures"
 TECH_IDS = ("mla", "pim_cxl")
 
-# CONTRACTS §2 `details` 필수 키
-REQUIRED_DETAILS: dict[str, tuple[str, ...]] = {
-    "T1": ("trl_band", "estimate", "why_not_higher"),
-    "T2": ("env_level",),
-    "T3": ("checklist",),
-    "T4": ("remaining_tasks", "not_public_items"),
-    "M1": ("market_figures",),
-    "M2": ("adopters",),
-    "M3": ("checklist",),
-    "S1": ("roles",),
-    "S2": ("benefits",),
-    "S3": ("burdens",),
-    "S4": ("tradeoffs",),
-    "D1": ("directness",),
-    "D2": ("directness",),
-    "D3": ("directness",),
-    "D4": ("checklist",),
-}
+
+REQUIRE_ALL = os.environ.get("TECHEVAL_REQUIRE_FIXTURES") == "1"  # 통합 완료 후 CI에서 1로 두면 누락 = 실패
 
 
 def _load(name: str):
     path = FIXTURES / name
     if not path.exists():
-        pytest.skip(f"{name} 미제공 (역할 {FIXTURE_OWNERS.get(name, '?')})")
+        msg = f"{name} 미제공 (역할 {FIXTURE_OWNERS.get(name, '?')})"
+        if REQUIRE_ALL:
+            pytest.fail(msg)
+        pytest.skip(msg)
     if name.endswith(".md"):
         return path.read_text(encoding="utf-8")
     return json.loads(path.read_text(encoding="utf-8"))
@@ -67,6 +56,9 @@ def _check_criterion_list(name: str, perspective: str) -> list[CriterionResult]:
         )
         missing = [k for k in REQUIRED_DETAILS[r.criterion_id] if k not in r.details]
         assert not missing, f"{name} {r.tech_id}/{r.criterion_id}: details 필수 키 누락 {missing}"
+        assert r.level == "not_public" or r.level in CRITERION_LEVELS[r.criterion_id], (
+            f"{name} {r.tech_id}/{r.criterion_id}: level {r.level!r} 허용 값 밖"
+        )
         if r.level != "not_public":
             for e in r.evidence:
                 assert e.evidence_id.startswith(f"{r.tech_id}-{r.criterion_id}-"), (
@@ -136,8 +128,8 @@ def test_trl_eval():
 def test_domain_eval():
     results = _check_criterion_list("domain_eval.json", "domain")
     for r in results:
-        if r.criterion_id in ("D1", "D2", "D3") and r.level != "not_public":
-            assert r.measurements, f"{r.tech_id}/{r.criterion_id}: measurements 필요 (V3)"
+        if r.criterion_id in ("D1", "D2", "D3") and r.level in ("L2", "L3"):
+            assert r.measurements, f"{r.tech_id}/{r.criterion_id}: level {r.level} 이면 measurements 필요 (V3)"
             if r.details["directness"] == "L2":
                 assert r.details.get("extrapolation_logic"), f"{r.tech_id}/{r.criterion_id}: L2는 외삽 논리 필수"
 

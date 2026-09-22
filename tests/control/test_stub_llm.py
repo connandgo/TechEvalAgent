@@ -205,3 +205,44 @@ def test_draft_profile_model_picks_tech(fixtures_dir):
     llm = FakeStructuredLLM(fixtures_dir=fixtures_dir)
     out = llm.with_structured_output(ProfileDraft).invoke("tech_id: pim_cxl 기술 개요")
     assert out.principle == "pim_cxl principle"
+
+
+def test_collect_stub_overrides_merges_agent_modules(monkeypatch):
+    """에이전트 모듈에 stub_overrides()가 있으면 자동 등록되고, 없거나 모듈이 없으면 건너뛴다."""
+    import sys
+    import types
+
+    from techeval import stub_llm
+
+    class DraftA(BaseModel):
+        x: int
+
+    class DraftB(BaseModel):
+        y: int
+
+    mod_a = types.ModuleType("fake_agent_a")
+    mod_a.stub_overrides = lambda: {DraftA: lambda text: {"x": 1}}
+    mod_b = types.ModuleType("fake_agent_b")
+    mod_b.stub_overrides = lambda: {DraftB: lambda text: DraftB(y=2)}
+    mod_c = types.ModuleType("fake_agent_c")  # stub_overrides 없음
+    monkeypatch.setitem(sys.modules, "fake_agent_a", mod_a)
+    monkeypatch.setitem(sys.modules, "fake_agent_b", mod_b)
+    monkeypatch.setitem(sys.modules, "fake_agent_c", mod_c)
+    monkeypatch.setattr(stub_llm, "AGENT_MODULES", ("fake_agent_a", "fake_agent_b", "fake_agent_c", "fake_missing"))
+
+    overrides = stub_llm.collect_stub_overrides()
+    assert set(overrides) == {DraftA, DraftB}
+    llm = FakeStructuredLLM(overrides=overrides)
+    assert llm.with_structured_output(DraftA).invoke("아무 프롬프트").x == 1
+    assert llm.with_structured_output(DraftB).invoke("아무 프롬프트").y == 2
+
+
+def test_explicit_missing_criteria_label_wins_over_mentions(llm):
+    """'M2만 재생성' 프롬프트에 이전 결과(M1/M3)가 실려 있어도 명시 표기만 따른다 (Codex M5)."""
+    prompt = 'tech_id: pim_cxl\nmissing_criteria: ["M2"]\n이전 결과: M1 L2, M3 L2, M1 근거 ...'
+    out = llm.with_structured_output(list[CriterionResult]).invoke(prompt)
+    assert [r.criterion_id for r in out] == ["M2"]
+    single = llm.with_structured_output(CriterionResult).invoke("tech_id: mla\ncriterion_id: T2\n참고: T1 T1 T1 T3")
+    assert single.criterion_id == "T2"
+    with pytest.raises(FixtureLookupError, match="explicit"):
+        llm.with_structured_output(CriterionResult).invoke("tech_id: mla\nmissing_criteria: M1, M3")

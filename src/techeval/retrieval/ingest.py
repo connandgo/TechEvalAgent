@@ -24,6 +24,7 @@ class ParsedPage(BaseModel):
 
 class IngestChunk(BaseModel):
     chunk_id: str
+    seq: int
     doc_id: str
     doc_title: str
     page: int
@@ -101,25 +102,64 @@ def _tail_tokens(text: str, tokenizer: object | None, count: int) -> str:
     return tokenizer.decode(ids[-count:], skip_special_tokens=True)
 
 
+def _split_oversized_unit(
+    text: str, tokenizer: object | None, *, max_tokens: int, overlap_tokens: int
+) -> list[str]:
+    """문장 하나가 토큰 예산을 넘을 때 공백 경계에서 안전하게 분할한다."""
+    words = re.findall(r"\S+(?:\s+|$)", text)
+    chunks: list[str] = []
+    current = ""
+    for word in words:
+        candidate = f"{current} {word}".strip()
+        if current and _token_length(candidate, tokenizer) > max_tokens:
+            chunks.append(current)
+            current = (
+                f"{_tail_tokens(current, tokenizer, overlap_tokens)} {word}".strip()
+            )
+        else:
+            current = candidate
+    if current:
+        chunks.append(current)
+    return chunks
+
+
 def _split_to_token_budget(
     text: str, tokenizer: object | None, *, max_tokens: int, overlap_tokens: int
 ) -> list[str]:
-    paragraphs = [
-        paragraph.strip()
-        for paragraph in re.split(r"\n{2,}", text)
-        if paragraph.strip()
-    ]
-    if not paragraphs:
-        return []
+    """절 내부도 BGE-M3 토크나이저 기준 최대 길이를 넘지 않게 분할한다."""
+    paragraphs = [part.strip() for part in re.split(r"\n{2,}", text) if part.strip()]
+    units: list[str] = []
+    for paragraph in paragraphs:
+        # PDF는 줄바꿈만 있고 빈 줄이 없는 경우가 많으므로 문장 경계도 fallback으로 쓴다.
+        sentences = [
+            part.strip()
+            for part in re.split(r"(?<=[.!?])\s+", paragraph)
+            if part.strip()
+        ]
+        units.extend(sentences or [paragraph])
     chunks: list[str] = []
     current = ""
-    for paragraph in paragraphs:
-        candidate = f"{current}\n\n{paragraph}".strip()
-        if current and _token_length(candidate, tokenizer) > max_tokens:
-            chunks.append(current)
-            current = f"{_tail_tokens(current, tokenizer, overlap_tokens)}\n\n{paragraph}".strip()
-        else:
-            current = candidate
+    for unit in units:
+        if _token_length(unit, tokenizer) > max_tokens:
+            if current:
+                chunks.append(current)
+                current = ""
+            chunks.extend(
+                _split_oversized_unit(
+                    unit,
+                    tokenizer,
+                    max_tokens=max_tokens,
+                    overlap_tokens=overlap_tokens,
+                )
+            )
+            continue
+        for part in [unit]:
+            candidate = f"{current}\n\n{part}".strip()
+            if current and _token_length(candidate, tokenizer) > max_tokens:
+                chunks.append(current)
+                current = f"{_tail_tokens(current, tokenizer, overlap_tokens)}\n\n{part}".strip()
+            else:
+                current = candidate
     if current:
         chunks.append(current)
     return chunks
@@ -155,6 +195,7 @@ def chunk_document(
                 result.append(
                     IngestChunk(
                         chunk_id=f"{doc_id}:{page.page:03d}:{sequence:02d}",
+                        seq=sequence,
                         doc_id=doc_id,
                         doc_title=doc_title,
                         page=page.page,
@@ -172,6 +213,7 @@ def build_index(
     *,
     chroma_dir: str | Path,
     embedding_model: str = "BAAI/bge-m3",
+    rebuild: bool = False,
 ) -> dict[str, int]:
     """문서 전체를 Chroma와 BM25에 동기화하고 문서별 청크 수를 반환한다."""
     embedder = BGEEmbedder(embedding_model)
@@ -190,6 +232,6 @@ def build_index(
         counts[doc_id] = len(chunks)
 
     embeddings = embedder.embed_documents([chunk.text for chunk in all_chunks])
-    ChromaStore(chroma_dir).replace(all_chunks, embeddings)
+    ChromaStore(chroma_dir).write(all_chunks, embeddings, rebuild=rebuild)
     BM25Index.build(all_chunks).save(Path(chroma_dir) / "bm25.pkl")
     return counts

@@ -204,8 +204,9 @@ TechEvalAgent/
 `.env` 키 (E가 `config.py`에서 로드, `.env.example`로 공유):
 
 ```
-LLM_PROVIDER=            # 팀 합의로 확정
-LLM_MODEL=               # 평가·생성용
+LLM_PROVIDER=            # 팀 합의로 확정 — with_structured_output이 네이티브 tool calling으로 동작해야 함
+LLM_MODEL=               # 평가·생성용 기본값
+LLM_MODEL_<AGENT>=       # 선택. TECH_RESEARCH/DOMAIN/MARKET/STAKEHOLDER/SYNTHESIS/REPORT 별 모델, 비우면 LLM_MODEL
 JUDGE_MODEL=             # 보고서 검수용 (LLM_MODEL과 달라야 함)
 EMBEDDING_MODEL=BAAI/bge-m3
 CHROMA_DIR=data/chroma

@@ -92,11 +92,7 @@ def detect_gaps(results: list[CriterionResult]) -> list[Gap]:
                     description=f"{r.criterion_id} 근거가 추론(inference)뿐이고 직접 인용 자료가 없음",
                 )
             )
-        elif (
-            "not_public" not in types
-            and r.confidence in ("low", "medium")
-            and _source_count(r) == 1
-        ):
+        elif "not_public" not in types and r.confidence in ("low", "medium") and _source_count(r) == 1:
             gaps.append(
                 Gap(
                     tech_id=r.tech_id,
@@ -183,16 +179,13 @@ def _details_block(results: list[CriterionResult]) -> str:
                 f"extrapolation_logic={r.details.get('extrapolation_logic')}"
             )
         elif r.criterion_id == "T1":
-            lines.append(
-                f"- {r.tech_id} T1 why_not_higher={r.details.get('why_not_higher')}"
-            )
+            lines.append(f"- {r.tech_id} T1 why_not_higher={r.details.get('why_not_higher')}")
     return "\n".join(lines)
 
 
 def _profiles_block(profiles: list[TechProfile]) -> str:
     return "\n".join(
-        f"- {p.tech_id}: validation_env={p.validation_env} / limitations={'; '.join(p.limitations)}"
-        for p in profiles
+        f"- {p.tech_id}: validation_env={p.validation_env} / limitations={'; '.join(p.limitations)}" for p in profiles
     )
 
 
@@ -204,21 +197,10 @@ def _build_messages(
     stats_sentence: str,
     feedback: list[str],
 ) -> list[tuple[str, str]]:
-    counter = (
-        "\n".join(f"- {_evidence_brief(e)}" for e in inp.counter_evidence) or "- (없음)"
-    )
+    counter = "\n".join(f"- {_evidence_brief(e)}" for e in inp.counter_evidence) or "- (없음)"
     evidence = "\n".join(f"- {_evidence_brief(e)}" for e in index.values())
-    gaps = (
-        "\n".join(
-            f"- {g.tech_id} {g.criterion_id} {g.gap_type}: {g.description}"
-            for g in detected
-        )
-        or "- (없음)"
-    )
-    techs = "\n".join(
-        f"- {t.tech_id}: {t.name} ({t.approach}, 계열: {t.family})"
-        for t in inp.technologies
-    )
+    gaps = "\n".join(f"- {g.tech_id} {g.criterion_id} {g.gap_type}: {g.description}" for g in detected) or "- (없음)"
+    techs = "\n".join(f"- {t.tech_id}: {t.name} ({t.approach}, 계열: {t.family})" for t in inp.technologies)
     human = "\n\n".join(
         [
             _load_prompt("agreements.md"),
@@ -235,9 +217,7 @@ def _build_messages(
         ]
     )
     if feedback:
-        human += "\n\n## 이전 출력의 문제 (반드시 고칠 것)\n" + "\n".join(
-            f"- {f}" for f in feedback
-        )
+        human += "\n\n## 이전 출력의 문제 (반드시 고칠 것)\n" + "\n".join(f"- {f}" for f in feedback)
     return [("system", _load_prompt("system.md")), ("human", human)]
 
 
@@ -261,9 +241,7 @@ def _validate_draft(
     for i, a in enumerate(draft.agreements):
         ids = _clean_ids(a.evidence_ids, index, f"agreement[{i}]")
         if not ids:
-            problems.append(
-                f"agreement[{i}] '{a.statement[:40]}'의 evidence_ids가 모두 존재하지 않음"
-            )
+            problems.append(f"agreement[{i}] '{a.statement[:40]}'의 evidence_ids가 모두 존재하지 않음")
             continue
         agreements.append(a.model_copy(update={"evidence_ids": ids}))
 
@@ -287,28 +265,19 @@ def _validate_draft(
             continue
         banned = find_banned_terms(c.statement + c.cause)
         if banned:
-            problems.append(
-                f"{where}: 우열 표현 {banned} 사용 — 원인은 기준·단위·근거 유형·직접성 차이로 서술"
-            )
+            problems.append(f"{where}: 우열 표현 {banned} 사용 — 원인은 기준·단위·근거 유형·직접성 차이로 서술")
             continue
         conflicts.append(c.model_copy(update={"evidence_ids": ids}))
 
     for tid in tech_ids:
         if (tid, "stakeholder", "S4") in matrix and not any(
-            c.tech_id == tid and "S4" in (c.criterion_a, c.criterion_b)
-            for c in conflicts
+            c.tech_id == tid and "S4" in (c.criterion_a, c.criterion_b) for c in conflicts
         ):
-            problems.append(
-                f"{tid}: S4(details.tradeoffs)를 출발점으로 한 conflict가 없음(기술별 최소 1개)"
-            )
+            problems.append(f"{tid}: S4(details.tradeoffs)를 출발점으로 한 conflict가 없음(기술별 최소 1개)")
     if not conflicts:
         problems.append("유효한 conflict가 0개")
 
-    gaps = [
-        g
-        for g in draft.gaps
-        if any(k[0] == g.tech_id and k[2] == g.criterion_id for k in matrix)
-    ]
+    gaps = [g for g in draft.gaps if any(k[0] == g.tech_id and k[2] == g.criterion_id for k in matrix)]
     return agreements, conflicts, gaps, problems
 
 
@@ -343,20 +312,12 @@ def run_synthesis(inp: SynthesisInput, deps: Deps) -> SynthesisResult:
     structured = deps.llm.with_structured_output(SynthesisDraft)
     feedback: list[str] = []
     for attempt in range(1, MAX_LLM_ATTEMPTS + 1):
-        raw = structured.invoke(
-            _build_messages(inp, results, index, detected, stats_sentence, feedback)
-        )
-        draft = SynthesisDraft.model_validate(
-            raw.model_dump() if isinstance(raw, BaseModel) else raw
-        )
-        agreements, conflicts, llm_gaps, problems = _validate_draft(
-            draft, index, matrix, tech_ids
-        )
+        raw = structured.invoke(_build_messages(inp, results, index, detected, stats_sentence, feedback))
+        draft = SynthesisDraft.model_validate(raw.model_dump() if isinstance(raw, BaseModel) else raw)
+        agreements, conflicts, llm_gaps, problems = _validate_draft(draft, index, matrix, tech_ids)
         if not problems:
             break
-        logger.warning(
-            "synthesis 검증 실패(시도 %d/%d): %s", attempt, MAX_LLM_ATTEMPTS, problems
-        )
+        logger.warning("synthesis 검증 실패(시도 %d/%d): %s", attempt, MAX_LLM_ATTEMPTS, problems)
         feedback = problems
     else:
         raise ValueError(f"synthesis 결과가 검증을 통과하지 못함: {feedback}")

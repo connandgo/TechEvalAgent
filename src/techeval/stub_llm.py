@@ -76,10 +76,47 @@ _ASCII_E = r"(?![A-Za-z0-9_])"
 _TECH_ID_EXPLICIT = re.compile(r"tech_id\W{0,4}(mla|pim_cxl)" + _ASCII_E, re.IGNORECASE)
 _TECH_ID_LOOSE = re.compile(_ASCII_B + r"(mla|pim_cxl|pim|cxl|deepseek)" + _ASCII_E, re.IGNORECASE)
 _CRITERION_ID = re.compile(_ASCII_B + r"([TMSD][1-4])" + _ASCII_E)
+# 명시 표기 (우선): `criterion_id: T3`, `missing_criteria: ["M1", "M3"]` / `missing_criteria: M1, M3`
+_CRITERION_EXPLICIT = re.compile(r"criterion_id\W{0,4}([TMSD][1-4])" + _ASCII_E, re.IGNORECASE)
+_MISSING_EXPLICIT = re.compile(r"missing_criteria\W{0,4}\[?([^\]\n]+)", re.IGNORECASE)
 
 
 class FixtureLookupError(LookupError):
     """프롬프트·모델로 픽스처를 결정하지 못했을 때."""
+
+
+# 각 역할이 자기 에이전트 모듈에 `stub_overrides() -> dict[type, Callable[[str], Any]]`를 두면
+# 여기서 자동으로 모아 FakeStructuredLLM에 등록한다 (LLM 출력 모델이 계약 픽스처와 1:1이 아닌 경우의 역변환기).
+AGENT_MODULES: tuple[str, ...] = (
+    "techeval.agents.tech_research",
+    "techeval.agents.domain",
+    "techeval.agents.market",
+    "techeval.agents.stakeholder",
+    "techeval.agents.synthesis",
+    "techeval.agents.report",
+)
+
+
+def collect_stub_overrides() -> dict[type, Callable[[str], Any]]:
+    """main에 있는 에이전트 모듈들의 `stub_overrides()`를 합친다. 모듈이 없거나 함수가 없으면 건너뛴다."""
+    import importlib
+
+    merged: dict[type, Callable[[str], Any]] = {}
+    for name in AGENT_MODULES:
+        try:
+            mod = importlib.import_module(name)
+        except ImportError:
+            continue
+        fn = getattr(mod, "stub_overrides", None)
+        if fn is None:
+            continue
+        overrides = fn()
+        dup = set(merged) & set(overrides)
+        if dup:
+            logger.warning("%s.stub_overrides 가 기존 오버라이드를 덮어씀: %s", name, [d.__name__ for d in dup])
+        merged.update(overrides)
+        logger.debug("stub_overrides 등록: %s -> %s", name, [k.__name__ for k in overrides])
+    return merged
 
 
 def prompt_to_text(prompt: Any) -> str:
@@ -115,7 +152,21 @@ def extract_tech_id(text: str) -> str | None:
 
 
 def extract_criterion_ids(text: str) -> Counter:
+    """프롬프트 전체에서 기준 ID 빈도 (명시 표기가 없을 때의 폴백)."""
     return Counter(_CRITERION_ID.findall(text))
+
+
+def explicit_criteria(text: str) -> list[str] | None:
+    """`missing_criteria: [...]` 또는 `criterion_id: X` 명시 표기만 읽는다. 없으면 None."""
+    m = _MISSING_EXPLICIT.search(text)
+    if m:
+        ids = _CRITERION_ID.findall(m.group(1))
+        if ids:
+            return list(dict.fromkeys(ids))
+    found = _CRITERION_EXPLICIT.findall(text)
+    if found:
+        return list(dict.fromkeys(found))
+    return None
 
 
 def extract_perspective(text: str) -> str | None:
@@ -305,9 +356,12 @@ class FakeStructuredLLM:
     def _resolve_list(self, item: type, text: str, perspective: str | None = None) -> list[Any]:
         if item is CriterionResult:
             tech_id = self._require_tech(text)
-            ids = extract_criterion_ids(text)
+            explicit = explicit_criteria(text)
+            ids = Counter(explicit) if explicit else extract_criterion_ids(text)
             if perspective:
                 wanted = [c for c in PERSPECTIVE_CRITERIA[perspective] if not ids or c in ids]
+            elif explicit:
+                wanted = [c for c in explicit if c in CRITERION_PERSPECTIVE]
             elif ids:
                 wanted = sorted(ids, key=lambda c: (CRITERION_PERSPECTIVE[c], c))
             else:
@@ -330,6 +384,11 @@ class FakeStructuredLLM:
 
     def _resolve_criterion(self, text: str) -> CriterionResult:
         tech_id = self._require_tech(text)
+        explicit = explicit_criteria(text)
+        if explicit:
+            if len(explicit) > 1:
+                raise FixtureLookupError(f"single CriterionResult requested but explicit criteria are {explicit}")
+            return self._criterion_from_fixture(tech_id, explicit[0])
         ids = extract_criterion_ids(text)
         if not ids:
             raise FixtureLookupError("cannot determine criterion_id from prompt")

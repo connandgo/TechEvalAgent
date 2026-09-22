@@ -30,15 +30,10 @@ class BM25Index:
             corpus=[tokenize(str(chunk.text)) for chunk in chunk_list],
         )
 
-    def search(
-        self, query: str, *, top_k: int = 20, allowed_ids: set[str] | None = None
-    ) -> list[tuple[str, float]]:
+    def search(self, query: str, *, top_k: int = 20, allowed_ids: set[str] | None = None) -> list[tuple[str, float]]:
         scores = self._bm25.get_scores(tokenize(query))
         ranked = sorted(
-            (
-                (self.chunk_ids[index], float(score))
-                for index, score in enumerate(scores)
-            ),
+            ((self.chunk_ids[index], float(score)) for index, score in enumerate(scores)),
             key=lambda item: item[1],
             reverse=True,
         )

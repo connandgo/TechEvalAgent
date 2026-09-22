@@ -22,5 +22,6 @@ uv.lock
 
 # 데이터·산출물 (AGENTS.md §7)
 data/papers/*.pdf
+paper/*.pdf
 data/chroma/
 outputs/

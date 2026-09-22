@@ -148,8 +148,8 @@ class CriterionResult(BaseModel):
             raise ValueError(f"{self.criterion_id} does not belong to {self.perspective}")
         if self.level == "not_public" and not any(e.source_type == "not_public" for e in self.evidence):
             raise ValueError("not_public level requires a not_public evidence record")
-        if self.criterion_id in ("D1", "D2", "D3") and self.level != "not_public" and not self.measurements:
-            raise ValueError(f"{self.criterion_id} requires measurements")
+        if self.criterion_id in ("D1", "D2", "D3") and self.level in ("L2", "L3") and not self.measurements:
+            raise ValueError(f"{self.criterion_id} level {self.level} requires measurements")
         return self
 
 
@@ -472,6 +472,7 @@ class GraphState(TypedDict, total=False):
 
 - `operator.add` 키는 재실행 시 **중복이 쌓인다**. E는 검사 노드에서 `(tech_id, criterion_id)` 기준 최신(`generated_at` 최대) 것만 취하는 `latest_by_criterion()` 헬퍼를 `state.py`에 두고, 종합·보고서 입력을 만들 때 이 헬퍼를 거친다. D는 이미 중복 제거된 입력만 받는다.
 - `retry_counts` 키 형식: `"<perspective>:<tech_id>"`, `"counter"`, `"report"`.
+- `missing_criteria`는 관점별 합집합 키(`"trl"`)와 함께 기술별 키(`"trl:mla"`)도 같은 dict에 기록한다(E의 그래프가 재실행 대상을 Send payload로 나눌 때 사용). 하류는 관점별 키만 읽으면 된다.
 
 ---
 
@@ -529,6 +530,7 @@ START
 - 픽스처는 **실제 논문 내용 기반**으로 그럴듯하게 작성한다(하류의 프롬프트 튜닝에 쓰이므로). 단, 빈 필드로 스키마를 통과시키지 않는다.
 - `tests/test_fixtures.py`(E)가 모든 픽스처를 스키마로 검증한다. 픽스처가 스키마를 깨면 main에 머지되지 않는다.
 - 스텁 LLM: `src/techeval/stub_llm.py`(E)의 `FakeStructuredLLM`. `scripts/run.py --stub`과 테스트가 함께 쓰므로 `tests/` 밖에 둔다(`tests/conftest.py`의 `fake_llm`/`deps_stub` 픽스처가 이를 주입). `with_structured_output(Model)` 호출 시 프롬프트에서 `tech_id`(`tech_id: mla` 표기 권장)·`criterion_id`를 추출해 픽스처에서 해당 Model 인스턴스를 돌려준다. `list[CriterionResult]`와 각 역할이 정의한 래퍼 BaseModel(필드가 계약 모델/리스트인 경우)도 지원한다. 매칭 실패 시 `FixtureLookupError`. 각 역할은 이걸로 자기 에이전트 함수의 흐름(검색 호출 → 프롬프트 조립 → 검증)을 테스트하고, `llm.calls`로 프롬프트 내용을 검증한다.
+- 에이전트의 LLM 출력 모델이 계약 픽스처와 1:1이 아닌 경우(예: `Citation(chunk_id, quote)`를 받아 코드가 `Evidence`를 만드는 구조), 해당 에이전트 모듈에 `stub_overrides() -> dict[type, Callable[[str], Any]]`(출력 모델 → 픽스처 역변환 함수)를 두면 `build_deps(stub=True)`와 `fake_llm` 픽스처가 `stub_llm.collect_stub_overrides()`로 자동 수집해 등록한다. E 코드를 고칠 필요 없다.
 
 ---
 
@@ -538,7 +540,7 @@ START
 |---|---|---|
 | V1 | `CriterionResult.evidence` ≥ 1 | schemas validator |
 | V2 | `not_public` 레벨 ⇒ not_public evidence(검색어·검색일) 포함 | schemas validator |
-| V3 | D1~D3 ⇒ measurements ≥ 1 (not_public 제외) | schemas validator |
+| V3 | D1~D3 & level ∈ {L2, L3} ⇒ measurements ≥ 1. L1(근거 없음)·not_public은 수치를 요구하지 않음 (L1 ≠ not_public: L1은 근거를 찾아봤으나 도메인 조건 수치가 없다는 판정, evidence ≥ 1은 V1로 여전히 필수) | schemas validator |
 | V4 | S2/S3 ⇒ 4주체 각 ≥1, S4 ⇒ ≥1쌍 | perspective_check |
 | V5 | evidence.chunk_id가 retriever에 실존, url이 web 결과에 실존 | perspective_check, tech_evidence_check |
 | V6 | evidence.quote가 해당 chunk.text의 부분 문자열(공백 정규화 후) | perspective_check (paper 출처) |

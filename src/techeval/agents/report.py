@@ -159,9 +159,7 @@ def _load_prompt(name: str) -> str:
 def _response_text(resp: object) -> str:
     content = getattr(resp, "content", resp)
     if isinstance(content, list):
-        content = "".join(
-            p.get("text", "") if isinstance(p, dict) else str(p) for p in content
-        )
+        content = "".join(p.get("text", "") if isinstance(p, dict) else str(p) for p in content)
     return str(content)
 
 
@@ -172,9 +170,7 @@ def sanitize_citations(text: str, index: dict[str, Evidence]) -> str:
         ids = [i.strip() for i in m.group(1).split(",") if i.strip()]
         kept = [i for i in ids if i in index]
         if len(kept) != len(ids):
-            logger.warning(
-                "존재하지 않는 인용 제거: %s", [i for i in ids if i not in index]
-            )
+            logger.warning("존재하지 않는 인용 제거: %s", [i for i in ids if i not in index])
         return f"[E: {', '.join(kept)}]" if kept else ""
 
     return CITATION_RE.sub(repl, text)
@@ -198,23 +194,21 @@ def _evidence_line(e: Evidence) -> str:
     elif e.source_type == "inference":
         extra = " [inference: 본문에서 '추론'으로 표기]"
     meta = ", ".join(x for x in (e.publisher, e.published_date) if x)
-    return f"- {e.evidence_id} ({e.source_type}, unit={e.unit}, {e.locator}{', ' + meta if meta else ''}){extra}: {quote}"
+    return (
+        f"- {e.evidence_id} ({e.source_type}, unit={e.unit}, {e.locator}{', ' + meta if meta else ''}){extra}: {quote}"
+    )
 
 
 def _result_block(r: CriterionResult) -> str:
     lines = [
         f"#### {r.tech_id} / {r.criterion_id} {CRITERION_NAMES.get(r.criterion_id, '')}",
-        f"- level: {r.level}"
-        + (f" (추정: {r.level_estimate})" if r.level_estimate else ""),
+        f"- level: {r.level}" + (f" (추정: {r.level_estimate})" if r.level_estimate else ""),
         f"- confidence: {r.confidence} / evidence_unit: {r.evidence_unit}",
         f"- content: {r.content}",
     ]
     if r.details:
         lines.append(f"- details: {json.dumps(r.details, ensure_ascii=False)}")
-    lines += [
-        f"- measurement: {format_measurement(m)} [E: {m.evidence_id}]"
-        for m in r.measurements
-    ]
+    lines += [f"- measurement: {format_measurement(m)} [E: {m.evidence_id}]" for m in r.measurements]
     lines.append("- evidence:")
     lines += ["  " + _evidence_line(e) for e in r.evidence]
     return "\n".join(lines)
@@ -242,9 +236,7 @@ def _gen_summary(ctx: _Ctx, revision: Revision | None) -> str:
     syn = ctx.inp.synthesis
     # S4 기반 상충을 기술별로 먼저, 이어서 나머지 순서대로 상위 3~4개
     is_s4 = [("S4" in (c.criterion_a, c.criterion_b)) for c in syn.conflicts]
-    ordered = [c for c, s4 in zip(syn.conflicts, is_s4) if s4] + [
-        c for c, s4 in zip(syn.conflicts, is_s4) if not s4
-    ]
+    ordered = [c for c, s4 in zip(syn.conflicts, is_s4) if s4] + [c for c, s4 in zip(syn.conflicts, is_s4) if not s4]
     ordered = ordered[:SUMMARY_CONFLICTS]
     data = "## 상충 지점 (synthesis.conflicts 상위)\n" + "\n".join(
         f"- [{c.tech_id}] {c.perspective_a}/{c.criterion_a} ↔ {c.perspective_b}/{c.criterion_b}: {c.statement} "
@@ -255,9 +247,7 @@ def _gen_summary(ctx: _Ctx, revision: Revision | None) -> str:
 
 
 def _survey_evidence(ctx: _Ctx) -> list[Evidence]:
-    pool = [e for p in ctx.inp.tech_profiles for e in p.evidence] + list(
-        ctx.inp.counter_evidence
-    )
+    pool = [e for p in ctx.inp.tech_profiles for e in p.evidence] + list(ctx.inp.counter_evidence)
     return list({e.evidence_id: e for e in pool if e.doc_id in SURVEY_DOCS}.values())
 
 
@@ -266,44 +256,28 @@ def _gen_background(ctx: _Ctx, revision: Revision | None) -> str:
     survey = _survey_evidence(ctx)
     if not survey:
         if revision:
-            logger.warning(
-                "1장 재생성 지시가 있으나 서베이 근거가 없어 고정 텍스트만 유지"
-            )
+            logger.warning("1장 재생성 지시가 있으나 서베이 근거가 없어 고정 텍스트만 유지")
         return text
-    data = "## 서베이 근거 (io_survey / kv_survey)\n" + "\n".join(
-        _evidence_line(e) for e in survey
-    )
+    data = "## 서베이 근거 (io_survey / kv_survey)\n" + "\n".join(_evidence_line(e) for e in survey)
     return f"{text}\n\n{_llm_text(ctx, 'ch1.md', data, revision)}"
 
 
 def _kv_claim(ctx: _Ctx, tech_id: str) -> str:
     profile = ctx.profile(tech_id)
     m = next(
-        (
-            m
-            for m in (profile.measurements if profile else [])
-            if "kv" in m.metric.lower()
-        ),
+        (m for m in (profile.measurements if profile else []) if "kv" in m.metric.lower()),
         None,
     )
-    return (
-        f". 선정 논문은 {format_measurement(m)}를 보고한다[E: {m.evidence_id}]"
-        if m
-        else ""
-    )
+    return f". 선정 논문은 {format_measurement(m)}를 보고한다[E: {m.evidence_id}]" if m else ""
 
 
 def _gen_selection(ctx: _Ctx, revision: Revision | None) -> str:
     reasons = "\n".join(
-        SELECTION_REASONS[t.tech_id].format(
-            name=t.name, kv_claim=_kv_claim(ctx, t.tech_id)
-        )
+        SELECTION_REASONS[t.tech_id].format(name=t.name, kv_claim=_kv_claim(ctx, t.tech_id))
         for t in ctx.techs
         if t.tech_id in SELECTION_REASONS
     )
-    text = SELECTION_TEMPLATE.format(
-        tech_rows=tech_rows(ctx.techs), reasons=reasons
-    ).strip()
+    text = SELECTION_TEMPLATE.format(tech_rows=tech_rows(ctx.techs), reasons=reasons).strip()
     kv = [e for e in _survey_evidence(ctx) if e.doc_id == "kv_survey"]
     if not kv:
         return text
@@ -326,12 +300,8 @@ def _gen_overview(tech: TechRef) -> Callable[[_Ctx, Revision | None], str]:
                 f"- validation_env: {p.validation_env}",
                 f"- public_artifacts: {json.dumps(p.public_artifacts, ensure_ascii=False)}",
                 "- measurements:\n"
-                + "\n".join(
-                    f"  - {format_measurement(m)} [E: {m.evidence_id}]"
-                    for m in p.measurements
-                ),
-                "## 인용 가능한 evidence\n"
-                + "\n".join(_evidence_line(e) for e in p.evidence),
+                + "\n".join(f"  - {format_measurement(m)} [E: {m.evidence_id}]" for m in p.measurements),
+                "## 인용 가능한 evidence\n" + "\n".join(_evidence_line(e) for e in p.evidence),
             ]
         )
         text = _llm_text(ctx, "ch3.md", data, revision)
@@ -352,10 +322,7 @@ def _gen_perspective(number: str) -> Callable[[_Ctx, Revision | None], str]:
         for t in ctx.techs:
             blocks.append(f"### {t.name} (tech_id={t.tech_id}, 계열: {t.family})")
             blocks += [_result_block(r) for r in results if r.tech_id == t.tech_id]
-        data = (
-            f"## 관점: {PERSPECTIVE_TITLES[perspective]} ({perspective})\n\n"
-            + "\n\n".join(blocks)
-        )
+        data = f"## 관점: {PERSPECTIVE_TITLES[perspective]} ({perspective})\n\n" + "\n\n".join(blocks)
         text = _llm_text(
             ctx,
             "ch4.md",
@@ -396,8 +363,7 @@ def _gap_table(ctx: _Ctx) -> str:
         return ""
     rows = ["| 기술 | 기준 | 공백 유형 | 내용 |", "|---|---|---|---|"]
     rows += [
-        f"| {ctx.name(g.tech_id)} | {g.criterion_id} | {g.gap_type} | {g.description.replace('|', '/')} |"
-        for g in gaps
+        f"| {ctx.name(g.tech_id)} | {g.criterion_id} | {g.gap_type} | {g.description.replace('|', '/')} |" for g in gaps
     ]
     return "**남은 근거 공백 (synthesis.gaps)**\n\n" + "\n".join(rows)
 
@@ -406,17 +372,14 @@ def _gen_limitations(ctx: _Ctx, revision: Revision | None) -> str:
     inp = ctx.inp
     gap = inp.evidence_gap
     t1 = [r for r in inp.trl_eval if r.criterion_id == "T1"]
-    ratio = ", ".join(
-        f"{ctx.name(t)} {v:.1%}" for t, v in gap.vendor_source_ratio.items()
-    )
+    ratio = ", ".join(f"{ctx.name(t)} {v:.1%}" for t, v in gap.vendor_source_ratio.items())
     counts = ", ".join(f"{ctx.name(t)} {n}건" for t, n in gap.evidence_count.items())
     checks = [
         "기술 조사 근거 검사(원리·한계·수치·측정 조건 누락 시 재검색, 상한 2회)",
         "관점별 근거 검사(15기준 × 2기술, evidence 실존·인용 일치, 신뢰도 재계산)",
         f"근거 비대칭 검사(비대칭={gap.asymmetry}, 반대 근거 탐색 필요={gap.needs_counter_search})",
         f"반대 근거 탐색 결과 {len(inp.counter_evidence)}건 반영",
-        "보고서 검수(별도 검수 모델, 5차원)"
-        + (" — 1회 재생성 반영" if inp.judge_result else ""),
+        "보고서 검수(별도 검수 모델, 5차원)" + (" — 1회 재생성 반영" if inp.judge_result else ""),
     ]
     data = "\n".join(
         [
@@ -431,10 +394,7 @@ def _gen_limitations(ctx: _Ctx, revision: Revision | None) -> str:
             f"- evidence_gap.note: {gap.note}",
             "## (4) 적용한 검사\n" + "\n".join(f"- {c}" for c in checks),
             "## (4) 남은 공백 (synthesis.gaps)\n"
-            + "\n".join(
-                f"- {g.tech_id} {g.criterion_id} {g.gap_type}: {g.description}"
-                for g in inp.synthesis.gaps
-            ),
+            + "\n".join(f"- {g.tech_id} {g.criterion_id} {g.gap_type}: {g.description}" for g in inp.synthesis.gaps),
         ]
     )
     text = _llm_text(ctx, "ch6.md", data, revision)
@@ -475,9 +435,7 @@ def _static_section(ctx: _Ctx, key: str) -> Section:
 def _make_section(ctx: _Ctx, key: str, revision: Revision | None) -> Section:
     logger.info("보고서 절 생성: %s%s", key, " (재생성)" if revision else "")
     body = _generators(ctx)[key](ctx, revision)
-    return Section(
-        key=key, heading=_heading(ctx, key) + "\n", body=f"\n{body.strip()}\n\n"
-    )
+    return Section(key=key, heading=_heading(ctx, key) + "\n", body=f"\n{body.strip()}\n\n")
 
 
 def _assemble(ctx: _Ctx, sections: dict[str, Section]) -> str:
@@ -509,9 +467,7 @@ def map_instructions_to_units(
 
 def _revision_targets(ctx: _Ctx, previous: dict[str, Section]) -> dict[str, list[str]]:
     judge = ctx.inp.judge_result
-    instructions = (
-        [*judge.revision_instructions, *judge.missing_required] if judge else []
-    )
+    instructions = [*judge.revision_instructions, *judge.missing_required] if judge else []
     targets, unmapped = map_instructions_to_units(instructions)
 
     prev_lint = lint_report(ctx.inp.previous_report_md or "", ctx.index)
@@ -553,9 +509,7 @@ def _regenerate(ctx: _Ctx) -> str:
 # ---------------------------------------------------------------- 진입점
 
 
-def _self_fix(
-    ctx: _Ctx, sections: dict[str, Section], lint: LintResult
-) -> dict[str, Section]:
+def _self_fix(ctx: _Ctx, sections: dict[str, Section], lint: LintResult) -> dict[str, Section]:
     """lint 오류(금칙어 등)가 난 LLM 절만 1회 고쳐 쓴다."""
     fixed = dict(sections)
     for key in sorted(lint.sections_with_errors() & set(LLM_UNITS)):
@@ -584,21 +538,15 @@ def run_report(inp: ReportInput, deps: Deps) -> str:
         report_md = _regenerate(ctx)
     else:
         if inp.judge_result is not None:
-            logger.warning(
-                "judge_result는 있으나 previous_report_md가 없어 전체를 새로 생성"
-            )
+            logger.warning("judge_result는 있으나 previous_report_md가 없어 전체를 새로 생성")
         sections = {
-            key: _make_section(ctx, key, None)
-            if key in LLM_UNITS
-            else _static_section(ctx, key)
+            key: _make_section(ctx, key, None) if key in LLM_UNITS else _static_section(ctx, key)
             for key in SECTION_ORDER
         }
         report_md = _assemble(ctx, sections)
         lint = lint_report(report_md, index)
         if lint.sections_with_errors() & set(LLM_UNITS):
-            logger.warning(
-                "lint 오류 → 해당 절 1회 수정: %s", [i.message for i in lint.errors]
-            )
+            logger.warning("lint 오류 → 해당 절 1회 수정: %s", [i.message for i in lint.errors])
             report_md = _assemble(ctx, _self_fix(ctx, sections, lint))
 
     final = lint_report(report_md, index)

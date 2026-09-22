@@ -15,15 +15,22 @@ class ChromaStore:
             metadata={"hnsw:space": "cosine"},
         )
 
-    def replace(self, chunks: Iterable[object], embeddings: list[list[float]]) -> None:
+    def write(
+        self,
+        chunks: Iterable[object],
+        embeddings: list[list[float]],
+        *,
+        rebuild: bool = False,
+    ) -> None:
         chunk_list = list(chunks)
         if len(chunk_list) != len(embeddings):
             raise ValueError("chunks and embeddings must have the same length")
-        existing = self._collection.get(include=[])
-        if existing["ids"]:
-            self._collection.delete(ids=existing["ids"])
+        if rebuild:
+            existing = self._collection.get(include=[])
+            if existing["ids"]:
+                self._collection.delete(ids=existing["ids"])
 
-        self._collection.add(
+        self._collection.upsert(
             ids=[str(chunk.chunk_id) for chunk in chunk_list],
             documents=[str(chunk.text) for chunk in chunk_list],
             embeddings=embeddings,
@@ -34,6 +41,7 @@ class ChromaStore:
                     "page": int(chunk.page),
                     "section": chunk.section or "",
                     "chunk_type": str(chunk.chunk_type),
+                    "seq": int(chunk.seq),
                 }
                 for chunk in chunk_list
             ],
