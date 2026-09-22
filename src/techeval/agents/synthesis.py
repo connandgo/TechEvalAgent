@@ -2,7 +2,10 @@
 
 import json
 import logging
+import re
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -74,13 +77,16 @@ def detect_gaps(results: list[CriterionResult]) -> list[Gap]:
                     description=f"{r.criterion_id} 판정 자체가 not_public(공개 근거 미확인)",
                 )
             )
-        elif "not_public" in types:
+        elif "not_public" in types or r.details.get("not_public_items"):
+            # 일부 항목만 미공개: not_public evidence로 남기거나, T4처럼 details.not_public_items에 적는다(CRITERIA §2.1)
+            items = r.details.get("not_public_items") or []
             gaps.append(
                 Gap(
                     tech_id=r.tech_id,
                     criterion_id=r.criterion_id,
                     gap_type="not_public",
-                    description=f"{r.criterion_id} 판정 일부 항목이 not_public으로 기록됨",
+                    description=f"{r.criterion_id} 판정 일부 항목이 not_public으로 기록됨"
+                    + (f": {'; '.join(items)}" if items else ""),
                 )
             )
         if types <= {"inference", "not_public"} and "inference" in types:
@@ -92,7 +98,12 @@ def detect_gaps(results: list[CriterionResult]) -> list[Gap]:
                     description=f"{r.criterion_id} 근거가 추론(inference)뿐이고 직접 인용 자료가 없음",
                 )
             )
-        elif "not_public" not in types and r.confidence in ("low", "medium") and _source_count(r) == 1:
+        elif (
+            "not_public" not in types
+            and not r.details.get("not_public_items")
+            and r.confidence in ("low", "medium")
+            and _source_count(r) == 1
+        ):
             gaps.append(
                 Gap(
                     tech_id=r.tech_id,
@@ -279,6 +290,50 @@ def _validate_draft(
 
     gaps = [g for g in draft.gaps if any(k[0] == g.tech_id and k[2] == g.criterion_id for k in matrix)]
     return agreements, conflicts, gaps, problems
+
+
+# _matrix_table 행: | tech | perspective | criterion | level | confidence | evidence_unit | evidence_ids | content |
+MATRIX_ROW_RE = re.compile(
+    r"^\| (mla|pim_cxl) \| (\w+) \| ([TMSD][1-4]) \|(?:[^|]*\|){3} ([^|]*) \|",
+    re.MULTILINE,
+)
+
+
+def _stub_draft(prompt: str) -> SynthesisDraft:
+    """스텁 LLM용 결정적 드래프트: 프롬프트의 매트릭스 표에서 기술별 S4 ↔ 다른 관점 conflict를 1개씩 만든다."""
+    rows: dict[tuple[str, str], tuple[str, list[str]]] = {}
+    for tid, persp, cid, ids in MATRIX_ROW_RE.findall(prompt):
+        rows[(tid, cid)] = (persp, [i.strip() for i in ids.split(",") if i.strip()])
+    conflicts = []
+    for tid in dict.fromkeys(t for t, _ in rows):
+        other = next((c for c in ("D4", "M2", "T1") if (tid, c) in rows), None)
+        if (tid, "S4") not in rows or other is None:
+            continue
+        persp_b, ids_b = rows[(tid, other)]
+        conflicts.append(
+            Conflict(
+                tech_id=tid,
+                perspective_a="stakeholder",
+                criterion_a="S4",
+                perspective_b=persp_b,
+                criterion_b=other,
+                statement=f"(스텁) {tid}의 S4 상충과 {other} 판정이 서로 다른 지점을 가리킨다.",
+                cause="(스텁) 평가 단위 차이: S4는 기술 계열(family), 상대 기준은 논문·구현(paper) 단위로 판정했다.",
+                evidence_ids=list(dict.fromkeys([*rows[(tid, "S4")][1], *ids_b])),
+            )
+        )
+    if not conflicts:
+        raise ValueError("stub synthesis: 프롬프트에서 기술 × 관점 × 기준 매트릭스를 찾지 못함")
+    return SynthesisDraft(
+        conflicts=conflicts,
+        unit_notes="(스텁) TRL·도메인은 논문 단위, 시장·이해관계자는 계열 단위로 판정했다.",
+        evidence_asymmetry_note="(스텁) 근거 방향성은 판단하지 않았다.",
+    )
+
+
+def stub_overrides() -> dict[type, Callable[[str], Any]]:
+    """E의 FakeStructuredLLM이 자동 등록한다(CONTRACTS §9). 스텁 실행에서도 입력 evidence로만 conflict를 만든다."""
+    return {SynthesisDraft: _stub_draft}
 
 
 def _merge_gaps(detected: list[Gap], llm_gaps: list[Gap]) -> list[Gap]:

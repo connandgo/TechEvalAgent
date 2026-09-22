@@ -19,19 +19,25 @@ from techeval.report.sections import (
 from techeval.report.tables import TABLE_HEADER
 from techeval.schemas import Evidence
 
-BANNED_TERMS: tuple[str, ...] = (
-    "더 우수",
-    "더 낫",
-    "추천",
-    "권장",
-    "1위",
-    "순위",
-    "종합 점수",
-    "총점",
-    "평균 레벨",
-    "우세",
-    "열세",
+# 금칙어 (역할 문서 §5.3 + E의 control/judge.py FORBIDDEN/AGGREGATE 패턴). 부정문("합산하지 않는다")도 걸린다.
+BANNED_PATTERNS: tuple[str, ...] = (
+    r"더\s*우수",
+    r"더\s*낫",
+    r"더\s*뛰어나",
+    r"우월",
+    r"우세",
+    r"열세",
+    r"추천",
+    r"권장",
+    r"[0-9]\s*위(?![가-힣])",
+    r"순위",
+    r"종합\s*점수",
+    r"총점",
+    r"합산",
+    r"평균\s*(점수|레벨)",
+    r"레벨\s*(합|평균)",
 )
+_BANNED_RE = re.compile("|".join(f"(?:{p})" for p in BANNED_PATTERNS))
 CHAPTER_TITLES: dict[str, str] = {
     "SUMMARY": "SUMMARY",
     "1": "1. 분석 배경",
@@ -45,6 +51,12 @@ CHAPTER_TITLES: dict[str, str] = {
 # 수치 패턴: 93.3%, 5.76x, 2.1배. 앞이 영숫자인 경우(예: 'H800')는 제외.
 NUMBER_RE = re.compile(r"(?<![\w.])\d+(?:\.\d+)?\s?(?:%|x\b|×|배)")
 NEAR_CHARS = 20
+# SUMMARY: 전체 보고서의 핵심 요약, A4 반 페이지 이내, 도입(인트로) 문장으로 시작 금지.
+# 반 페이지 ≈ 10pt 본문 폭 기준 700자 안팎(인용 표기·마크다운 제외). 분량은 judge 채점 대상이 아니므로(CRITERIA §6)
+# errors가 아니라 warnings로 두고, run_report가 이 경고를 보고 SUMMARY만 1회 다시 쓴다.
+SUMMARY_MAX_CHARS = 700
+SUMMARY_INTRO_RE = re.compile(r"^(?:본|이|이번|해당)\s*(?:보고서|요약|평가|문서|절|장)|^(?:다음은|아래는|요약하면)")
+FIXABLE_WARNING_KINDS: tuple[str, ...] = ("summary_too_long", "summary_intro")
 
 
 class LintIssue(BaseModel):
@@ -66,9 +78,17 @@ class LintResult(BaseModel):
     def sections_with_errors(self) -> set[str]:
         return {i.section for i in self.errors}
 
+    def fix_issues(self) -> list[LintIssue]:
+        """D가 스스로 고칠 문제: 오류 전부 + SUMMARY 분량·인트로 경고."""
+        return [*self.errors, *(w for w in self.warnings if w.kind in FIXABLE_WARNING_KINDS)]
+
+    def sections_to_fix(self) -> set[str]:
+        return {i.section for i in self.fix_issues()}
+
 
 def find_banned_terms(text: str) -> list[str]:
-    return [t for t in BANNED_TERMS if t in text]
+    """검출된 금칙어 표현(원문 그대로)을 중복 없이 반환한다."""
+    return list(dict.fromkeys(m.group(0) for m in _BANNED_RE.finditer(text)))
 
 
 def _number_warnings(section: Section) -> list[LintIssue]:
@@ -90,6 +110,35 @@ def _number_warnings(section: Section) -> list[LintIssue]:
                         message=f"[{section.key}] 수치 '{m.group(0)}' 근처에 [E: id] 인용이 없음",
                     )
                 )
+    return issues
+
+
+def summary_plain_text(body: str) -> str:
+    """인용 표기·마크다운 기호를 뺀 SUMMARY 본문."""
+    text = CITATION_RE.sub("", body)
+    text = re.sub(r"[*_`>#]|^\s*[-\d.]+\s", "", text, flags=re.MULTILINE)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _summary_warnings(section: Section) -> list[LintIssue]:
+    text = summary_plain_text(section.body)
+    issues = []
+    if len(text) > SUMMARY_MAX_CHARS:
+        issues.append(
+            LintIssue(
+                section="SUMMARY",
+                kind="summary_too_long",
+                message=f"[SUMMARY] {len(text)}자로 A4 반 페이지 기준({SUMMARY_MAX_CHARS}자)을 넘음 — 핵심 결론만 남겨 줄여라",
+            )
+        )
+    if SUMMARY_INTRO_RE.match(text):
+        issues.append(
+            LintIssue(
+                section="SUMMARY",
+                kind="summary_intro",
+                message=f"[SUMMARY] 도입 문장으로 시작함('{text[:20]}…') — 첫 문장부터 핵심 결론을 써라",
+            )
+        )
     return issues
 
 
@@ -133,6 +182,8 @@ def lint_report(report_md: str, evidence_index: dict[str, Evidence]) -> LintResu
                     )
                 )
         warnings += _number_warnings(s)
+        if s.key == "SUMMARY":
+            warnings += _summary_warnings(s)
 
     # 5) REFERENCE = 본문 인용 집합 (inference/not_public 제외)
     ref = next((s for s in sections if s.key == "REFERENCE"), None)
@@ -177,6 +228,7 @@ def lint_report(report_md: str, evidence_index: dict[str, Evidence]) -> LintResu
             instructions.append(f"{i.message}: 입력 evidence 목록에 있는 id만 인용하라")
         else:
             instructions.append(i.message)
+    instructions += [w.message for w in warnings if w.kind in FIXABLE_WARNING_KINDS]
     return LintResult(
         errors=errors,
         warnings=warnings,

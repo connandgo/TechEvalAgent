@@ -9,7 +9,7 @@ from techeval.schemas import CriterionResult, Evidence, TechProfile
 logger = logging.getLogger(__name__)
 
 REFERENCE_HEADING = "## REFERENCE"
-# 본문 인용 표기. "[E: a, b]"처럼 한 괄호에 여러 id를 쉼표로 적는 것도 허용한다.
+# 본문 인용 표기. 출력은 항상 `[E: a][E: b]`(format_citations)이고, 읽을 때는 "[E: a, b]"도 허용한다.
 CITATION_RE = re.compile(r"\[E:\s*([^\]]+?)\s*\]")
 # REFERENCE 항목 끝에 붙는 근거 id 목록 표기. lint가 본문 인용 집합과 대조할 때 쓴다.
 REF_IDS_RE = re.compile(r"\(근거 ID:\s*([^)]+)\)\s*$")
@@ -33,6 +33,19 @@ def build_evidence_index(
                 logger.warning("evidence_id 중복(내용 다름): %s — 첫 항목 사용", e.evidence_id)
             index.setdefault(e.evidence_id, e)
     return index
+
+
+def format_citations(ids: list[str]) -> str:
+    """인용 표기. CRITERIA §5 형식대로 id마다 괄호 하나: `[E: a][E: b]` (E의 judge도 이 형식만 읽는다)."""
+    return "".join(f"[E: {i}]" for i in dict.fromkeys(ids))
+
+
+def normalize_citations(text: str) -> str:
+    """`[E: a, b]`처럼 한 괄호에 여러 id를 쓴 표기를 `[E: a][E: b]`로 펼친다."""
+    return CITATION_RE.sub(
+        lambda m: format_citations([i.strip() for i in m.group(1).split(",") if i.strip()]),
+        text,
+    )
 
 
 def collect_cited_ids(text: str) -> list[str]:

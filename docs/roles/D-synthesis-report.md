@@ -26,7 +26,7 @@ src/techeval/prompts/report/             # system.md, summary.md, ch1~ch6.md, ch
 tests/agents/test_synthesis.py
 tests/agents/test_report.py
 tests/report/test_citation.py, test_lint.py, test_pdf.py, test_tables.py
-tests/report/d_fixtures.py, make_d_fixtures.py, upstream_samples/   # 픽스처 로더·재생성 스크립트·B·C 샘플
+tests/report/d_fixtures.py, make_d_fixtures.py, upstream_samples/   # 픽스처 로더·재생성 스크립트·C 샘플(market/stakeholder)
 tests/fixtures/synthesis.json
 tests/fixtures/report_md.md
 ```
@@ -60,7 +60,7 @@ tests/fixtures/report_md.md
 
 ### 5.2 보고서 (`run_report`)
 - 챕터 구성·분량은 `docs/CRITERIA.md` §5. 챕터별로 프롬프트를 분리하고 각 챕터 프롬프트에 필요한 데이터만 넣는다.
-  - SUMMARY: `synthesis.conflicts` 상위 3~4개 → 3~4문장
+  - SUMMARY: **전체 평가 보고서의 핵심 요약**(개요 장표 아님). A4 1/2 페이지 이내(인용 제외 700자 안쪽, 4~6문장), **도입(인트로) 문장으로 시작 금지**. 입력은 `synthesis.conflicts` 상위 4개(S4 우선) + 기술별 관점 판정 한 줄 요약 + 해석상 한계(`unit_notes`, `vendor_source_ratio`). 분량·인트로는 `lint`가 경고로 잡고 SUMMARY만 1회 재작성(judge 채점 대상 아님)
   - 1장: 배경(고정 텍스트 템플릿 + 서베이 `io_survey`/`kv_survey` 근거가 `tech_profiles`·`counter_evidence`에 있으면 인용)
   - 2장: 기술 선정(고정 텍스트 템플릿, CRITERIA §7 선정 사유)
   - 3장: `tech_profiles` — 원리·정량 성과(Measurement 조건 병기)·한계, 원문 인용

@@ -17,6 +17,8 @@ from techeval.report.citation import (
     CITATION_RE,
     build_evidence_index,
     build_reference_section,
+    format_citations,
+    normalize_citations,
 )
 from techeval.report.lint import LintResult, lint_report
 from techeval.report.sections import Section, join_sections, split_sections
@@ -171,7 +173,7 @@ def sanitize_citations(text: str, index: dict[str, Evidence]) -> str:
         kept = [i for i in ids if i in index]
         if len(kept) != len(ids):
             logger.warning("존재하지 않는 인용 제거: %s", [i for i in ids if i not in index])
-        return f"[E: {', '.join(kept)}]" if kept else ""
+        return format_citations(kept)
 
     return CITATION_RE.sub(repl, text)
 
@@ -183,7 +185,7 @@ def _clean_llm_text(text: str, index: dict[str, Evidence]) -> str:
         text = fence.group(1).strip()
     # 절 제목은 코드가 붙인다. LLM이 쓴 #~### 제목은 #### 소제목으로 낮춰 절 구조를 깨지 않게 한다.
     text = re.sub(r"^#{1,3}\s+", "#### ", text, flags=re.MULTILINE)
-    return sanitize_citations(text, index)
+    return normalize_citations(sanitize_citations(text, index))
 
 
 def _evidence_line(e: Evidence) -> str:
@@ -226,22 +228,43 @@ def _llm_text(ctx: _Ctx, prompt_name: str, data: str, revision: Revision | None)
 
 
 def _cite(ids: list[str]) -> str:
-    return f"[E: {', '.join(ids)}]" if ids else ""
+    return format_citations(ids)
 
 
 # ---------------------------------------------------------------- 절 생성기
 
 
+def _level_line(ctx: _Ctx, tech_id: str) -> str:
+    """기술 1개의 15기준 판정을 한 줄로: `T1 TRL 4-6(추정 TRL 6)[E: …] · T2 L3[E: …] …` (합산하지 않고 나열만)."""
+    rows = []
+    for r in ctx.results:
+        if r.tech_id != tech_id:
+            continue
+        level = f"{r.level}({r.level_estimate})" if r.level_estimate else r.level
+        rows.append(f"{r.criterion_id} {level}{_cite([r.evidence[0].evidence_id])}")
+    return f"- {ctx.name(tech_id)}: " + " · ".join(rows)
+
+
 def _gen_summary(ctx: _Ctx, revision: Revision | None) -> str:
     syn = ctx.inp.synthesis
-    # S4 기반 상충을 기술별로 먼저, 이어서 나머지 순서대로 상위 3~4개
+    # 상충 지점: S4 기반 상충을 먼저, 이어서 나머지 순서대로 상위 SUMMARY_CONFLICTS개
     is_s4 = [("S4" in (c.criterion_a, c.criterion_b)) for c in syn.conflicts]
     ordered = [c for c, s4 in zip(syn.conflicts, is_s4) if s4] + [c for c, s4 in zip(syn.conflicts, is_s4) if not s4]
-    ordered = ordered[:SUMMARY_CONFLICTS]
-    data = "## 상충 지점 (synthesis.conflicts 상위)\n" + "\n".join(
-        f"- [{c.tech_id}] {c.perspective_a}/{c.criterion_a} ↔ {c.perspective_b}/{c.criterion_b}: {c.statement} "
-        f"(원인: {c.cause}) {_cite(c.evidence_ids)}"
-        for c in ordered
+    ratio = ", ".join(f"{ctx.name(t)} {v:.1%}" for t, v in ctx.inp.evidence_gap.vendor_source_ratio.items())
+    data = "\n".join(
+        [
+            "## 상충 지점 (synthesis.conflicts 상위)",
+            *(
+                f"- [{c.tech_id}] {c.perspective_a}/{c.criterion_a} ↔ {c.perspective_b}/{c.criterion_b}: {c.statement} "
+                f"(원인: {c.cause}) {_cite(c.evidence_ids)}"
+                for c in ordered[:SUMMARY_CONFLICTS]
+            ),
+            "## 기술별 관점 판정 (필요한 레벨만 골라 인용)",
+            *(_level_line(ctx, t.tech_id) for t in ctx.techs),
+            "## 해석상 한계",
+            f"- 평가 단위: {syn.unit_notes}",
+            f"- 벤더(official) 자료 비율: {ratio}",
+        ]
     )
     return _llm_text(ctx, "summary.md", data, revision)
 
@@ -471,7 +494,7 @@ def _revision_targets(ctx: _Ctx, previous: dict[str, Section]) -> dict[str, list
     targets, unmapped = map_instructions_to_units(instructions)
 
     prev_lint = lint_report(ctx.inp.previous_report_md or "", ctx.index)
-    for issue in prev_lint.errors:
+    for issue in prev_lint.fix_issues():
         if issue.section in LLM_UNITS:
             targets.setdefault(issue.section, []).append(issue.message)
     for key in LLM_UNITS:
@@ -506,14 +529,35 @@ def _regenerate(ctx: _Ctx) -> str:
     return _assemble(ctx, sections)
 
 
+# ---------------------------------------------------------------- 스텁 LLM (CONTRACTS §9 stub_overrides)
+
+EVIDENCE_ID_RE = re.compile(r"\b(?:mla|pim_cxl)-[A-Z]+[0-9]*-\d{2}\b")
+
+
+def _stub_text(prompt: str) -> str:
+    """스텁 LLM의 비구조화 응답: 절 이름과, 입력 데이터에 실제로 있는 evidence_id 하나를 인용한 한 문장."""
+    head = next(
+        (ln.lstrip("# ").strip() for ln in prompt.splitlines() if ln.startswith("# 작성할")),
+        "절",
+    )
+    ids = EVIDENCE_ID_RE.findall(prompt.split("# 입력 데이터", 1)[-1])
+    cite = f"[E: {ids[0]}]" if ids else ""
+    return f"(스텁 LLM) {head} — 입력 데이터만으로 서술한 자리 표시 문장이다{cite}."
+
+
+def stub_overrides() -> dict[type, Callable[[str], str]]:
+    """E의 FakeStructuredLLM이 자동 등록한다. 등록이 없으면 invoke()가 빈 문자열을 돌려 절이 비게 된다."""
+    return {str: _stub_text}
+
+
 # ---------------------------------------------------------------- 진입점
 
 
 def _self_fix(ctx: _Ctx, sections: dict[str, Section], lint: LintResult) -> dict[str, Section]:
     """lint 오류(금칙어 등)가 난 LLM 절만 1회 고쳐 쓴다."""
     fixed = dict(sections)
-    for key in sorted(lint.sections_with_errors() & set(LLM_UNITS)):
-        msgs = [i.message for i in lint.errors if i.section == key]
+    for key in sorted(lint.sections_to_fix() & set(LLM_UNITS)):
+        msgs = [i.message for i in lint.fix_issues() if i.section == key]
         fixed[key] = _make_section(ctx, key, Revision(sections[key].body, msgs))
     return fixed
 
@@ -545,7 +589,7 @@ def run_report(inp: ReportInput, deps: Deps) -> str:
         }
         report_md = _assemble(ctx, sections)
         lint = lint_report(report_md, index)
-        if lint.sections_with_errors() & set(LLM_UNITS):
+        if lint.sections_to_fix() & set(LLM_UNITS):
             logger.warning("lint 오류 → 해당 절 1회 수정: %s", [i.message for i in lint.errors])
             report_md = _assemble(ctx, _self_fix(ctx, sections, lint))
 
