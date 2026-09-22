@@ -14,3 +14,6 @@ def test_render_fixture_report(tmp_path):
     assert path.read_bytes().startswith(b"%PDF")
     pages = HTML(string=build_html(report_md)).render().pages
     assert len(pages) >= 5
+    final_md = (tmp_path / "sub" / "report_final.md").read_text("utf-8")  # PDF와 같은 독자용 최종본
+    assert "[E:" not in final_md and "근거 ID" not in final_md
+    assert "[1" in final_md

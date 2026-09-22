@@ -7,6 +7,8 @@ from pathlib import Path
 
 import markdown
 
+from techeval.report.citation import to_numbered_citations
+
 logger = logging.getLogger(__name__)
 
 FONT_DIR = Path(__file__).resolve().parents[3] / "assets" / "fonts"
@@ -94,13 +96,19 @@ def _render_pandoc(report_md: str, out: Path) -> None:
 
 
 def render_pdf(report_md: str, out_path: str) -> str:
-    """report_md를 out_path에 PDF로 저장하고 그 경로를 반환한다."""
+    """report_md를 out_path에 PDF로 저장하고 그 경로를 반환한다.
+
+    PDF는 독자용 최종본이다: 검수용 `[E: evidence_id]`를 REFERENCE 번호 인용 `[1, 3]`으로 바꿔 렌더링하고,
+    같은 내용의 마크다운을 PDF 옆에 `<이름>_final.md`로 함께 저장한다(예: report.pdf → report_final.md).
+    """
     out = Path(out_path)
     out.parent.mkdir(parents=True, exist_ok=True)
+    final_md = to_numbered_citations(report_md)
+    out.with_name(f"{out.stem}_final.md").write_text(final_md, encoding="utf-8")
     try:
-        _render_weasyprint(build_html(report_md), out)
+        _render_weasyprint(build_html(final_md), out)
     except (ImportError, OSError) as exc:
         logger.warning("weasyprint 사용 불가(%s) — pandoc으로 대체", exc)
-        _render_pandoc(report_md, out)
+        _render_pandoc(final_md, out)
     logger.info("PDF 생성: %s (%d bytes)", out, out.stat().st_size)
     return str(out)
