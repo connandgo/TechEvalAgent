@@ -472,6 +472,7 @@ class GraphState(TypedDict, total=False):
 
 - `operator.add` 키는 재실행 시 **중복이 쌓인다**. E는 검사 노드에서 `(tech_id, criterion_id)` 기준 최신(`generated_at` 최대) 것만 취하는 `latest_by_criterion()` 헬퍼를 `state.py`에 두고, 종합·보고서 입력을 만들 때 이 헬퍼를 거친다. D는 이미 중복 제거된 입력만 받는다.
 - `retry_counts` 키 형식: `"<perspective>:<tech_id>"`, `"counter"`, `"report"`.
+- `missing_criteria`는 관점별 합집합 키(`"trl"`)와 함께 기술별 키(`"trl:mla"`)도 같은 dict에 기록한다(E의 그래프가 재실행 대상을 Send payload로 나눌 때 사용). 하류는 관점별 키만 읽으면 된다.
 
 ---
 

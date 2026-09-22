@@ -51,16 +51,12 @@ class RetrievedChunk(BaseModel):
     bm25_score: float | None = None
     chunk_type: Literal["text", "table", "figure_caption"] = "text"
 
-    def to_evidence(
-        self, *, evidence_id: str, quote: str, unit: EvidenceUnit = "paper"
-    ) -> Evidence:
+    def to_evidence(self, *, evidence_id: str, quote: str, unit: EvidenceUnit = "paper") -> Evidence:
         """공용 Evidence 모델로 변환하고, LLM 인용문이 원문에 있는지 확인한다."""
         normalized_quote = re.sub(r"\s+", " ", quote).strip()
         normalized_text = re.sub(r"\s+", " ", self.text).strip()
         if not normalized_quote or normalized_quote not in normalized_text:
-            raise ValueError(
-                f"quote must be a substring of retrieved chunk {self.chunk_id}"
-            )
+            raise ValueError(f"quote must be a substring of retrieved chunk {self.chunk_id}")
         meta = DOC_META.get(self.doc_id, {})
         section = f" §{self.section}" if self.section else ""
         return Evidence(
@@ -71,9 +67,7 @@ class RetrievedChunk(BaseModel):
             locator=f"{self.doc_id} p.{self.page}{section}",
             title=self.doc_title,
             authors=meta.get("authors"),
-            publisher="arXiv"
-            if "arxiv.org" in meta.get("url", "")
-            else "Artificial Intelligence Review",
+            publisher="arXiv" if "arxiv.org" in meta.get("url", "") else "Artificial Intelligence Review",
             published_date=meta.get("published_date"),
             url=meta.get("url"),
             doc_id=self.doc_id,
@@ -136,9 +130,7 @@ class VectorRetriever(BaseRetriever):
         self._bm25 = BM25Index.load(self.chroma_dir / "bm25.pkl")
 
     @staticmethod
-    def _from_row(
-        chunk_id: str, document: str, metadata: dict, score: float
-    ) -> RetrievedChunk:
+    def _from_row(chunk_id: str, document: str, metadata: dict, score: float) -> RetrievedChunk:
         return RetrievedChunk(
             chunk_id=chunk_id,
             doc_id=metadata["doc_id"],
@@ -150,12 +142,8 @@ class VectorRetriever(BaseRetriever):
             chunk_type=metadata.get("chunk_type", "text"),
         )
 
-    def _dense_search(
-        self, query: str, *, top_k: int, doc_ids: list[str] | None
-    ) -> list[RetrievedChunk]:
-        result = self._store.query(
-            self._embedder.embed_query(query), top_k=top_k, doc_ids=doc_ids
-        )
+    def _dense_search(self, query: str, *, top_k: int, doc_ids: list[str] | None) -> list[RetrievedChunk]:
+        result = self._store.query(self._embedder.embed_query(query), top_k=top_k, doc_ids=doc_ids)
         return [
             self._from_row(chunk_id, document, metadata, 1.0 / (1.0 + float(distance)))
             for chunk_id, document, metadata, distance in zip(
@@ -166,14 +154,10 @@ class VectorRetriever(BaseRetriever):
             )
         ]
 
-    def _bm25_search(
-        self, query: str, *, top_k: int, doc_ids: list[str] | None
-    ) -> list[RetrievedChunk]:
+    def _bm25_search(self, query: str, *, top_k: int, doc_ids: list[str] | None) -> list[RetrievedChunk]:
         allowed_ids = self._store.all_ids(doc_ids=doc_ids)
         chunks: list[RetrievedChunk] = []
-        for chunk_id, score in self._bm25.search(
-            query, top_k=top_k, allowed_ids=allowed_ids
-        ):
+        for chunk_id, score in self._bm25.search(query, top_k=top_k, allowed_ids=allowed_ids):
             chunk = self.get_chunk(chunk_id)
             if chunk is not None:
                 chunk.score = score
@@ -193,16 +177,8 @@ class VectorRetriever(BaseRetriever):
         if mode not in {"hybrid", "dense", "bm25"}:
             raise ValueError(f"Unsupported retrieval mode: {mode}")
         candidate_count = max(top_k * 4, 20)
-        dense = (
-            self._dense_search(query, top_k=candidate_count, doc_ids=doc_ids)
-            if mode != "bm25"
-            else []
-        )
-        bm25 = (
-            self._bm25_search(query, top_k=candidate_count, doc_ids=doc_ids)
-            if mode != "dense"
-            else []
-        )
+        dense = self._dense_search(query, top_k=candidate_count, doc_ids=doc_ids) if mode != "bm25" else []
+        bm25 = self._bm25_search(query, top_k=candidate_count, doc_ids=doc_ids) if mode != "dense" else []
         ranked = rrf_fuse(dense, bm25) if mode == "hybrid" else (dense or bm25)
         result = ranked[:top_k]
         logger.debug(
@@ -218,6 +194,4 @@ class VectorRetriever(BaseRetriever):
         result = self._store.get(chunk_id)
         if not result["ids"]:
             return None
-        return self._from_row(
-            result["ids"][0], result["documents"][0], result["metadatas"][0], 0.0
-        )
+        return self._from_row(result["ids"][0], result["documents"][0], result["metadatas"][0], 0.0)

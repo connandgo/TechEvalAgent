@@ -51,7 +51,8 @@ APPEND_KEYS: tuple[str, ...] = ("tech_profiles", "trl_eval", "market_eval", "sta
 def latest_by_criterion(results: list[CriterionResult]) -> list[CriterionResult]:
     """`(tech_id, criterion_id)`별로 `generated_at`이 가장 최신인 결과 1개만 남긴다.
 
-    같은 시각이면 뒤에 온 것(리스트 후순위 = 나중에 append된 것)을 취한다.
+    `generated_at`은 같은 형식의 ISO 문자열이어야 한다 (문자열 비교).
+    같은 시각이면 뒤에 온 것(나중에 append된 것)을 취한다.
     반환 순서는 입력에서 각 키가 처음 등장한 순서를 따른다.
     """
     chosen: dict[tuple[str, str], CriterionResult] = {}

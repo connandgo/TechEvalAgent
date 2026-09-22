@@ -26,9 +26,7 @@ class BGEEmbedder:
     def tokenizer(self):
         return self.model.tokenizer
 
-    def embed_documents(
-        self, texts: Sequence[str], *, batch_size: int = 16
-    ) -> list[list[float]]:
+    def embed_documents(self, texts: Sequence[str], *, batch_size: int = 16) -> list[list[float]]:
         if not texts:
             return []
         vectors = self.model.encode(

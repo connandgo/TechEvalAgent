@@ -30,9 +30,7 @@ def build_evidence_index(
     for group in groups:
         for e in group:
             if e.evidence_id in index and index[e.evidence_id] != e:
-                logger.warning(
-                    "evidence_id 중복(내용 다름): %s — 첫 항목 사용", e.evidence_id
-                )
+                logger.warning("evidence_id 중복(내용 다름): %s — 첫 항목 사용", e.evidence_id)
             index.setdefault(e.evidence_id, e)
     return index
 
@@ -62,9 +60,7 @@ def _pages(pages: list[int]) -> str | None:
     uniq = sorted(set(pages))
     if not uniq:
         return None
-    return (
-        f"p. {uniq[0]}" if len(uniq) == 1 else "pp. " + ", ".join(str(p) for p in uniq)
-    )
+    return f"p. {uniq[0]}" if len(uniq) == 1 else "pp. " + ", ".join(str(p) for p in uniq)
 
 
 def _format_paper(e: Evidence, pages: list[int]) -> str:
@@ -106,13 +102,9 @@ def _format_web(e: Evidence) -> str:
 def format_reference(e: Evidence, *, pages: list[int] | None = None) -> str:
     """참고문헌 1줄. pages는 같은 논문의 여러 evidence를 병합할 때 넘긴다(기본은 e.page)."""
     if e.source_type in NON_REFERENCE_TYPES:
-        raise ValueError(
-            f"{e.source_type} evidence는 참고문헌으로 포맷하지 않는다: {e.evidence_id}"
-        )
+        raise ValueError(f"{e.source_type} evidence는 참고문헌으로 포맷하지 않는다: {e.evidence_id}")
     if e.source_type == "paper":
-        return _format_paper(
-            e, pages if pages is not None else ([e.page] if e.page else [])
-        )
+        return _format_paper(e, pages if pages is not None else ([e.page] if e.page else []))
     if e.source_type == "patent":
         return _format_patent(e)
     return _format_web(e)
@@ -126,9 +118,7 @@ def _merge_key(e: Evidence) -> str:
     return f"{e.source_type}:{_url(e) or e.locator}|{e.title}"
 
 
-def reference_entries(
-    cited_ids: list[str], evidence_index: dict[str, Evidence]
-) -> list[tuple[str, list[str]]]:
+def reference_entries(cited_ids: list[str], evidence_index: dict[str, Evidence]) -> list[tuple[str, list[str]]]:
     """(참고문헌 문자열, 병합된 evidence_id 목록) 리스트. 인용 순서 유지, inference/not_public 제외."""
     groups: dict[str, list[Evidence]] = {}
     for eid in cited_ids:
@@ -142,15 +132,11 @@ def reference_entries(
     entries = []
     for evs in groups.values():
         pages = [e.page for e in evs if e.page]
-        entries.append(
-            (format_reference(evs[0], pages=pages), [e.evidence_id for e in evs])
-        )
+        entries.append((format_reference(evs[0], pages=pages), [e.evidence_id for e in evs]))
     return entries
 
 
-def build_reference_section(
-    report_body: str, evidence_index: dict[str, Evidence]
-) -> str:
+def build_reference_section(report_body: str, evidence_index: dict[str, Evidence]) -> str:
     """본문의 [E: id] 인용만 모아 REFERENCE 절 마크다운을 만든다."""
     entries = reference_entries(collect_cited_ids(report_body), evidence_index)
     lines = [REFERENCE_HEADING, ""]

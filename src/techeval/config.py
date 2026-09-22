@@ -90,18 +90,9 @@ def build_deps(stub: bool = False, settings: Settings | None = None, *, use_cach
     if stub:
         from techeval.stub_llm import FakeStructuredLLM
 
-        try:
-            from techeval.retrieval.stub import StubRetriever
-        except ImportError as e:  # A 미제공
-            raise ImportError("techeval.retrieval.stub.StubRetriever (역할 A)가 아직 없습니다") from e
-        try:
-            from techeval.tools.stub import stub_web_search
-        except ImportError as e:  # C 미제공
-            raise ImportError("techeval.tools.stub.stub_web_search (역할 C)가 아직 없습니다") from e
-
         return Deps(
-            retriever=StubRetriever(),
-            web_search=stub_web_search,
+            retriever=make_stub_retriever(),
+            web_search=make_stub_web_search(),
             llm=FakeStructuredLLM(),
             judge_llm=FakeStructuredLLM(),
             now=lambda: "2026-01-01T00:00:00",
@@ -122,3 +113,41 @@ def build_deps(stub: bool = False, settings: Settings | None = None, *, use_cach
         judge_llm=get_judge_llm(s),
         now=now_iso,
     )
+
+
+# --- 스텁 폴백 (A·C의 스텁이 아직 머지되지 않았을 때) --------------------------------
+
+
+class _FallbackRetriever:
+    """A의 `StubRetriever`가 없을 때 쓰는 빈 검색기. 모든 검색이 빈 결과 → 결과는 not_public으로 기록된다."""
+
+    def search(self, query: str, *, top_k: int = 5, doc_ids: list[str] | None = None, mode: str = "hybrid") -> list:
+        return []
+
+    def get_chunk(self, chunk_id: str) -> None:
+        return None
+
+
+def _fallback_web_search(query: str, **kwargs: Any) -> list:
+    """C의 `stub_web_search`가 없을 때 쓰는 빈 검색 함수."""
+    return []
+
+
+def make_stub_retriever() -> Any:
+    try:
+        from techeval.retrieval.stub import StubRetriever
+
+        return StubRetriever()
+    except ImportError:
+        logger.warning("techeval.retrieval.stub.StubRetriever 없음 (역할 A) — 빈 검색기로 대체")
+        return _FallbackRetriever()
+
+
+def make_stub_web_search() -> Any:
+    try:
+        from techeval.tools.stub import stub_web_search
+
+        return stub_web_search
+    except ImportError:
+        logger.warning("techeval.tools.stub.stub_web_search 없음 (역할 C) — 빈 검색 함수로 대체")
+        return _fallback_web_search

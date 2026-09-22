@@ -58,9 +58,7 @@ def split_sections(report_md: str) -> list[Section]:
             continue
         if current.heading or current.body:
             sections.append(current)
-        current = Section(
-            key=key, heading=line if line.endswith("\n") else line + "\n", body=""
-        )
+        current = Section(key=key, heading=line if line.endswith("\n") else line + "\n", body="")
     if current.heading or current.body:
         sections.append(current)
     return sections

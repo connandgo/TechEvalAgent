@@ -52,6 +52,5 @@ CH4_INTRO = (
 def tech_rows(technologies: list[TechRef]) -> str:
     approach = {"sw": "SW — KV cache 축소", "hw": "HW — 메모리 계층 확장"}
     return "\n".join(
-        f"| {approach[t.approach]} | {t.name} | {t.paper_title} | {t.paper_date} | {t.family} |"
-        for t in technologies
+        f"| {approach[t.approach]} | {t.name} | {t.paper_title} | {t.paper_date} | {t.family} |" for t in technologies
     )
