@@ -187,3 +187,105 @@ class TestStateHelpers:
         assert len(TECHNOLOGIES) == 2
         with pytest.raises(KeyError):
             get_tech("nope")
+
+
+# --- 에이전트별 모델 설정 --------------------------------------------------------
+
+
+class TestAgentModelOverride:
+    def test_model_for_falls_back_to_default(self):
+        from techeval.config import Settings
+
+        s = Settings(llm_provider="p", llm_model="base", judge_model="judge", llm_model_report="strong")
+        assert s.model_for(None) == "base"
+        assert s.model_for("domain") == "base"
+        assert s.model_for("report") == "strong"
+        assert s.agent_overrides() == {"report": "strong"}
+        with pytest.raises(KeyError):
+            s.model_for("nope")
+
+    def test_graph_uses_agent_specific_deps(self, tmp_path):
+        """agent_deps 에 준 Deps 가 해당 노드에만 들어가고 나머지는 공용 deps 를 쓴다."""
+        from techeval import stub_agents
+        from techeval.agents._deps import Deps
+        from techeval.graph import Agents, GraphConfig, build_graph, invoke_config
+        from techeval.stub_llm import FakeStructuredLLM
+        from tests.helpers import MemRetriever, make_chunks, make_web_search
+
+        seen: dict[str, list[str]] = {}
+
+        def spy(name, base):
+            def fn(inp, deps):
+                seen.setdefault(name, []).append(getattr(deps.llm, "tag", "shared"))
+                return base(inp, deps)
+
+            return fn
+
+        shared = FakeStructuredLLM()
+        strong = FakeStructuredLLM()
+        strong.tag = "strong"
+        deps = Deps(
+            retriever=MemRetriever(make_chunks()),
+            web_search=make_web_search(),
+            llm=shared,
+            judge_llm=FakeStructuredLLM(),
+            now=lambda: "2026-01-01T00:00:00",
+        )
+        agents = Agents(
+            run_tech_research=spy("tech_research", stub_agents.run_tech_research),
+            run_domain_eval=spy("domain", stub_agents.run_domain_eval),
+            run_market_eval=spy("market", stub_agents.run_market_eval),
+            run_stakeholder_eval=spy("stakeholder", stub_agents.run_stakeholder_eval),
+            run_synthesis=spy("synthesis", stub_agents.run_synthesis),
+            run_report=spy("report", stub_agents.run_report),
+            render_pdf=stub_agents.render_pdf,
+        )
+        stub_agents.FIXTURES_DIR = tmp_path / "none"
+        try:
+            cfg = GraphConfig(stub=True, output_dir=str(tmp_path), skip_pdf=True)
+            g = build_graph(deps, agents, cfg, agent_deps={"report": deps.model_copy(update={"llm": strong})})
+            g.invoke({}, config=invoke_config(cfg))
+        finally:
+            stub_agents.FIXTURES_DIR = stub_agents.DEFAULT_FIXTURES_DIR
+        assert set(seen["report"]) == {"strong"}
+        assert all(set(v) == {"shared"} for k, v in seen.items() if k != "report")
+
+
+class TestV3Relaxed:
+    """V3: D1~D3는 L2/L3일 때만 measurements 필수. L1(근거 없음)은 evidence만 있으면 된다."""
+
+    def test_l2_l3_require_measurements(self):
+        for level in ("L2", "L3"):
+            with pytest.raises(ValidationError):
+                result(criterion_id="D3", perspective="domain", level=level)
+
+    def test_l1_without_measurements_is_valid(self):
+        r = result(criterion_id="D3", perspective="domain", level="L1")
+        assert r.measurements == [] and len(r.evidence) == 1
+
+    def test_l1_still_requires_evidence(self):
+        with pytest.raises(ValidationError):
+            result(criterion_id="D3", perspective="domain", level="L1", evidence=[])
+
+    def test_perspective_check_accepts_l1_without_measurements(self):
+        from techeval.control.perspective_check import _v4_problems
+
+        assert _v4_problems(result(criterion_id="D1", perspective="domain", level="L1")) == []
+        m = Measurement(metric="m", value="1", evidence_id="mla-D1-01")
+        assert _v4_problems(result(criterion_id="D1", perspective="domain", level="L3", measurements=[m])) == []
+        # validator를 우회해 만든 L2·수치 없음 결과는 검사 노드가 V3로 잡는다
+        broken = CriterionResult.model_construct(
+            tech_id="mla",
+            perspective="domain",
+            criterion_id="D1",
+            level="L2",
+            content="c",
+            evidence=[paper()],
+            confidence="medium",
+            evidence_unit="paper",
+            measurements=[],
+            details={"directness": "L2", "extrapolation_logic": "x"},
+            generated_at="2026-01-01T00:00:00",
+            retry_count=0,
+        )
+        assert any("V3" in p for p in _v4_problems(broken))

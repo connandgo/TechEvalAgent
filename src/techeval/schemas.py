@@ -156,8 +156,10 @@ class CriterionResult(BaseModel):
             raise ValueError(f"{self.criterion_id} does not belong to {self.perspective}")
         if self.level == "not_public" and not any(e.source_type == "not_public" for e in self.evidence):
             raise ValueError("not_public level requires a not_public evidence record")
-        if self.criterion_id in ("D1", "D2", "D3") and self.level != "not_public" and not self.measurements:
-            raise ValueError(f"{self.criterion_id} requires measurements")
+        # V3: D1~D3에서 수치 근거가 있다고 판정(L2 직접/L3 간접)했으면 Measurement가 있어야 한다.
+        # L1(근거 없음)·not_public은 수치를 요구하지 않는다 — L1은 "찾아봤으나 도메인 조건 수치가 없음"이라는 판정이다.
+        if self.criterion_id in ("D1", "D2", "D3") and self.level in ("L2", "L3") and not self.measurements:
+            raise ValueError(f"{self.criterion_id} level {self.level} requires measurements")
         return self
 
 

@@ -136,8 +136,8 @@ def test_trl_eval():
 def test_domain_eval():
     results = _check_criterion_list("domain_eval.json", "domain")
     for r in results:
-        if r.criterion_id in ("D1", "D2", "D3") and r.level != "not_public":
-            assert r.measurements, f"{r.tech_id}/{r.criterion_id}: measurements 필요 (V3)"
+        if r.criterion_id in ("D1", "D2", "D3") and r.level in ("L2", "L3"):
+            assert r.measurements, f"{r.tech_id}/{r.criterion_id}: level {r.level} 이면 measurements 필요 (V3)"
             if r.details["directness"] == "L2":
                 assert r.details.get("extrapolation_logic"), f"{r.tech_id}/{r.criterion_id}: L2는 외삽 논리 필수"
 

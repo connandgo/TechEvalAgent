@@ -82,6 +82,40 @@ class FixtureLookupError(LookupError):
     """프롬프트·모델로 픽스처를 결정하지 못했을 때."""
 
 
+# 각 역할이 자기 에이전트 모듈에 `stub_overrides() -> dict[type, Callable[[str], Any]]`를 두면
+# 여기서 자동으로 모아 FakeStructuredLLM에 등록한다 (LLM 출력 모델이 계약 픽스처와 1:1이 아닌 경우의 역변환기).
+AGENT_MODULES: tuple[str, ...] = (
+    "techeval.agents.tech_research",
+    "techeval.agents.domain",
+    "techeval.agents.market",
+    "techeval.agents.stakeholder",
+    "techeval.agents.synthesis",
+    "techeval.agents.report",
+)
+
+
+def collect_stub_overrides() -> dict[type, Callable[[str], Any]]:
+    """main에 있는 에이전트 모듈들의 `stub_overrides()`를 합친다. 모듈이 없거나 함수가 없으면 건너뛴다."""
+    import importlib
+
+    merged: dict[type, Callable[[str], Any]] = {}
+    for name in AGENT_MODULES:
+        try:
+            mod = importlib.import_module(name)
+        except ImportError:
+            continue
+        fn = getattr(mod, "stub_overrides", None)
+        if fn is None:
+            continue
+        overrides = fn()
+        dup = set(merged) & set(overrides)
+        if dup:
+            logger.warning("%s.stub_overrides 가 기존 오버라이드를 덮어씀: %s", name, [d.__name__ for d in dup])
+        merged.update(overrides)
+        logger.debug("stub_overrides 등록: %s -> %s", name, [k.__name__ for k in overrides])
+    return merged
+
+
 def prompt_to_text(prompt: Any) -> str:
     """str / PromptValue / 메시지 리스트 / dict 등 어떤 입력이든 검색 가능한 문자열로 편다."""
     if isinstance(prompt, str):

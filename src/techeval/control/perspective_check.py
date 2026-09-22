@@ -52,8 +52,8 @@ def _v4_problems(r: CriterionResult) -> list[str]:
         if not d.get("tradeoffs"):
             probs.append(f"{tag}: details.tradeoffs ≥1 필요 (V4)")
     elif r.criterion_id in ("D1", "D2", "D3"):
-        if not r.measurements:
-            probs.append(f"{tag}: measurements 필요 (V3)")
+        if r.level in ("L2", "L3") and not r.measurements:
+            probs.append(f"{tag}: level {r.level} 이면 measurements 필요 (V3)")
         if d.get("directness") == "L2" and not d.get("extrapolation_logic"):
             probs.append(f"{tag}: directness=L2 이면 extrapolation_logic 필수")
     return probs

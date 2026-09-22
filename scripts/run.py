@@ -1,6 +1,8 @@
 """전체 파이프라인 실행 CLI (E).
 
 uv run python scripts/run.py --stub                 # 전부 스텁으로 그래프 흐름만 검증
+uv run python scripts/run.py --stub-deps --allow-stub-fallback
+    # 검색기·웹검색·LLM은 스텁, 에이전트는 실제 코드 (없는 역할만 스텁)
 uv run python scripts/run.py                        # 실제 실행 -> outputs/report.md, outputs/report.pdf
 옵션: --no-cache (웹 캐시 무시) --out outputs/ --dump-state --skip-pdf --allow-stub-fallback --log-level INFO
 """
@@ -14,7 +16,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from techeval.config import build_deps, load_settings  # noqa: E402
+from techeval.config import build_agent_deps, build_deps, load_settings  # noqa: E402
 from techeval.graph import GraphConfig, build_graph, invoke_config, load_agents, state_to_json  # noqa: E402
 
 logger = logging.getLogger("techeval.run")
@@ -23,6 +25,11 @@ logger = logging.getLogger("techeval.run")
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(description="TechEvalAgent 파이프라인 실행")
     p.add_argument("--stub", action="store_true", help="검색기·웹검색·LLM·에이전트를 전부 스텁으로 실행")
+    p.add_argument(
+        "--stub-deps",
+        action="store_true",
+        help="검색기·웹검색·LLM만 스텁, 에이전트는 실제 코드 사용 (없는 역할은 --allow-stub-fallback 으로 대체)",
+    )
     p.add_argument("--no-cache", action="store_true", help="웹 검색 캐시(outputs/web_cache)를 무시")
     p.add_argument("--out", default=None, help="출력 디렉토리 (기본: OUTPUT_DIR 또는 outputs)")
     p.add_argument("--dump-state", action="store_true", help="노드별 State를 <out>/state/<step>_<node>.json 으로 저장")
@@ -42,10 +49,12 @@ def main(argv: list[str] | None = None) -> int:
     out_dir = Path(args.out or settings.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    deps = build_deps(stub=args.stub, settings=settings, use_cache=not args.no_cache)
+    stub_deps = args.stub or args.stub_deps
+    deps = build_deps(stub=stub_deps, settings=settings, use_cache=not args.no_cache)
     agents, stubbed = load_agents(stub=args.stub, allow_stub_fallback=args.allow_stub_fallback)
-    cfg = GraphConfig(output_dir=str(out_dir), skip_pdf=args.skip_pdf, stub=args.stub)
-    graph = build_graph(deps, agents, cfg)
+    cfg = GraphConfig(output_dir=str(out_dir), skip_pdf=args.skip_pdf, stub=stub_deps)
+    agent_deps = {} if stub_deps else build_agent_deps(deps, settings)  # LLM_MODEL_<AGENT> 가 있는 에이전트만
+    graph = build_graph(deps, agents, cfg, agent_deps=agent_deps)
 
     node_counts: Counter[str] = Counter()
     step = 0
@@ -78,6 +87,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"LLM 호출: {fmt(llm_calls)} (judge {fmt(judge_calls)})")
     if stubbed:
         print("스텁 대체:", ", ".join(stubbed))
+    if agent_deps:
+        print("에이전트별 모델:", settings.agent_overrides())
     if jr is not None:
         print(f"judge: passed={jr.passed} scores={jr.scores} missing={jr.missing_required}")
     print(
