@@ -45,24 +45,39 @@ def test_missing_chapter_and_table(report, index):
 def test_unknown_citation(report, index):
     bad = report.replace("[E: mla-T2-01]", "[E: mla-T2-99]", 1)
     res = lint_report(bad, index)
-    assert any(i.kind == "unknown_citation" and "mla-T2-99" in i.message for i in res.errors)
+    assert any(
+        i.kind == "unknown_citation" and "mla-T2-99" in i.message for i in res.errors
+    )
 
 
 def test_reference_must_match_body(report, index):
-    extra = report.rstrip() + " \n99. 가짜 문헌 (근거 ID: mla-T3-02, pim_cxl-M1-01, mla-S4-02, zz-1)\n"
+    extra = (
+        report.rstrip()
+        + " \n99. 가짜 문헌 (근거 ID: mla-T3-02, pim_cxl-M1-01, mla-S4-02, zz-1)\n"
+    )
     res = lint_report(extra, index)
-    assert any(i.kind == "reference_mismatch" and "미인용" in i.message for i in res.errors)
+    assert any(
+        i.kind == "reference_mismatch" and "미인용" in i.message for i in res.errors
+    )
     body, _ = report.split("## REFERENCE")
     dropped = body + "## REFERENCE\n\n1. 일부만 (근거 ID: mla-T1-01)\n"
     res = lint_report(dropped, index)
-    assert any(i.kind == "reference_mismatch" and "REFERENCE에 없음" in i.message for i in res.errors)
+    assert any(
+        i.kind == "reference_mismatch" and "REFERENCE에 없음" in i.message
+        for i in res.errors
+    )
 
 
 def test_number_without_citation_is_warning_only(report, index):
-    warn = report.replace("## 5. 시사점\n", "## 5. 시사점\n\n처리량이 3.2x 늘었다.\n", 1)
+    warn = report.replace(
+        "## 5. 시사점\n", "## 5. 시사점\n\n처리량이 3.2x 늘었다.\n", 1
+    )
     res = lint_report(warn, index)
     assert res.passed
-    assert any(w.kind == "number_without_citation" and "3.2x" in w.message for w in res.warnings)
+    assert any(
+        w.kind == "number_without_citation" and "3.2x" in w.message
+        for w in res.warnings
+    )
 
 
 def test_split_join_roundtrip(report):

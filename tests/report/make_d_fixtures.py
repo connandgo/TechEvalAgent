@@ -246,7 +246,11 @@ class ScriptedLLM:
         elif "3. 기술 개요" in head:
             key = "3.mla" if "tech_id=mla," in human else "3.pim_cxl"
         elif "4. 관점별 평가" in head:
-            key = "4." + next(p for p in ("trl", "market", "stakeholder", "domain") if f"({p})\n" in human)
+            key = "4." + next(
+                p
+                for p in ("trl", "market", "stakeholder", "domain")
+                if f"({p})\n" in human
+            )
         elif "5. 시사점" in head:
             key = "5"
         elif "6. 한계점" in head:
@@ -265,7 +269,9 @@ def _no_search(*a, **k):
 
 
 def main() -> None:
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(levelname)s %(name)s: %(message)s"
+    )
     deps = Deps(
         retriever=None,
         web_search=_no_search,

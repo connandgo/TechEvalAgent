@@ -70,7 +70,9 @@ def test_format_web_with_and_without_date():
     assert format_reference(_web("pim_cxl-M2-01")) == (
         "Samsung Semiconductor(2024-05-02). CXL Memory Module. Samsung Semiconductor, https://example.com/cmm-d"
     )
-    undated = format_reference(_web("pim_cxl-M2-01", published_date=None, source_type="web"))
+    undated = format_reference(
+        _web("pim_cxl-M2-01", published_date=None, source_type="web")
+    )
     assert undated.startswith("Samsung Semiconductor(n.d., 확인일 2026-09-20). ")
 
 
