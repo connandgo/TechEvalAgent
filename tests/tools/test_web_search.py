@@ -12,6 +12,7 @@ import pytest
 from pydantic import ValidationError
 
 from techeval.schemas import Evidence, compute_confidence
+from techeval.tools import web_search as ws
 from techeval.tools.stub import FIXTURE_PATH, _match_key, load_fixture, stub_web_search
 from techeval.tools.web_search import (
     MAX_CONTENT_CHARS,
@@ -475,3 +476,104 @@ def test_fixture_rejects_broken_schema(tmp_path: Path):
     bad.write_text(json.dumps({"k": [{"title": "no url"}]}), encoding="utf-8")
     with pytest.raises(ValidationError):
         load_fixture(str(bad))
+
+
+# --- web_search 본체 (provider·캐시) ---------------------------------------------
+# 네트워크는 타지 않는다. PROVIDERS를 가짜 함수로 바꿔 호출 횟수만 센다.
+
+
+@pytest.fixture
+def fake_provider(monkeypatch, tmp_path):
+    calls: list[str] = []
+
+    def _fake(query, *, api_key, max_results, recency_days):
+        calls.append(query)
+        return [
+            {
+                "title": "Leo CXL Smart Memory Controllers",
+                "url": "https://www.astera-labs.com/products/leo/",
+                "snippet": "Leo controllers are shipping in production platforms.",
+                "content": None,
+                "published_date": None,
+            }
+        ]
+
+    monkeypatch.setenv("OUTPUT_DIR", str(tmp_path))
+    monkeypatch.setenv("WEB_SEARCH_PROVIDER", "tavily")
+    monkeypatch.setenv("WEB_SEARCH_API_KEY", "test-key")
+    monkeypatch.delenv("WEB_SEARCH_NO_CACHE", raising=False)
+    monkeypatch.setitem(ws.PROVIDERS, "tavily", _fake)
+    return calls
+
+
+def test_web_search_records_query_and_classifies_source(fake_provider):
+    results = ws.web_search("CXL memory expander KV cache")
+    assert [r.query for r in results] == ["CXL memory expander KV cache"]
+    assert results[0].source_kind == "official"
+    assert results[0].publisher == "Astera Labs"
+
+
+def test_web_search_uses_cache_on_second_call(fake_provider):
+    first = ws.web_search("CXL memory expander KV cache")
+    second = ws.web_search("CXL memory expander KV cache")
+    assert len(fake_provider) == 1, "두 번째 호출은 캐시에서 와야 한다"
+    assert first == second
+
+
+def test_web_search_cache_key_separates_parameters(fake_provider):
+    ws.web_search("CXL memory expander KV cache")
+    ws.web_search("CXL memory expander KV cache", max_results=3)
+    assert len(fake_provider) == 2, "파라미터가 다르면 다른 캐시여야 한다"
+
+
+def test_no_cache_env_bypasses_cache(fake_provider, monkeypatch):
+    """config.build_deps(use_cache=False)가 이 환경변수로 알린다."""
+    ws.web_search("CXL memory expander KV cache")
+    monkeypatch.setenv("WEB_SEARCH_NO_CACHE", "1")
+    ws.web_search("CXL memory expander KV cache")
+    assert len(fake_provider) == 2
+
+
+def test_web_search_raises_when_provider_unset(monkeypatch, tmp_path):
+    """검색 실패는 빈 리스트가 아니라 예외 — not_public 판단은 호출자 몫이다."""
+    monkeypatch.setenv("OUTPUT_DIR", str(tmp_path))
+    monkeypatch.setenv("WEB_SEARCH_PROVIDER", "")
+    with pytest.raises(RuntimeError, match="WEB_SEARCH_PROVIDER"):
+        ws.web_search("whatever")
+
+
+def test_web_search_raises_when_api_key_missing(monkeypatch, tmp_path):
+    monkeypatch.setenv("OUTPUT_DIR", str(tmp_path))
+    monkeypatch.setenv("WEB_SEARCH_PROVIDER", "tavily")
+    monkeypatch.setenv("WEB_SEARCH_API_KEY", "")
+    with pytest.raises(RuntimeError, match="WEB_SEARCH_API_KEY"):
+        ws.web_search("whatever")
+
+
+def test_build_query_applies_site_filter():
+    assert ws._build_query("CXL", ["vllm.ai"]) == "CXL (site:vllm.ai)"
+    assert ws._build_query("CXL", None) == "CXL"
+
+
+def test_same_url_has_identical_metadata_across_keys():
+    """같은 URL이 여러 검색어에 걸려도 메타데이터는 동일해야 한다.
+
+    실제 provider는 검색어가 달라도 같은 문서면 같은 title·snippet을 돌려준다.
+    픽스처가 이를 어기면, 소비자가 여러 결과를 합쳐 quote를 찾은 뒤 그중 하나로만
+    Evidence를 만들 때 `to_evidence`의 부분 문자열 검사에서 터진다.
+    """
+    seen: dict[str, WebResult] = {}
+    for key, results in load_fixture().items():
+        for r in results:
+            first = seen.setdefault(r.url, r)
+            for field in (
+                "title",
+                "snippet",
+                "content",
+                "publisher",
+                "published_date",
+                "source_kind",
+            ):
+                assert getattr(r, field) == getattr(first, field), (
+                    f"{key}: {r.url} 의 {field} 가 다른 키의 값과 다르다"
+                )

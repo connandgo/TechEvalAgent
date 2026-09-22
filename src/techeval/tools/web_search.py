@@ -7,13 +7,19 @@ CONTRACTS.md §4의 계약을 구현한다. B(T3·D4)와 E(counter_evidence)도 
 실제 provider 호출(`web_search`)과 캐시는 2·3단계에서 이 파일에 추가한다.
 """
 
+import hashlib
+import json
 import logging
+import os
 import re
 from collections.abc import Callable
 from datetime import UTC, date, datetime
+from html import unescape
+from pathlib import Path
 from typing import Literal
 from urllib.parse import urlparse
 
+import httpx
 from pydantic import BaseModel, field_validator
 
 from techeval.schemas import Evidence, EvidenceUnit, SourceType
@@ -24,6 +30,8 @@ SourceKind = Literal["official", "news", "blog", "paper", "forum", "other"]
 
 #: 본문 추출 상한 (역할 C 문서 §4-2)
 MAX_CONTENT_CHARS = 4000
+HTTP_TIMEOUT = 20.0
+USER_AGENT = "TechEvalAgent/0.1 (research prototype)"
 
 # --- 출처 분류 표 -------------------------------------------------------------
 # AGENTS.md 8: 벤더 발표 자료를 news/paper로 표시하면 E의 근거 비대칭 계산이 틀어진다.
@@ -518,3 +526,212 @@ def not_public_evidence(
         searched_at=_now_iso(),
         search_scope=scope.strip(),
     )
+
+
+# --- 캐시 ---------------------------------------------------------------------
+
+
+def _cache_dir() -> Path:
+    return Path(os.environ.get("OUTPUT_DIR", "outputs")) / "web_cache"
+
+
+def _cache_key(query: str, params: dict) -> str:
+    """검색어 + 파라미터로 캐시 키를 만든다. 파라미터가 다르면 다른 캐시다."""
+    payload = json.dumps({"q": query, **params}, sort_keys=True, ensure_ascii=False)
+    return hashlib.sha1(payload.encode("utf-8")).hexdigest()
+
+
+def _cache_enabled() -> bool:
+    """`run.py --no-cache`가 config.build_deps에서 이 환경변수로 알린다."""
+    return os.environ.get("WEB_SEARCH_NO_CACHE", "") not in ("1", "true", "True")
+
+
+def _cache_read(key: str) -> list[WebResult] | None:
+    path = _cache_dir() / f"{key}.json"
+    if not _cache_enabled() or not path.exists():
+        return None
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        return [WebResult.model_validate(item) for item in raw]
+    except (json.JSONDecodeError, ValueError) as e:
+        logger.warning("web_cache 파손 — 무시하고 재검색한다 (%s): %s", path, e)
+        return None
+
+
+def _cache_write(key: str, results: list[WebResult]) -> None:
+    if not _cache_enabled():
+        return
+    path = _cache_dir() / f"{key}.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = [r.model_dump(mode="json") for r in results]
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+# --- provider ------------------------------------------------------------------
+
+
+def _build_query(query: str, site_filter: list[str] | None) -> str:
+    if not site_filter:
+        return query
+    return f"{query} ({' OR '.join(f'site:{s}' for s in site_filter)})"
+
+
+def _tavily(
+    query: str, *, api_key: str, max_results: int, recency_days: int | None
+) -> list[dict]:
+    body: dict = {
+        "api_key": api_key,
+        "query": query,
+        "max_results": max_results,
+        "search_depth": "advanced",
+        "include_raw_content": True,
+    }
+    if recency_days:
+        body["days"] = recency_days
+    r = httpx.post("https://api.tavily.com/search", json=body, timeout=HTTP_TIMEOUT)
+    r.raise_for_status()
+    out = []
+    for item in r.json().get("results", []):
+        out.append(
+            {
+                "title": item.get("title") or item.get("url", ""),
+                "url": item["url"],
+                "snippet": item.get("content") or "",
+                "content": item.get("raw_content"),
+                "published_date": _normalize_date_string(item["published_date"])
+                if item.get("published_date")
+                else None,
+            }
+        )
+    return out
+
+
+def _serper(
+    query: str, *, api_key: str, max_results: int, recency_days: int | None
+) -> list[dict]:
+    body: dict = {"q": query, "num": max_results}
+    if recency_days:
+        # Serper의 tbs 날짜 필터 — 일/월/년 단위만 지원한다.
+        body["tbs"] = (
+            f"qdr:d{recency_days}"
+            if recency_days < 30
+            else f"qdr:m{recency_days // 30}"
+        )
+    r = httpx.post(
+        "https://google.serper.dev/search",
+        json=body,
+        headers={"X-API-KEY": api_key},
+        timeout=HTTP_TIMEOUT,
+    )
+    r.raise_for_status()
+    out = []
+    for item in r.json().get("organic", [])[:max_results]:
+        out.append(
+            {
+                "title": item.get("title", ""),
+                "url": item["link"],
+                "snippet": item.get("snippet") or "",
+                "content": None,
+                "published_date": _normalize_date_string(item["date"])
+                if item.get("date")
+                else None,
+            }
+        )
+    return out
+
+
+PROVIDERS: dict[str, Callable[..., list[dict]]] = {"tavily": _tavily, "serper": _serper}
+
+
+def _fetch_html(url: str) -> str | None:
+    """본문 추출용 원문 HTML. 실패는 로그만 남기고 None (검색 자체를 실패시키지 않는다)."""
+    try:
+        r = httpx.get(
+            url,
+            timeout=HTTP_TIMEOUT,
+            follow_redirects=True,
+            headers={"User-Agent": USER_AGENT},
+        )
+        r.raise_for_status()
+        return r.text
+    except httpx.HTTPError as e:
+        logger.info("본문 가져오기 실패 — snippet만 쓴다 (%s): %s", url, e)
+        return None
+
+
+_TAG_RE = re.compile(r"<(script|style)[^>]*>.*?</\1>", re.IGNORECASE | re.DOTALL)
+_ANY_TAG_RE = re.compile(r"<[^>]+>")
+
+
+def _html_to_text(html: str) -> str:
+    """의존성 없이 태그를 걷어낸다. 정교한 본문 추출이 필요해지면 trafilatura로 교체."""
+    text = _TAG_RE.sub(" ", html)
+    text = _ANY_TAG_RE.sub(" ", text)
+    return _squash_ws(unescape(text))
+
+
+def web_search(
+    query: str,
+    *,
+    max_results: int = 5,
+    recency_days: int | None = None,
+    site_filter: list[str] | None = None,
+    fetch_content: bool = False,
+) -> list[WebResult]:
+    """웹 검색 1회. 결과에 검색어·검색일을 기록하고 `outputs/web_cache/`에 캐시한다.
+
+    provider는 `.env`의 `WEB_SEARCH_PROVIDER`로 고른다(`tavily` / `serper`).
+    실패하면 예외를 올린다 — 빈 리스트로 뭉개지 않는다. `not_public` 처리 여부는 호출자가 정한다.
+    `fetch_content=True`면 각 결과의 본문을 받아 `MAX_CONTENT_CHARS`까지 보관한다.
+    """
+    params = {
+        "max_results": max_results,
+        "recency_days": recency_days,
+        "site_filter": sorted(site_filter) if site_filter else None,
+        "fetch_content": fetch_content,
+    }
+    key = _cache_key(query, params)
+    cached = _cache_read(key)
+    if cached is not None:
+        logger.debug("web_search 캐시 히트: %r", query)
+        return cached
+
+    from techeval.config import load_settings
+
+    s = load_settings()
+    provider = (s.web_search_provider or "").lower()
+    if provider not in PROVIDERS:
+        raise RuntimeError(
+            f"WEB_SEARCH_PROVIDER를 {'/'.join(PROVIDERS)} 중 하나로 설정하세요 (현재: {s.web_search_provider!r})"
+        )
+    if not s.web_search_api_key:
+        raise RuntimeError("WEB_SEARCH_API_KEY가 비어 있습니다 (.env.example 참조)")
+
+    raw = PROVIDERS[provider](
+        _build_query(query, site_filter),
+        api_key=s.web_search_api_key,
+        max_results=max_results,
+        recency_days=recency_days,
+    )
+
+    results: list[WebResult] = []
+    for item in raw:
+        html = _fetch_html(item["url"]) if fetch_content else None
+        content = item.get("content")
+        if fetch_content and not content and html:
+            content = _html_to_text(html)
+        results.append(
+            build_web_result(
+                title=item["title"],
+                url=item["url"],
+                snippet=item["snippet"],
+                query=query,
+                content=content,
+                html=html,
+                published_date=item.get("published_date"),
+            )
+        )
+
+    _cache_write(key, results)
+    logger.info("web_search(%r) -> %d건 (provider=%s)", query, len(results), provider)
+    return results
