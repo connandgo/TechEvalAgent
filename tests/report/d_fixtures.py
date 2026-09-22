@@ -1,9 +1,10 @@
 """D 테스트용 픽스처 로더.
 
-B·C 픽스처(tech_profiles / *_eval)가 main에 올라오기 전까지는 D가 CONTRACTS 스키마로 만든 샘플
-(`tests/report/upstream_samples/`)을 쓴다. D 픽스처(synthesis.json, report_md.md)가 이 샘플로 생성되었으므로
-B·C 픽스처가 올라오면 샘플을 지우고 D 픽스처를 다시 생성한다(`tests/report/make_d_fixtures.py`).
-E 픽스처(counter_evidence / evidence_gap / judge_result)는 main의 `tests/fixtures/`를 그대로 쓴다.
+C 픽스처(market_eval / stakeholder_eval)가 main에 올라오기 전까지는 D가 CONTRACTS 스키마로 만든 샘플
+(`tests/report/upstream_samples/`)을 쓴다. C 픽스처가 올라오면 샘플을 지우고 D 픽스처(synthesis.json, report_md.md)를
+다시 생성한다(`uv run python -m tests.report.make_d_fixtures`).
+B 픽스처(tech_profiles / trl_eval / domain_eval)와 E 픽스처(counter_evidence / evidence_gap / judge_result)는
+`tests/fixtures/`의 것을 그대로 쓴다.
 """
 
 import json
@@ -14,13 +15,7 @@ from techeval.schemas import CriterionResult, Evidence, TechProfile
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 SAMPLES = Path(__file__).resolve().parent / "upstream_samples"
-UPSTREAM_SAMPLES = {
-    "tech_profiles.json",
-    "trl_eval.json",
-    "market_eval.json",
-    "stakeholder_eval.json",
-    "domain_eval.json",
-}
+UPSTREAM_SAMPLES = {"market_eval.json", "stakeholder_eval.json"}
 EVAL_FILES = ("trl_eval", "market_eval", "stakeholder_eval", "domain_eval")
 
 
