@@ -26,7 +26,7 @@
       "title": "vllm-project/vllm — MLA attention backend source",
       "url": "https://github.com/vllm-project/vllm",
       "snippet": "The vLLM repository contains the MLA attention backend implementation used for DeepSeek-V2 and DeepSeek-V3 style models, including the latent KV cache layout and the absorbed projection decode path.",
-      "content": "The vLLM repository contains the MLA attention backend implementation used for DeepSeek-V2 and DeepSeek-V3 style models, including the latent KV cache layout and the absorbed projection decode path. The backend is selected from the model config when MLA-specific projection dimensions are declared; models without those fields use the generic paged attention backend instead.",
+      "content": "The vLLM repository contains the MLA attention backend implementation used for DeepSeek-V2 and DeepSeek-V3 style models, including the latent KV cache layout and the absorbed projection decode path. The vLLM repository contains the MLA attention backend implementation used for DeepSeek-V2 and DeepSeek-V3 style models, including the latent KV cache layout and the absorbed projection decode path. The backend is selected from the model config when MLA-specific projection dimensions are declared; models without those fields use the generic paged attention backend instead. vLLM carries an independently written MLA attention backend for DeepSeek-V2 style models, maintained outside the original authors' repository and exercised by the project's own serving test suite.",
       "publisher": "vLLM",
       "published_date": null,
       "fetched_at": "2026-09-20T09:00:00+00:00",
@@ -50,7 +50,7 @@
       "title": "DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model",
       "url": "https://arxiv.org/abs/2405.04434",
       "snippet": "We introduce Multi-head Latent Attention (MLA), which compresses the Key-Value cache into a low-rank latent vector, and report that DeepSeek-V2 reduces KV cache per token by 93.3% compared with DeepSeek 67B while supporting a 128K context length.",
-      "content": "We introduce Multi-head Latent Attention (MLA), which compresses the Key-Value cache into a low-rank latent vector, and report that DeepSeek-V2 reduces KV cache per token by 93.3% compared with DeepSeek 67B while supporting a 128K context length. DeepSeek-V2 has 236B total parameters with 21B activated per token, and is trained and served on clusters of NVIDIA H800 GPUs.",
+      "content": "We introduce Multi-head Latent Attention (MLA), which compresses the Key-Value cache into a low-rank latent vector, and report that DeepSeek-V2 reduces KV cache per token by 93.3% compared with DeepSeek 67B while supporting a 128K context length. We introduce Multi-head Latent Attention (MLA), which compresses the Key-Value cache into a low-rank latent vector, and report that DeepSeek-V2 reduces KV cache per token by 93.3% compared with DeepSeek 67B while supporting a 128K context length. DeepSeek-V2 has 236B total parameters with 21B activated per token, and is trained and served on clusters of NVIDIA H800 GPUs. The paper describes the evaluation suite and the hardware setup used for the reported throughput and KV cache figures, but does not link an evaluation script or the evaluation data used to produce the tables. The paper describes the evaluation suite and the hardware setup used for the reported throughput and KV cache figures, but does not link an evaluation script or the evaluation data used to produce the tables. Benchmark results are reported against a stated baseline configuration, and readers are directed to the released weights to reproduce inference behaviour rather than to a published harness.",
       "publisher": "arXiv",
       "published_date": "2024-05",
       "fetched_at": "2026-09-20T09:00:00+00:00",
@@ -72,7 +72,7 @@
       "title": "deepseek-ai/DeepSeek-V2 — Hugging Face",
       "url": "https://huggingface.co/deepseek-ai/DeepSeek-V2",
       "snippet": "Model weights and configuration for DeepSeek-V2 are published under an open licence, and the model card documents the MLA projection dimensions required by serving frameworks.",
-      "content": null,
+      "content": "Model weights and configuration for DeepSeek-V2 are published under an open licence, and the model card documents the MLA projection dimensions required by serving frameworks. Model card for DeepSeek-V2, a 236B-parameter Mixture-of-Experts model with 21B activated parameters. Weights are released under the DeepSeek model license; the card documents the MLA configuration fields and the 128K context length.",
       "publisher": "Hugging Face",
       "published_date": "2024-06-14",
       "fetched_at": "2026-09-20T09:00:00+00:00",
@@ -107,7 +107,7 @@
       "title": "Leo CXL Smart Memory Controllers",
       "url": "https://www.astera-labs.com/products/leo-cxl-smart-memory-controllers/",
       "snippet": "Leo CXL memory controllers are shipping in production platforms and support memory expansion and pooling for server hosts, with published bandwidth and capacity configurations.",
-      "content": null,
+      "content": "Leo CXL memory controllers are shipping in production platforms and support memory expansion and pooling for server hosts, with published bandwidth and capacity configurations. Astera Labs presents Leo controllers as memory expansion that appears to the host as additional system memory, so that applications use it without modification. The product material describes capacity and bandwidth expansion, not near-memory compute offload.",
       "publisher": "Astera Labs",
       "published_date": "2024-09-17",
       "fetched_at": "2026-09-20T09:00:00+00:00",
@@ -153,7 +153,7 @@
       "title": "SK hynix develops AiM-based accelerator card for generative AI",
       "url": "https://news.skhynix.com/sk-hynix-aim-accelerator-card-generative-ai/",
       "snippet": "The AiM (Accelerator-in-Memory) card is presented as a prototype card for generative AI inference, with measured results reported on a vendor testbed.",
-      "content": null,
+      "content": "The AiM (Accelerator-in-Memory) card is presented as a prototype card for generative AI inference, with measured results reported on a vendor testbed. SK hynix describes the AiM accelerator card and an accompanying software stack for partners. Access to the SDK and to the hardware is handled through partner engagement rather than public download.",
       "publisher": "SK hynix",
       "published_date": "2024-11-05",
       "fetched_at": "2026-09-20T09:00:00+00:00",
@@ -164,7 +164,7 @@
       "title": "Processing-in-memory parts remain sampling-stage for AI servers",
       "url": "https://www.eetimes.com/processing-in-memory-parts-remain-sampling-stage-for-ai-servers/",
       "snippet": "Analysts note that PIM and PNM devices are sampled to selected customers and that no vendor has disclosed volume production for LLM inference servers.",
-      "content": null,
+      "content": "Analysts note that PIM and PNM devices are sampled to selected customers and that no vendor has disclosed volume production for LLM inference servers. Reporting on PIM and PNM silicon notes that evaluation is limited to vendor sampling programmes, and that independent groups have not published reproductions of vendor-reported inference numbers on their own hardware.",
       "publisher": "EE Times",
       "published_date": "2025-07-30",
       "fetched_at": "2026-09-20T09:00:00+00:00",
@@ -281,10 +281,10 @@
       "query": "DeepSeek-V2 code release github"
     },
     {
-      "title": "deepseek-ai/DeepSeek-V2 · Hugging Face",
+      "title": "deepseek-ai/DeepSeek-V2 — Hugging Face",
       "url": "https://huggingface.co/deepseek-ai/DeepSeek-V2",
-      "snippet": "Model card for DeepSeek-V2, a 236B-parameter Mixture-of-Experts model with 21B activated parameters. Weights are released under the DeepSeek model license; the card documents the MLA configuration fields and the 128K context length.",
-      "content": null,
+      "snippet": "Model weights and configuration for DeepSeek-V2 are published under an open licence, and the model card documents the MLA projection dimensions required by serving frameworks.",
+      "content": "Model weights and configuration for DeepSeek-V2 are published under an open licence, and the model card documents the MLA projection dimensions required by serving frameworks. Model card for DeepSeek-V2, a 236B-parameter Mixture-of-Experts model with 21B activated parameters. Weights are released under the DeepSeek model license; the card documents the MLA configuration fields and the 128K context length.",
       "publisher": "Hugging Face",
       "published_date": "2024-06-14",
       "fetched_at": "2026-09-20T09:00:00+00:00",
@@ -294,8 +294,8 @@
     {
       "title": "DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model",
       "url": "https://arxiv.org/abs/2405.04434",
-      "snippet": "The paper describes the evaluation suite and the hardware setup used for the reported throughput and KV cache figures, but does not link an evaluation script or the evaluation data used to produce the tables.",
-      "content": "The paper describes the evaluation suite and the hardware setup used for the reported throughput and KV cache figures, but does not link an evaluation script or the evaluation data used to produce the tables. Benchmark results are reported against a stated baseline configuration, and readers are directed to the released weights to reproduce inference behaviour rather than to a published harness.",
+      "snippet": "We introduce Multi-head Latent Attention (MLA), which compresses the Key-Value cache into a low-rank latent vector, and report that DeepSeek-V2 reduces KV cache per token by 93.3% compared with DeepSeek 67B while supporting a 128K context length.",
+      "content": "We introduce Multi-head Latent Attention (MLA), which compresses the Key-Value cache into a low-rank latent vector, and report that DeepSeek-V2 reduces KV cache per token by 93.3% compared with DeepSeek 67B while supporting a 128K context length. We introduce Multi-head Latent Attention (MLA), which compresses the Key-Value cache into a low-rank latent vector, and report that DeepSeek-V2 reduces KV cache per token by 93.3% compared with DeepSeek 67B while supporting a 128K context length. DeepSeek-V2 has 236B total parameters with 21B activated per token, and is trained and served on clusters of NVIDIA H800 GPUs. The paper describes the evaluation suite and the hardware setup used for the reported throughput and KV cache figures, but does not link an evaluation script or the evaluation data used to produce the tables. The paper describes the evaluation suite and the hardware setup used for the reported throughput and KV cache figures, but does not link an evaluation script or the evaluation data used to produce the tables. Benchmark results are reported against a stated baseline configuration, and readers are directed to the released weights to reproduce inference behaviour rather than to a published harness.",
       "publisher": "arXiv",
       "published_date": "2024-05",
       "fetched_at": "2026-09-20T09:00:00+00:00",
@@ -305,8 +305,8 @@
     {
       "title": "vllm-project/vllm — MLA attention backend source",
       "url": "https://github.com/vllm-project/vllm",
-      "snippet": "vLLM carries an independently written MLA attention backend for DeepSeek-V2 style models, maintained outside the original authors' repository and exercised by the project's own serving test suite.",
-      "content": null,
+      "snippet": "The vLLM repository contains the MLA attention backend implementation used for DeepSeek-V2 and DeepSeek-V3 style models, including the latent KV cache layout and the absorbed projection decode path.",
+      "content": "The vLLM repository contains the MLA attention backend implementation used for DeepSeek-V2 and DeepSeek-V3 style models, including the latent KV cache layout and the absorbed projection decode path. The vLLM repository contains the MLA attention backend implementation used for DeepSeek-V2 and DeepSeek-V3 style models, including the latent KV cache layout and the absorbed projection decode path. The backend is selected from the model config when MLA-specific projection dimensions are declared; models without those fields use the generic paged attention backend instead. vLLM carries an independently written MLA attention backend for DeepSeek-V2 style models, maintained outside the original authors' repository and exercised by the project's own serving test suite.",
       "publisher": "vLLM",
       "published_date": null,
       "fetched_at": "2026-09-20T09:00:00+00:00",
@@ -319,7 +319,7 @@
       "title": "Scalable Processing-Near-Memory for 1M-Token LLM Inference: CXL-Enabled KV-Cache Management Beyond GPU Limits",
       "url": "https://arxiv.org/abs/2511.00321",
       "snippet": "The paper specifies the PNM accelerator design, the token page selection offload, and the hybrid GPU-PNM parallelization strategy, and reports results measured on a CXL-PNM system. No repository, RTL, or simulator configuration is linked from the paper.",
-      "content": "The paper specifies the PNM accelerator design, the token page selection offload, and the hybrid GPU-PNM parallelization strategy, and reports results measured on a CXL-PNM system. No repository, RTL, or simulator configuration is linked from the paper. Reported gains reach up to 21.9x throughput and up to 60x lower energy per token relative to the stated baseline, for models up to 405B parameters at 1M-token context.",
+      "content": "The paper specifies the PNM accelerator design, the token page selection offload, and the hybrid GPU-PNM parallelization strategy, and reports results measured on a CXL-PNM system. No repository, RTL, or simulator configuration is linked from the paper. The paper specifies the PNM accelerator design, the token page selection offload, and the hybrid GPU-PNM parallelization strategy, and reports results measured on a CXL-PNM system. No repository, RTL, or simulator configuration is linked from the paper. Reported gains reach up to 21.9x throughput and up to 60x lower energy per token relative to the stated baseline, for models up to 405B parameters at 1M-token context. The evaluated system replaces the recall path of a non-eviction KV-cache framework with an offloaded token page selection step executed inside CXL memory, which changes how the serving runtime allocates and addresses KV pages. The evaluated system replaces the recall path of a non-eviction KV-cache framework with an offloaded token page selection step executed inside CXL memory, which changes how the serving runtime allocates and addresses KV pages. The authors report the integration against a CXL-PNM platform rather than against an unmodified open-source serving engine.",
       "publisher": "arXiv",
       "published_date": "2025-10",
       "fetched_at": "2026-09-20T09:00:00+00:00",
@@ -327,10 +327,10 @@
       "query": "PIM CXL prototype code availability"
     },
     {
-      "title": "SK hynix AiM accelerator card for generative AI",
+      "title": "SK hynix develops AiM-based accelerator card for generative AI",
       "url": "https://news.skhynix.com/sk-hynix-aim-accelerator-card-generative-ai/",
-      "snippet": "SK hynix describes the AiM accelerator card and an accompanying software stack for partners. Access to the SDK and to the hardware is handled through partner engagement rather than public download.",
-      "content": null,
+      "snippet": "The AiM (Accelerator-in-Memory) card is presented as a prototype card for generative AI inference, with measured results reported on a vendor testbed.",
+      "content": "The AiM (Accelerator-in-Memory) card is presented as a prototype card for generative AI inference, with measured results reported on a vendor testbed. SK hynix describes the AiM accelerator card and an accompanying software stack for partners. Access to the SDK and to the hardware is handled through partner engagement rather than public download.",
       "publisher": "SK hynix",
       "published_date": "2024-11-05",
       "fetched_at": "2026-09-20T09:00:00+00:00",
@@ -338,10 +338,10 @@
       "query": "PIM CXL prototype code availability"
     },
     {
-      "title": "Processing-in-memory parts remain at sampling stage for AI servers",
+      "title": "Processing-in-memory parts remain sampling-stage for AI servers",
       "url": "https://www.eetimes.com/processing-in-memory-parts-remain-sampling-stage-for-ai-servers/",
-      "snippet": "Reporting on PIM and PNM silicon notes that evaluation is limited to vendor sampling programmes, and that independent groups have not published reproductions of vendor-reported inference numbers on their own hardware.",
-      "content": null,
+      "snippet": "Analysts note that PIM and PNM devices are sampled to selected customers and that no vendor has disclosed volume production for LLM inference servers.",
+      "content": "Analysts note that PIM and PNM devices are sampled to selected customers and that no vendor has disclosed volume production for LLM inference servers. Reporting on PIM and PNM silicon notes that evaluation is limited to vendor sampling programmes, and that independent groups have not published reproductions of vendor-reported inference numbers on their own hardware.",
       "publisher": "EE Times",
       "published_date": "2025-07-30",
       "fetched_at": "2026-09-20T09:00:00+00:00",
@@ -364,8 +364,8 @@
     {
       "title": "Scalable Processing-Near-Memory for 1M-Token LLM Inference: CXL-Enabled KV-Cache Management Beyond GPU Limits",
       "url": "https://arxiv.org/abs/2511.00321",
-      "snippet": "The evaluated system replaces the recall path of a non-eviction KV-cache framework with an offloaded token page selection step executed inside CXL memory, which changes how the serving runtime allocates and addresses KV pages.",
-      "content": "The evaluated system replaces the recall path of a non-eviction KV-cache framework with an offloaded token page selection step executed inside CXL memory, which changes how the serving runtime allocates and addresses KV pages. The authors report the integration against a CXL-PNM platform rather than against an unmodified open-source serving engine.",
+      "snippet": "The paper specifies the PNM accelerator design, the token page selection offload, and the hybrid GPU-PNM parallelization strategy, and reports results measured on a CXL-PNM system. No repository, RTL, or simulator configuration is linked from the paper.",
+      "content": "The paper specifies the PNM accelerator design, the token page selection offload, and the hybrid GPU-PNM parallelization strategy, and reports results measured on a CXL-PNM system. No repository, RTL, or simulator configuration is linked from the paper. The paper specifies the PNM accelerator design, the token page selection offload, and the hybrid GPU-PNM parallelization strategy, and reports results measured on a CXL-PNM system. No repository, RTL, or simulator configuration is linked from the paper. Reported gains reach up to 21.9x throughput and up to 60x lower energy per token relative to the stated baseline, for models up to 405B parameters at 1M-token context. The evaluated system replaces the recall path of a non-eviction KV-cache framework with an offloaded token page selection step executed inside CXL memory, which changes how the serving runtime allocates and addresses KV pages. The evaluated system replaces the recall path of a non-eviction KV-cache framework with an offloaded token page selection step executed inside CXL memory, which changes how the serving runtime allocates and addresses KV pages. The authors report the integration against a CXL-PNM platform rather than against an unmodified open-source serving engine.",
       "publisher": "arXiv",
       "published_date": "2025-10",
       "fetched_at": "2026-09-20T09:00:00+00:00",
@@ -375,13 +375,188 @@
     {
       "title": "Leo CXL Smart Memory Controllers",
       "url": "https://www.astera-labs.com/products/leo-cxl-smart-memory-controllers/",
-      "snippet": "Astera Labs presents Leo controllers as memory expansion that appears to the host as additional system memory, so that applications use it without modification. The product material describes capacity and bandwidth expansion, not near-memory compute offload.",
-      "content": null,
+      "snippet": "Leo CXL memory controllers are shipping in production platforms and support memory expansion and pooling for server hosts, with published bandwidth and capacity configurations.",
+      "content": "Leo CXL memory controllers are shipping in production platforms and support memory expansion and pooling for server hosts, with published bandwidth and capacity configurations. Astera Labs presents Leo controllers as memory expansion that appears to the host as additional system memory, so that applications use it without modification. The product material describes capacity and bandwidth expansion, not near-memory compute offload.",
       "publisher": "Astera Labs",
       "published_date": "2024-09-17",
       "fetched_at": "2026-09-20T09:00:00+00:00",
       "source_kind": "official",
       "query": "CXL memory serving engine integration vLLM"
+    }
+  ],
+  "Multi-head Latent Attention third-party implementation reproduction": [
+    {
+      "title": "vllm-project/vllm — MLA attention backend source",
+      "url": "https://github.com/vllm-project/vllm",
+      "snippet": "The vLLM repository contains the MLA attention backend implementation used for DeepSeek-V2 and DeepSeek-V3 style models, including the latent KV cache layout and the absorbed projection decode path.",
+      "content": "The vLLM repository contains the MLA attention backend implementation used for DeepSeek-V2 and DeepSeek-V3 style models, including the latent KV cache layout and the absorbed projection decode path. The vLLM repository contains the MLA attention backend implementation used for DeepSeek-V2 and DeepSeek-V3 style models, including the latent KV cache layout and the absorbed projection decode path. The backend is selected from the model config when MLA-specific projection dimensions are declared; models without those fields use the generic paged attention backend instead. vLLM carries an independently written MLA attention backend for DeepSeek-V2 style models, maintained outside the original authors' repository and exercised by the project's own serving test suite.",
+      "publisher": "vLLM",
+      "published_date": null,
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "other",
+      "query": "Multi-head Latent Attention third-party implementation reproduction"
+    },
+    {
+      "title": "Attention backends — SGLang documentation",
+      "url": "https://docs.sglang.ai/backend/attention_backend.html",
+      "snippet": "SGLang supports MLA-based models and documents the latent KV cache layout used for DeepSeek architectures, including the absorbed projection variant used during decoding.",
+      "content": null,
+      "publisher": "SGLang",
+      "published_date": "2025-06-02",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "official",
+      "query": "Multi-head Latent Attention third-party implementation reproduction"
+    },
+    {
+      "title": "A Survey on LLM Acceleration based on KV Cache Management",
+      "url": "https://arxiv.org/abs/2412.19442",
+      "snippet": "Among architecture-level methods, low-rank latent compression such as Multi-head Latent Attention has been adopted in production-scale open models and is now supported by several open-source serving frameworks.",
+      "content": null,
+      "publisher": "arXiv",
+      "published_date": "2024-12",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "paper",
+      "query": "Multi-head Latent Attention third-party implementation reproduction"
+    }
+  ],
+  "Processing-in-Memory third-party implementation reproduction": [
+    {
+      "title": "Scalable Processing-Near-Memory for 1M-Token LLM Inference: CXL-Enabled KV-Cache Management Beyond GPU Limits",
+      "url": "https://arxiv.org/abs/2511.00321",
+      "snippet": "The paper specifies the PNM accelerator design, the token page selection offload, and the hybrid GPU-PNM parallelization strategy, and reports results measured on a CXL-PNM system. No repository, RTL, or simulator configuration is linked from the paper.",
+      "content": "The paper specifies the PNM accelerator design, the token page selection offload, and the hybrid GPU-PNM parallelization strategy, and reports results measured on a CXL-PNM system. No repository, RTL, or simulator configuration is linked from the paper. The paper specifies the PNM accelerator design, the token page selection offload, and the hybrid GPU-PNM parallelization strategy, and reports results measured on a CXL-PNM system. No repository, RTL, or simulator configuration is linked from the paper. Reported gains reach up to 21.9x throughput and up to 60x lower energy per token relative to the stated baseline, for models up to 405B parameters at 1M-token context. The evaluated system replaces the recall path of a non-eviction KV-cache framework with an offloaded token page selection step executed inside CXL memory, which changes how the serving runtime allocates and addresses KV pages. The evaluated system replaces the recall path of a non-eviction KV-cache framework with an offloaded token page selection step executed inside CXL memory, which changes how the serving runtime allocates and addresses KV pages. The authors report the integration against a CXL-PNM platform rather than against an unmodified open-source serving engine.",
+      "publisher": "arXiv",
+      "published_date": "2025-10",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "paper",
+      "query": "Processing-in-Memory third-party implementation reproduction"
+    },
+    {
+      "title": "Processing-in-memory parts remain sampling-stage for AI servers",
+      "url": "https://www.eetimes.com/processing-in-memory-parts-remain-sampling-stage-for-ai-servers/",
+      "snippet": "Analysts note that PIM and PNM devices are sampled to selected customers and that no vendor has disclosed volume production for LLM inference servers.",
+      "content": "Analysts note that PIM and PNM devices are sampled to selected customers and that no vendor has disclosed volume production for LLM inference servers. Reporting on PIM and PNM silicon notes that evaluation is limited to vendor sampling programmes, and that independent groups have not published reproductions of vendor-reported inference numbers on their own hardware.",
+      "publisher": "EE Times",
+      "published_date": "2025-07-30",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "news",
+      "query": "Processing-in-Memory third-party implementation reproduction"
+    },
+    {
+      "title": "SK hynix develops AiM-based accelerator card for generative AI",
+      "url": "https://news.skhynix.com/sk-hynix-aim-accelerator-card-generative-ai/",
+      "snippet": "The AiM (Accelerator-in-Memory) card is presented as a prototype card for generative AI inference, with measured results reported on a vendor testbed.",
+      "content": "The AiM (Accelerator-in-Memory) card is presented as a prototype card for generative AI inference, with measured results reported on a vendor testbed. SK hynix describes the AiM accelerator card and an accompanying software stack for partners. Access to the SDK and to the hardware is handled through partner engagement rather than public download.",
+      "publisher": "SK hynix",
+      "published_date": "2024-11-05",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "official",
+      "query": "Processing-in-Memory third-party implementation reproduction"
+    }
+  ],
+  "Multi-head Latent Attention inference framework integration": [
+    {
+      "title": "Supported Models and Attention Backends — vLLM",
+      "url": "https://docs.vllm.ai/en/latest/models/supported_models.html",
+      "snippet": "vLLM implements a dedicated MLA (Multi-head Latent Attention) backend for DeepSeek-V2 and DeepSeek-V3 style models. The MLA path stores the compressed latent KV representation instead of per-head key and value tensors, which reduces paged KV cache footprint relative to the standard MHA backend.",
+      "content": "vLLM implements a dedicated MLA (Multi-head Latent Attention) backend for DeepSeek-V2 and DeepSeek-V3 style models. The MLA path stores the compressed latent KV representation instead of per-head key and value tensors, which reduces paged KV cache footprint relative to the standard MHA backend. Enabling the backend requires a model config that declares MLA-specific projection dimensions; models without those fields fall back to the generic attention backend.",
+      "publisher": "vLLM",
+      "published_date": "2025-03-11",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "official",
+      "query": "Multi-head Latent Attention inference framework integration"
+    },
+    {
+      "title": "Attention backends — SGLang documentation",
+      "url": "https://docs.sglang.ai/backend/attention_backend.html",
+      "snippet": "SGLang supports MLA-based models and documents the latent KV cache layout used for DeepSeek architectures, including the absorbed projection variant used during decoding.",
+      "content": null,
+      "publisher": "SGLang",
+      "published_date": "2025-06-02",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "official",
+      "query": "Multi-head Latent Attention inference framework integration"
+    },
+    {
+      "title": "vllm-project/vllm — MLA attention backend source",
+      "url": "https://github.com/vllm-project/vllm",
+      "snippet": "The vLLM repository contains the MLA attention backend implementation used for DeepSeek-V2 and DeepSeek-V3 style models, including the latent KV cache layout and the absorbed projection decode path.",
+      "content": "The vLLM repository contains the MLA attention backend implementation used for DeepSeek-V2 and DeepSeek-V3 style models, including the latent KV cache layout and the absorbed projection decode path. The vLLM repository contains the MLA attention backend implementation used for DeepSeek-V2 and DeepSeek-V3 style models, including the latent KV cache layout and the absorbed projection decode path. The backend is selected from the model config when MLA-specific projection dimensions are declared; models without those fields use the generic paged attention backend instead. vLLM carries an independently written MLA attention backend for DeepSeek-V2 style models, maintained outside the original authors' repository and exercised by the project's own serving test suite.",
+      "publisher": "vLLM",
+      "published_date": null,
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "other",
+      "query": "Multi-head Latent Attention inference framework integration"
+    }
+  ],
+  "Processing-in-Memory inference framework integration": [
+    {
+      "title": "vLLM documentation",
+      "url": "https://docs.vllm.ai/en/latest/",
+      "snippet": "vLLM manages the KV cache through its paged attention block manager backed by GPU memory, with CPU memory used for swap. The documented storage tiers do not include a CXL-attached or near-memory compute device.",
+      "content": "vLLM manages the KV cache through its paged attention block manager backed by GPU memory, with CPU memory used for swap. The documented storage tiers do not include a CXL-attached or near-memory compute device. Adding one would require changes below the block manager, at the layer that allocates, addresses, and transfers KV blocks, rather than a model-level configuration change.",
+      "publisher": "vLLM",
+      "published_date": "2025-08-19",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "official",
+      "query": "Processing-in-Memory inference framework integration"
+    },
+    {
+      "title": "Scalable Processing-Near-Memory for 1M-Token LLM Inference: CXL-Enabled KV-Cache Management Beyond GPU Limits",
+      "url": "https://arxiv.org/abs/2511.00321",
+      "snippet": "The paper specifies the PNM accelerator design, the token page selection offload, and the hybrid GPU-PNM parallelization strategy, and reports results measured on a CXL-PNM system. No repository, RTL, or simulator configuration is linked from the paper.",
+      "content": "The paper specifies the PNM accelerator design, the token page selection offload, and the hybrid GPU-PNM parallelization strategy, and reports results measured on a CXL-PNM system. No repository, RTL, or simulator configuration is linked from the paper. The paper specifies the PNM accelerator design, the token page selection offload, and the hybrid GPU-PNM parallelization strategy, and reports results measured on a CXL-PNM system. No repository, RTL, or simulator configuration is linked from the paper. Reported gains reach up to 21.9x throughput and up to 60x lower energy per token relative to the stated baseline, for models up to 405B parameters at 1M-token context. The evaluated system replaces the recall path of a non-eviction KV-cache framework with an offloaded token page selection step executed inside CXL memory, which changes how the serving runtime allocates and addresses KV pages. The evaluated system replaces the recall path of a non-eviction KV-cache framework with an offloaded token page selection step executed inside CXL memory, which changes how the serving runtime allocates and addresses KV pages. The authors report the integration against a CXL-PNM platform rather than against an unmodified open-source serving engine.",
+      "publisher": "arXiv",
+      "published_date": "2025-10",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "paper",
+      "query": "Processing-in-Memory inference framework integration"
+    },
+    {
+      "title": "Leo CXL Smart Memory Controllers",
+      "url": "https://www.astera-labs.com/products/leo-cxl-smart-memory-controllers/",
+      "snippet": "Leo CXL memory controllers are shipping in production platforms and support memory expansion and pooling for server hosts, with published bandwidth and capacity configurations.",
+      "content": "Leo CXL memory controllers are shipping in production platforms and support memory expansion and pooling for server hosts, with published bandwidth and capacity configurations. Astera Labs presents Leo controllers as memory expansion that appears to the host as additional system memory, so that applications use it without modification. The product material describes capacity and bandwidth expansion, not near-memory compute offload.",
+      "publisher": "Astera Labs",
+      "published_date": "2024-09-17",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "official",
+      "query": "Processing-in-Memory inference framework integration"
+    }
+  ],
+  "PIM CXL production deployment": [
+    {
+      "title": "CXL memory expansion in the real world: what is actually shipping",
+      "url": "https://www.servethehome.com/cxl-memory-expansion-what-is-actually-shipping/",
+      "snippet": "CXL Type-3 expansion modules are available from multiple vendors, but deployments reported so far target capacity-bound in-memory workloads rather than LLM KV cache offload.",
+      "content": null,
+      "publisher": "ServeTheHome",
+      "published_date": "2025-01-23",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "news",
+      "query": "PIM CXL production deployment"
+    },
+    {
+      "title": "Leo CXL Smart Memory Controllers",
+      "url": "https://www.astera-labs.com/products/leo-cxl-smart-memory-controllers/",
+      "snippet": "Leo CXL memory controllers are shipping in production platforms and support memory expansion and pooling for server hosts, with published bandwidth and capacity configurations.",
+      "content": "Leo CXL memory controllers are shipping in production platforms and support memory expansion and pooling for server hosts, with published bandwidth and capacity configurations. Astera Labs presents Leo controllers as memory expansion that appears to the host as additional system memory, so that applications use it without modification. The product material describes capacity and bandwidth expansion, not near-memory compute offload.",
+      "publisher": "Astera Labs",
+      "published_date": "2024-09-17",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "official",
+      "query": "PIM CXL production deployment"
+    },
+    {
+      "title": "Processing-in-memory parts remain sampling-stage for AI servers",
+      "url": "https://www.eetimes.com/processing-in-memory-parts-remain-sampling-stage-for-ai-servers/",
+      "snippet": "Analysts note that PIM and PNM devices are sampled to selected customers and that no vendor has disclosed volume production for LLM inference servers.",
+      "content": "Analysts note that PIM and PNM devices are sampled to selected customers and that no vendor has disclosed volume production for LLM inference servers. Reporting on PIM and PNM silicon notes that evaluation is limited to vendor sampling programmes, and that independent groups have not published reproductions of vendor-reported inference numbers on their own hardware.",
+      "publisher": "EE Times",
+      "published_date": "2025-07-30",
+      "fetched_at": "2026-09-20T09:00:00+00:00",
+      "source_kind": "news",
+      "query": "PIM CXL production deployment"
     }
   ]
 }
