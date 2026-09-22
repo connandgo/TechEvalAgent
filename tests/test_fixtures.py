@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from techeval.control.perspective_check import CRITERION_LEVELS, REQUIRED_DETAILS
 from techeval.schemas import (
     PERSPECTIVE_CRITERIA,
     STAKEHOLDERS,
@@ -24,25 +25,6 @@ from techeval.stub_llm import FIXTURE_OWNERS
 
 FIXTURES = Path(__file__).parent / "fixtures"
 TECH_IDS = ("mla", "pim_cxl")
-
-# CONTRACTS §2 `details` 필수 키
-REQUIRED_DETAILS: dict[str, tuple[str, ...]] = {
-    "T1": ("trl_band", "estimate", "why_not_higher"),
-    "T2": ("env_level",),
-    "T3": ("checklist",),
-    "T4": ("remaining_tasks", "not_public_items"),
-    "M1": ("market_figures",),
-    "M2": ("adopters",),
-    "M3": ("checklist",),
-    "S1": ("roles",),
-    "S2": ("benefits",),
-    "S3": ("burdens",),
-    "S4": ("tradeoffs",),
-    "D1": ("directness",),
-    "D2": ("directness",),
-    "D3": ("directness",),
-    "D4": ("checklist",),
-}
 
 
 def _load(name: str):
@@ -67,6 +49,9 @@ def _check_criterion_list(name: str, perspective: str) -> list[CriterionResult]:
         )
         missing = [k for k in REQUIRED_DETAILS[r.criterion_id] if k not in r.details]
         assert not missing, f"{name} {r.tech_id}/{r.criterion_id}: details 필수 키 누락 {missing}"
+        assert r.level == "not_public" or r.level in CRITERION_LEVELS[r.criterion_id], (
+            f"{name} {r.tech_id}/{r.criterion_id}: level {r.level!r} 허용 값 밖"
+        )
         if r.level != "not_public":
             for e in r.evidence:
                 assert e.evidence_id.startswith(f"{r.tech_id}-{r.criterion_id}-"), (

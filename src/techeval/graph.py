@@ -197,8 +197,13 @@ def build_graph(
         return {"tech_profiles": [out.tech_profile], "trl_eval": out.trl_eval}
 
     def route_after_tech_research(state: GraphState) -> str:
-        # 관점 평가가 이미 시작된 뒤(perspective_check가 T 기준을 재요청한 경우)에는 검사 노드로 돌아가지 않는다
-        return "perspective_check" if state.get("market_eval") else "tech_evidence_check"
+        # perspective_check가 한 번이라도 돌았으면 missing_criteria에 "market:<tech>" 류 키가 생긴다.
+        # 그 뒤의 tech_research(T 기준 재실행)는 검사 노드로 돌아가지 않고 perspective_check로 합류한다.
+        started = any(
+            ":" in k and k.split(":")[0] in ("market", "stakeholder", "domain")
+            for k in state.get("missing_criteria", {})
+        )
+        return "perspective_check" if started else "tech_evidence_check"
 
     @_log_node
     def tech_evidence_check(state: GraphState) -> dict:
@@ -234,9 +239,20 @@ def build_graph(
                     logger.warning(
                         "tech_evidence_check: %s 프로필 항목 %s 은 상한 도달로 그대로 진행", tid, profile_items
                     )
+                profile = next((p for p in latest_by_tech(state.get("tech_profiles", [])) if p.tech_id == tid), None)
+                used = list(profile.search_queries_used) if profile else []
                 for cid in res.missing_criteria(tid):
                     confirmed.append(
-                        make_not_public_result(tech, cid, queries=[], now=deps.now(), retry_count=retry.get(key, 0))
+                        make_not_public_result(
+                            tech,
+                            cid,
+                            queries=used,
+                            now=deps.now(),
+                            retry_count=retry.get(key, 0),
+                            problems=[
+                                p for p in res.problems.get(tid, []) if p.startswith(f"{cid}:") or f"-{cid}-" in p
+                            ],
+                        )
                     )
         return {"missing_criteria": missing, "retry_counts": retry, "trl_eval": confirmed}
 
@@ -325,7 +341,16 @@ def build_graph(
                     tech = _tech_by_id(state, tid)
                     for cid in cids:
                         updates[PERSPECTIVE_KEY[p]].append(
-                            make_not_public_result(tech, cid, queries=[], now=deps.now(), retry_count=retry.get(key, 0))
+                            make_not_public_result(
+                                tech,
+                                cid,
+                                queries=[],
+                                now=deps.now(),
+                                retry_count=retry.get(key, 0),
+                                problems=[
+                                    x for x in res.problems if x.startswith(f"{tid}/{cid}") or f"{tid}-{cid}-" in x
+                                ],
+                            )
                         )
         return {"missing_criteria": missing, "retry_counts": retry, **updates}
 

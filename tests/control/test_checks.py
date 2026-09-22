@@ -3,8 +3,6 @@
 tech_evidence_check / perspective_check / evidence_gap / query_rewrite / counter_evidence / judge
 """
 
-import copy
-
 from techeval.agents._deps import Deps, ReportInput
 from techeval.control.counter_evidence import search_counter_evidence
 from techeval.control.evidence_gap import check_evidence_gap
@@ -15,7 +13,6 @@ from techeval.control.sources import SourceRegistry, evidence_problems, normaliz
 from techeval.control.tech_evidence_check import check_tech_evidence
 from techeval.schemas import (
     PERSPECTIVE_CRITERIA,
-    STAKEHOLDERS,
     EvidenceGap,
     Gap,
     JudgeResult,
@@ -122,16 +119,7 @@ def test_tech_check_not_public_is_not_rechecked():
 
 
 def _full_evals(r: MemRetriever, reg: SourceRegistry) -> dict:
-    """30개 전부 유효한 결과."""
-    entry = [{"text": "t", "evidence_id": "x", "is_inference": False}]
-    details = {
-        "S2": {"benefits": {s: entry for s in STAKEHOLDERS}},
-        "S3": {"burdens": {s: entry for s in STAKEHOLDERS}},
-        "S4": {"tradeoffs": [{"beneficiary": "a", "burdened": "b", "text": "t", "evidence_ids": []}]},
-        "D1": {"directness": "L3"},
-        "D2": {"directness": "L2", "extrapolation_logic": "logic"},
-        "D3": {"directness": "L3"},
-    }
+    """30개 전부 유효한 결과 (기준별 유효 level·details는 helpers.result 기본값)."""
     evals: dict = {}
     for p, cids in PERSPECTIVE_CRITERIA.items():
         evals[p] = []
@@ -143,7 +131,7 @@ def _full_evals(r: MemRetriever, reg: SourceRegistry) -> dict:
                     url = f"https://{t.tech_id}.example.com/{c}"
                     reg.add(url)
                     ev = [web_evidence(f"{t.tech_id}-{c}-01", url)]
-                evals[p].append(result(t, c, p, ev, details=copy.deepcopy(details.get(c, {}))))
+                evals[p].append(result(t, c, p, ev))
     return evals
 
 
@@ -418,3 +406,28 @@ def test_judge_recomputes_passed_and_overrides_scores():
     )
     fixed = judge_report(GOOD_MD, inp, llm, NOW)
     assert fixed.passed is False and fixed.missing_required == ["pim_cxl/T1 why_not_higher"]
+
+
+def test_paper_evidence_from_web_is_validated_by_url():
+    """C가 arXiv 검색 결과를 source_type=paper(chunk_id 없음, url 있음)로 변환한 경우 — URL 경로로 검증 (H4)."""
+    r = _retriever()
+    reg = SourceRegistry(preload_urls=["https://arxiv.org/abs/2502.07864"])
+    ok = web_evidence("mla-M3-01", "https://arxiv.org/abs/2502.07864", source_type="paper")
+    assert evidence_problems(ok, r, reg) == []
+    bad = web_evidence("mla-M3-02", "https://arxiv.org/abs/9999.00000", source_type="paper")
+    assert any("V5" in p for p in evidence_problems(bad, r, reg))
+    neither = ok.model_copy(update={"url": None, "locator": "somewhere"})
+    assert any("neither" in p for p in evidence_problems(neither, r, reg))
+
+
+def test_confidence_counts_each_web_paper_as_its_own_source():
+    """논문은 URL(=논문 1편) 단위로 독립 출처. 같은 arxiv.org 라도 다른 논문이면 2개. 웹 자료는 도메인 단위."""
+    from techeval.schemas import compute_confidence
+
+    a = web_evidence("x-1", "https://arxiv.org/abs/1", source_type="paper")
+    b = web_evidence("x-2", "https://arxiv.org/abs/2", source_type="paper")
+    assert compute_confidence([a, b]) == "high"
+    assert compute_confidence([a, a.model_copy(update={"evidence_id": "x-1b"})]) == "medium"  # 같은 논문
+    n1 = web_evidence("x-3", "https://news.example.com/p1")
+    n2 = web_evidence("x-4", "https://news.example.com/p2")
+    assert compute_confidence([n1, n2]) == "medium"  # 같은 사이트 두 기사 = 출처 1개

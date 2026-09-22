@@ -20,6 +20,44 @@ from techeval.schemas import (
 
 logger = logging.getLogger(__name__)
 
+# CRITERIA §2 기준별 허용 level 문자열 (not_public은 전 기준 공통)
+CRITERION_LEVELS: dict[str, frozenset[str]] = {
+    "T1": frozenset({"TRL 1-3", "TRL 4-6", "TRL 7-9"}),
+    "T2": frozenset({"L1", "L2", "L3", "L4"}),
+    "T3": frozenset({"L0", "L1", "L2", "L3"}),
+    "T4": frozenset({"narrative"}),
+    "M1": frozenset({"L0", "L1", "L2", "L3"}),
+    "M2": frozenset({"L0", "L1", "L2", "L3", "L4"}),
+    "M3": frozenset({"L0", "L1", "L2", "L3"}),
+    "S1": frozenset({"assigned"}),
+    "S2": frozenset({"narrative"}),
+    "S3": frozenset({"narrative"}),
+    "S4": frozenset({"narrative"}),
+    "D1": frozenset({"L1", "L2", "L3"}),
+    "D2": frozenset({"L1", "L2", "L3"}),
+    "D3": frozenset({"L1", "L2", "L3"}),
+    "D4": frozenset({"checklist"}),
+}
+
+# CONTRACTS §2 `details` 필수 키
+REQUIRED_DETAILS: dict[str, tuple[str, ...]] = {
+    "T1": ("trl_band", "estimate", "why_not_higher"),
+    "T2": ("env_level",),
+    "T3": ("checklist",),
+    "T4": ("remaining_tasks", "not_public_items"),
+    "M1": ("market_figures",),
+    "M2": ("adopters",),
+    "M3": ("checklist",),
+    "S1": ("roles",),
+    "S2": ("benefits",),
+    "S3": ("burdens",),
+    "S4": ("tradeoffs",),
+    "D1": ("directness",),
+    "D2": ("directness",),
+    "D3": ("directness",),
+    "D4": ("checklist",),
+}
+
 
 class PerspectiveCheckResult(BaseModel):
     missing: dict[str, dict[str, list[str]]]  # perspective -> tech_id -> [criterion_id]
@@ -36,12 +74,19 @@ class PerspectiveCheckResult(BaseModel):
 
 
 def _v4_problems(r: CriterionResult) -> list[str]:
-    """S2/S3 4주체 각 ≥1, S4 ≥1쌍, D1~D3 measurements, D2 L2 외삽 논리."""
+    """level 체계·details 필수 키(CRITERIA §2), S2/S3 4주체 각 ≥1, S4 ≥1쌍, D1~D3 measurements, L2 외삽 논리."""
     if r.level == "not_public":
         return []
     d = r.details or {}
     tag = f"{r.tech_id}/{r.criterion_id}"
     probs: list[str] = []
+    if r.level not in CRITERION_LEVELS[r.criterion_id]:
+        probs.append(f"{tag}: level {r.level!r}는 허용 값 {sorted(CRITERION_LEVELS[r.criterion_id])} 밖 (CRITERIA §2)")
+    missing_keys = [k for k in REQUIRED_DETAILS[r.criterion_id] if k not in d]
+    if missing_keys:
+        probs.append(f"{tag}: details 필수 키 누락 {missing_keys} (CONTRACTS §2)")
+    if r.criterion_id == "T1" and not (d.get("why_not_higher") or "").strip():
+        probs.append(f"{tag}: T1은 '한 단계 위로 올리지 못한 이유'(why_not_higher) 필수")
     if r.criterion_id in ("S2", "S3"):
         key = "benefits" if r.criterion_id == "S2" else "burdens"
         entries = d.get(key) or {}

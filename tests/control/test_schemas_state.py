@@ -270,9 +270,14 @@ class TestV3Relaxed:
     def test_perspective_check_accepts_l1_without_measurements(self):
         from techeval.control.perspective_check import _v4_problems
 
-        assert _v4_problems(result(criterion_id="D1", perspective="domain", level="L1")) == []
+        d = {"directness": "L1"}
+        assert _v4_problems(result(criterion_id="D1", perspective="domain", level="L1", details=d)) == []
         m = Measurement(metric="m", value="1", evidence_id="mla-D1-01")
-        assert _v4_problems(result(criterion_id="D1", perspective="domain", level="L3", measurements=[m])) == []
+        d3 = {"directness": "L3"}
+        assert (
+            _v4_problems(result(criterion_id="D1", perspective="domain", level="L3", measurements=[m], details=d3))
+            == []
+        )
         # validator를 우회해 만든 L2·수치 없음 결과는 검사 노드가 V3로 잡는다
         broken = CriterionResult.model_construct(
             tech_id="mla",

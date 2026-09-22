@@ -82,16 +82,19 @@ def quote_in_chunk(quote: str, chunk: Any) -> bool:
 def evidence_problems(e: Any, retriever: Any, registry: SourceRegistry | None) -> list[str]:
     """Evidence 1건의 V5/V6 위반 목록. 비어 있으면 통과.
 
-    - paper: chunk_id 필수, retriever에 실존, quote가 chunk.text의 부분 문자열
-    - web/official/patent: url(또는 locator)이 registry에 기록된 검색 결과여야 함 (registry가 None이면 생략)
+    - paper(코퍼스): chunk_id가 있으면 retriever에 실존 + quote가 chunk.text의 부분 문자열
+    - paper(웹 검색으로 얻은 논문, chunk_id 없음)·web/official/patent: url(또는 locator)이 registry에 기록된
+      검색 결과여야 함 (registry가 None이면 생략)
     - inference/not_public: 검사 대상 아님 (스키마 validator가 검색어·검색일을 강제)
     """
     problems: list[str] = []
     st = e.source_type
-    if st == "paper":
-        if not e.chunk_id:
-            problems.append(f"{e.evidence_id}: paper evidence without chunk_id")
+    if st == "paper" and not e.chunk_id:
+        if not (e.url or "://" in e.locator):
+            problems.append(f"{e.evidence_id}: paper evidence has neither chunk_id nor url (V5)")
             return problems
+        st = "web"  # 웹에서 얻은 논문은 URL 경로로 검증
+    if st == "paper":
         chunk = chunk_exists(retriever, e.chunk_id)
         if chunk is None:
             problems.append(f"{e.evidence_id}: chunk_id {e.chunk_id!r} not found in retriever (V5)")
