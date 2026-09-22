@@ -366,18 +366,22 @@ def profile_summary(p: TechProfile | None) -> str:
 # ---------------------------------------------------------------------------
 
 _PAPER_QUERIES: dict[str, list[str]] = {
+    # 실제 인덱스 점검 결과: 별칭+영문 키워드는 정확도, "{name}"+한국어는 다양성(BM25 어휘 분산)을 준다. 둘을 섞는다.
     "profile": [
         "{name} 핵심 원리 KV cache",
         "{alias} key-value cache mechanism design",
         "{alias} results throughput memory reduction",
-        "{name} 한계 limitations",
+        "{name} Conclusion Limitation and Future Work",
     ],
     "T2": [
-        "실험 환경 GPU 구성",
-        "evaluation setup hardware prototype simulation",
+        "{name} 실험 환경 GPU 구성 training inference efficiency",
+        "{alias} evaluation setup prototype simulation parameters table",
         "{alias} deployment serving measurement",
     ],
-    "T4": ["{alias} limitations future work", "{name} 남은 과제 미공개 항목"],
+    "T4": [
+        "{alias} Conclusion Limitation and Future Work",
+        "{name} 남은 과제 not evaluated remaining challenges",
+    ],
 }
 _FAMILY_QUERIES = ["{alias} survey taxonomy", "{family} 계열 한계 반대 근거"]
 _WEB_QUERIES: dict[str, list[str]] = {
@@ -435,7 +439,7 @@ def gather_context(inp: AgentInput, deps: Deps, targets: list[str]) -> SearchCon
         paper_queries += _fmt(_RETRY_EXTRA_QUERIES, tech, inp.retry_count)
     for q in dict.fromkeys(paper_queries):
         ctx.add_chunks(
-            deps.retriever.search(q, top_k=6, doc_ids=[tech.primary_doc_id]),
+            deps.retriever.search(q, top_k=8, doc_ids=[tech.primary_doc_id]),
             unit="paper",
         )
         ctx.queries.append(q)
