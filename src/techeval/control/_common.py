@@ -62,6 +62,19 @@ def _empty_details(criterion_id: str) -> dict:
     return {}
 
 
+# 반대 근거 '확보'로 인정하지 않는 출처 유형 (탐색 실패 기록·추론은 근거가 아니다)
+NON_EVIDENCE_SOURCES: tuple[str, ...] = ("not_public", "inference")
+
+
+def secured_counter_techs(counter_evidence: list[Evidence] | None) -> set[str]:
+    """실제 반대 근거(논문·웹·공식 자료)를 확보한 기술 ID. `not_public`·`inference` COUNTER 기록은 제외한다."""
+    return {
+        e.evidence_id.split("-COUNTER-")[0]
+        for e in (counter_evidence or [])
+        if "-COUNTER-" in e.evidence_id and e.source_type not in NON_EVIDENCE_SOURCES
+    }
+
+
 def make_not_public_result(
     tech: TechRef,
     criterion_id: str,

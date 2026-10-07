@@ -1,6 +1,7 @@
 """마크다운 보고서 → PDF. 기본 경로는 markdown + weasyprint, weasyprint를 못 쓰면 pandoc으로 대체한다."""
 
 import logging
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -14,28 +15,22 @@ logger = logging.getLogger(__name__)
 FONT_DIR = Path(__file__).resolve().parents[3] / "assets" / "fonts"
 FONT_EXTS = (".ttf", ".otf", ".ttc", ".woff", ".woff2")
 # assets/fonts/에 폰트가 없을 때 fontconfig로 찾을 시스템 한글 폰트 (앞에서부터 우선)
-SYSTEM_KO_FONTS = (
-    "Noto Sans KR",
-    "Noto Sans CJK KR",
-    "Apple SD Gothic Neo",
-    "NanumGothic",
-    "Malgun Gothic",
-)
+SYSTEM_KO_FONTS = ("Noto Sans KR", "Noto Sans CJK KR", "Apple SD Gothic Neo", "NanumGothic", "Malgun Gothic")
 
 BASE_CSS = """
-@page { size: A4; margin: 20mm 18mm 20mm 18mm;
+@page { size: A4; margin: 14mm 14mm 15mm 14mm;  /* Agent 실습: 보고서 10장 이내 */
         @bottom-center { content: counter(page) " / " counter(pages); font-size: 8pt; color: #666; } }
-html { font-family: %(font_stack)s; font-size: 10pt; line-height: 1.6; color: #111; }
+html { font-family: %(font_stack)s; font-size: 9.5pt; line-height: 1.45; color: #111; }
 h1 { font-size: 18pt; margin: 0 0 6mm; }
-h2 { font-size: 14pt; margin: 8mm 0 3mm; border-bottom: 1px solid #999; padding-bottom: 1mm;
+h2 { font-size: 13pt; margin: 5mm 0 2mm; border-bottom: 1px solid #999; padding-bottom: 1mm;
      break-after: avoid; }
-h3 { font-size: 11.5pt; margin: 5mm 0 2mm; break-after: avoid; }
+h3 { font-size: 11pt; margin: 3.5mm 0 1.5mm; break-after: avoid; }
 p, li { orphans: 2; widows: 2; }
-table { border-collapse: collapse; width: 100%%; margin: 3mm 0; font-size: 8.5pt;
+table { border-collapse: collapse; width: 100%%; margin: 2mm 0; font-size: 8pt;
         table-layout: auto; }
 thead { display: table-header-group; }
 tr { break-inside: avoid; page-break-inside: avoid; }
-th, td { border: 1px solid #bbb; padding: 1.2mm 1.6mm; vertical-align: top;
+th, td { border: 1px solid #bbb; padding: 0.9mm 1.4mm; vertical-align: top;
          word-break: keep-all; overflow-wrap: break-word; }
 th { background: #f0f0f0; white-space: nowrap; }
 td:first-child { white-space: nowrap; }  /* 기준명·지표명·기술명: 한글이 글자 단위로 끊기지 않게 */
@@ -106,7 +101,8 @@ def render_pdf(report_md: str, out_path: str) -> str:
     final_md = to_numbered_citations(report_md)
     out.with_name(f"{out.stem}_final.md").write_text(final_md, encoding="utf-8")
     try:
-        _render_weasyprint(build_html(final_md), out)
+        # `[1, *]`·`[*]`의 별표가 마크다운 기울임 기호로 먹혀 `[1, ]`로 보이지 않도록 PDF 변환 직전에만 이스케이프
+        _render_weasyprint(build_html(re.sub(r"(?<=[\[ ])\*(?=\])", r"\\*", final_md)), out)
     except (ImportError, OSError) as exc:
         logger.warning("weasyprint 사용 불가(%s) — pandoc으로 대체", exc)
         _render_pandoc(final_md, out)

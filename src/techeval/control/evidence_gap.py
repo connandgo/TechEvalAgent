@@ -7,6 +7,7 @@
 
 import logging
 
+from techeval.control._common import secured_counter_techs
 from techeval.schemas import (
     PERSPECTIVE_CRITERIA,
     CriterionResult,
@@ -54,9 +55,10 @@ def check_evidence_gap(
 ) -> EvidenceGap:
     """`evals` = {"trl": [...], "market": [...], "stakeholder": [...], "domain": [...]} (latest_by_criterion 적용본).
 
-    `counter_evidence`가 이미 있는 기술은 "반대 근거 0건" 대상에서 제외한다 (탐색을 이미 한 것이므로).
+    실제 반대 근거(논문·웹·공식 자료)를 확보한 기술만 "반대 근거 0건" 대상에서 제외한다.
+    탐색 실패(`not_public`)·추론(`inference`) COUNTER 기록은 확보로 보지 않아 공백이 그대로 남는다.
     """
-    covered = {e.evidence_id.split("-COUNTER-")[0] for e in (counter_evidence or []) if "-COUNTER-" in e.evidence_id}
+    covered = secured_counter_techs(counter_evidence)
     all_results = [r for rs in evals.values() for r in rs]
     by_tech: dict[str, list[CriterionResult]] = {t.tech_id: [] for t in technologies}
     for r in all_results:
