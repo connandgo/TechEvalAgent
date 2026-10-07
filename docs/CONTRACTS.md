@@ -56,6 +56,7 @@ DOMAIN = "대규모 데이터센터의 장문맥 LLM 추론 환경"
 MAX_RETRY_PER_PERSPECTIVE = 2   # 기술 조사 재검색, 관점별 재실행 상한
 MAX_COUNTER_EVIDENCE_SEARCH = 1
 MAX_REPORT_REGENERATION = 1
+MAX_SUPERVISOR_STEPS = 30        # Agent 실습(CONTRACT CHANGE): supervisor 판단 상한
 
 TECHNOLOGIES: list["TechRef"]  # 아래 TechRef 정의 후 초기화 (mla, pim_cxl 2개 고정)
 ```
@@ -227,6 +228,50 @@ class JudgeResult(BaseModel):
     revision_instructions: list[str]
     passed: bool                    # 모든 점수 >= 3 이고 missing_required 비어 있음
     judged_at: str
+```
+
+**CONTRACT CHANGE (Agent 실습 — Supervisor 패턴)**: 품질 평가·supervisor 판단 스키마 추가. 기존 모델 필드는 바꾸지 않았다.
+
+```python
+QualityCriterion = Literal["groundedness", "neutrality", "bias_control", "perspective_coverage"]
+QualityIssueCause = Literal["citation", "weak_evidence", "banned_term", "tone", "asymmetry", "counter_missing",
+                            "vendor_heavy", "undisclosed", "missing_result", "missing_section", "structure", "legacy_judge"]
+
+
+class QualityCheck(BaseModel):
+    criterion: QualityCriterion
+    passed: bool
+    method: Literal["code", "llm", "hybrid"]
+    detail: str
+
+
+class QualityIssue(BaseModel):          # 미달 원인 1건 → supervisor가 재작업 위치 결정
+    criterion: QualityCriterion | Literal["structure", "judge"]
+    cause: QualityIssueCause
+    tech_id: TechId | None = None
+    criterion_id: CriterionId | None = None
+    detail: str = ""
+
+
+class QualityResult(BaseModel):
+    checks: dict[QualityCriterion, QualityCheck]
+    passed: bool                        # 4개 항목 + 필수 구조 + 기존 Judge passed 가 모두 참일 때만 True
+    revision_instructions: list[str]
+    evaluated_at: str
+    legacy_judge_passed: bool = True    # 기존 judge_report 의 passed (덮어쓰지 않고 함께 기록)
+    issues: list[QualityIssue] = []
+
+
+SupervisorAction = Literal["tech_research", "perspectives", "synthesis", "counter_evidence",
+                           "report", "quality_eval", "render_pdf"]
+
+
+class SupervisorDecision(BaseModel):    # supervisor가 State에 쓰기 전에 검증
+    next: SupervisorAction
+    dispatch: dict[str, dict[str, list[str]]] = {}   # {노드: {tech_id: 부족 기준}} — 빈 리스트 = 첫 실행
+    reason: str                         # 비어 있으면 안 됨
+    # 검증: dispatch 노드는 action에 맞는 것만(tech_research → tech_research, perspectives → market/stakeholder/domain_eval),
+    #       기술 ID는 TECHNOLOGIES, 기준은 그 노드 담당 관점의 기준(TRL은 "PROFILE:<필드>" 허용), 배정 action은 빈 배정 금지
 ```
 
 `details` 키 규약(기준별, CRITERIA.md와 동일):
@@ -430,14 +475,38 @@ class ReportInput(BaseModel):
 | 질의 재작성 | `control/query_rewrite.py` | `missing_criteria`, 이전 검색어 | `rewritten_queries` (Send payload) | 부족 항목별 대체 검색어 2~3개 생성 (LLM 사용 가능, 의견 생성 아님) |
 | 관점별 근거 검사 | `control/perspective_check.py` | 4개 `*_eval` | `missing_criteria`, `retry_counts` | 15기준 × 2기술 = 30개 존재, Pydantic 통과, evidence 실존, S2/S3 4주체 각 ≥1, S4 ≥1쌍, D2 measurement |
 | 근거 비대칭 검사 | `control/evidence_gap.py` | `synthesis`, 4개 `*_eval` | `evidence_gap` | 기술별 evidence 수 비율 > 2:1 이거나 어느 기술의 반대 근거가 0이면 `needs_counter_search=True` |
-| 반대 근거 탐색 | `control/counter_evidence.py` | `evidence_gap` | `counter_evidence` | 부족한 방향으로 `web_search`+`retriever` 1회. 결과는 Evidence 리스트, 의견 없음 |
+| 반대 근거 탐색 | `control/counter_evidence.py` | `evidence_gap` | `counter_evidence` | 부족한 방향으로 `web_search`+`retriever` 1회. 결과는 Evidence 리스트, 의견 없음. **확보 판정**(`_common.secured_counter_techs`)은 `not_public`·`inference` COUNTER를 제외한다 |
 | 보고서 검수 | `control/judge.py` | `report_md`, `ReportInput` | `judge_result` | `JUDGE_MODEL`로 5차원 1/3/5. 분량·마크다운 장식은 채점 금지 |
+| 품질 평가 (Agent 실습) | `control/quality_eval.py` | `report_md`, `ReportInput`, `retry_counts["counter"]` | `quality_result`, `judge_result` | Groundedness·중립성(hybrid), 편향 통제·관점 커버리지(code) + 필수 구조 + 기존 Judge passed. 편향 통제는 문제(비대칭·반대 근거 미확보·벤더 편중)마다 반대 근거 탐색 시도 + 6장 같은 문단에 유형·기술명(벤더는 비율 수치) 공개를 함께 요구 |
 
 ---
 
 ## 7. State 스키마 (`src/techeval/state.py`)
 
 계획서 5.1 그대로. 키 이름·타입·reducer를 바꾸지 않는다.
+
+**CONTRACT CHANGE (Agent 실습 — Supervisor 패턴)**: 아래 원래 키는 그대로 두고 `GraphState = ControlState + PayloadState`로 나눴다.
+`PayloadState`는 아래 블록의 키 + `quality_result: QualityResult`이다. `ControlState`(supervisor 전용 제어 메타)는 다음과 같다.
+
+```python
+class ControlState(TypedDict, total=False):
+    trace_id: str                                   # 로그·LangSmith 메타데이터와 State를 잇는 상관 키
+    next: SupervisorAction                          # SupervisorDecision 검증 후 기록
+    dispatch: dict[str, dict[str, list[str]]]       # 이번 배정 {노드: {tech_id: 부족 기준}}
+    decision_reason: str                            # 마지막 판단 사유 한 줄 (상세는 로그)
+    step_count: int                                 # MAX_SUPERVISOR_STEPS로 종료 보장
+    retry_counts: dict[str, int]
+    missing_criteria: dict[str, list[str]]          # 기술별 키 "market:mla" 도 함께
+    synthesis_stale: bool                           # 종합 뒤 근거가 바뀜 → 재종합
+    report_stale: bool                              # 품질 미달 재작업 후 보고서 재작성 필요
+    quality_pending: bool                           # 새 보고서가 품질 평가 전
+    source_urls: Annotated[list[str], union_list]   # 웹 검색 URL(합집합) — 노드·supervisor가 기록, 재개 시 레지스트리(V5) 복원
+    search_log: Annotated[dict[str, list[str]], merge_lists]  # {"market:mla": [실제 실행한 웹·논문 검색어]} — not_public 기록용
+    run_status: Literal["succeeded", "incomplete"]  # 출력 시점: 품질 검수 통과 = succeeded, 검수 미달·검수 오류·상한 종료 = incomplete
+    end_reason: str                                 # 출력으로 간 사유
+    node_status: Annotated[dict[str, str], merge_dict]   # {"market:mla": "assigned"|"done"|"error"|"exhausted"}
+    last_error: Annotated[str | None, last_value]
+```
 
 ```python
 import operator
@@ -506,6 +575,30 @@ START
 ```
 
 상한: 기술 조사 재검색 2회, 관점별 재실행 기준별 2회, 반대 근거 탐색 1회, 보고서 재생성 1회. 상한 도달 시 남은 항목은 `not_public`/`gaps`로 확정하고 다음 단계로 진행한다(무한 루프 금지).
+
+**CONTRACT CHANGE (Agent 실습 — Supervisor 패턴)**: 위 고정 흐름을 supervisor 허브로 바꿨다. 상한은 그대로이고 `MAX_SUPERVISOR_STEPS`가 추가됐다.
+
+```
+START ─▶ init ─▶ supervisor ◀──────────────────────────────────────────────┐
+                    │ State만 보고 SupervisorDecision(next, dispatch, reason)  │
+                    ├─▶ tech_research (기술별 Send)                          ─┤
+                    ├─▶ market_eval / stakeholder_eval / domain_eval (동시 Send) ─┤
+                    ├─▶ synthesis ─────────────────────────────────────────────┤
+                    ├─▶ counter_evidence ──────────────────────────────────────┤
+                    ├─▶ report ────────────────────────────────────────────────┤
+                    ├─▶ quality_eval ──────────────────────────────────────────┘
+                    └─▶ render_pdf ─▶ END
+```
+
+- 하위 에이전트·보고서·품질 평가는 끝나면 항상 supervisor로 돌아온다(하위끼리 직접 연결 없음).
+- 품질 미달 시 supervisor가 `QualityResult.issues`로 재작업 위치를 고른다:
+  `missing_result` → 해당 관점 에이전트(그 기준만) / `asymmetry`·`counter_missing`·`vendor_heavy`(탐색 전) → `counter_evidence` → 재종합 /
+  `weak_evidence` → 신뢰도 low 기준 재작업(관점별 상한 내) / 그 밖(`citation`·`banned_term`·`tone`·`undisclosed`·`structure`·`legacy_judge` 또는 상류 상한 소진) → `report` 재작성.
+  보고서 재작성 상한에 닿으면 `render_pdf`.
+- 재시도 상한 `not_public`(`_common.make_not_public_result`): `search_query`에 그 작업의 실제 검색어(`search_log` + 결과 Evidence)를 남긴다.
+  마지막 실행이 예외면 `run_error`를 넘겨 `locator="run_error"`, 사유 "실행 오류(공개 여부 미확인)"로 구분한다.
+- 재개: `GraphConfig.checkpoint_path`(SQLite, 선택 의존성 `langgraph-checkpoint-sqlite`) 또는 `build_graph(checkpointer=...)`.
+  `thread_id = trace_id`. `scripts/run.py --resume <trace_id>`로 새 프로세스에서 이어서 실행한다.
 
 ---
 

@@ -247,6 +247,111 @@ class JudgeResult(BaseModel):
     judged_at: str
 
 
+# Agent 실습: 보고서 생성 후 품질 평가 노드(quality_eval)의 4개 항목 (Hybrid = 코드 검사 + LLM 판정)
+QualityCriterion = Literal["groundedness", "neutrality", "bias_control", "perspective_coverage"]
+QUALITY_CRITERIA: tuple[str, ...] = ("groundedness", "neutrality", "bias_control", "perspective_coverage")
+
+
+class QualityCheck(BaseModel):
+    criterion: QualityCriterion
+    passed: bool
+    method: Literal["code", "llm", "hybrid"]
+    detail: str  # 판정 근거 (사람이 읽는 한두 문장)
+
+
+QualityIssueCause = Literal[
+    "citation",  # 각주·REFERENCE 위반 (코드)
+    "weak_evidence",  # LLM evidence 점수 미달
+    "banned_term",  # 우열·추천 금칙어 (코드)
+    "tone",  # LLM neutrality 점수 미달
+    "asymmetry",  # 두 기술 근거 수 비율 초과
+    "counter_missing",  # 반대 근거 미확보
+    "vendor_heavy",  # 벤더·제안사 자료 비율 초과
+    "undisclosed",  # 근거 공백을 한계점에 구체적으로 밝히지 않음
+    "missing_result",  # State에 기술×기준 결과 자체가 없음
+    "missing_section",  # 결과는 있으나 보고서에 절·기준이 빠짐
+    "structure",  # SUMMARY·각 장·REFERENCE 등 필수 구조 누락
+    "legacy_judge",  # 기존 Judge 5차원 중 3점 미만
+]
+
+
+class QualityIssue(BaseModel):
+    """품질 미달 원인 1건. supervisor가 원인별로 재작업 위치를 고르는 입력."""
+
+    criterion: QualityCriterion | Literal["structure", "judge"]
+    cause: QualityIssueCause
+    tech_id: TechId | None = None
+    criterion_id: CriterionId | None = None
+    detail: str = ""
+
+
+class QualityResult(BaseModel):
+    """quality_eval 노드 출력. passed는 4개 항목 + 필수 구조 + 기존 Judge가 모두 통과일 때만 True (코드가 계산)."""
+
+    checks: dict[QualityCriterion, QualityCheck]
+    passed: bool
+    revision_instructions: list[str]
+    evaluated_at: str
+    legacy_judge_passed: bool = True  # 기존 judge_report의 passed (5차원 모두 3점 이상 + 필수 항목)
+    issues: list[QualityIssue] = Field(default_factory=list)
+
+
+# Supervisor 루프 상한 (스텝 수 고정이 아니라 상한으로 종료 보장)
+MAX_SUPERVISOR_STEPS = 30
+
+SupervisorAction = Literal[
+    "tech_research",
+    "perspectives",
+    "synthesis",
+    "counter_evidence",
+    "report",
+    "quality_eval",
+    "render_pdf",
+]
+# 관점 평가 노드 → 담당 관점
+PERSPECTIVE_NODES: dict[str, str] = {
+    "tech_research": "trl",
+    "market_eval": "market",
+    "stakeholder_eval": "stakeholder",
+    "domain_eval": "domain",
+}
+
+
+class SupervisorDecision(BaseModel):
+    """supervisor 판단 1회. State에 쓰기 전에 검증해 잘못된 배정을 막는다.
+
+    - `dispatch`는 `tech_research`/`perspectives`에서만 쓰고, 노드는 action에 맞는 것만 허용한다.
+    - 기술 ID는 고정 기술 목록에 있어야 하고, 부족 항목은 그 노드 담당 관점의 기준(TRL은 `PROFILE:<필드>` 포함)이어야 한다.
+    """
+
+    next: SupervisorAction
+    dispatch: dict[str, dict[str, list[str]]] = Field(default_factory=dict)
+    reason: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def _check_dispatch(self) -> "SupervisorDecision":
+        allowed = {
+            "tech_research": {"tech_research"},
+            "perspectives": {"market_eval", "stakeholder_eval", "domain_eval"},
+        }.get(self.next, set())
+        if self.next in ("tech_research", "perspectives") and not any(self.dispatch.values()):
+            raise ValueError(f"{self.next}: 배정이 비어 있음")
+        tech_ids = {t.tech_id for t in TECHNOLOGIES}
+        for node, items_by_tech in self.dispatch.items():
+            if node not in allowed:
+                raise ValueError(f"action={self.next}에서 배정할 수 없는 노드: {node}")
+            criteria = set(PERSPECTIVE_CRITERIA[PERSPECTIVE_NODES[node]])
+            for tid, items in items_by_tech.items():
+                if tid not in tech_ids:
+                    raise ValueError(f"알 수 없는 기술 ID: {tid}")
+                bad = [
+                    i for i in items if i not in criteria and not (node == "tech_research" and i.startswith("PROFILE:"))
+                ]
+                if bad:
+                    raise ValueError(f"{node}/{tid}: 담당 관점 밖의 기준 {bad}")
+        return self
+
+
 # ---------------------------------------------------------------------------
 # 고정 기술 목록 (Human 선정)
 # ---------------------------------------------------------------------------
