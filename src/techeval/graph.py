@@ -15,6 +15,8 @@ Agent 실습에서 고정 순서(기술 조사 → 검사 → 관점 3개 병렬
   반대 근거 미확보·근거 비대칭·벤더 편중 → 반대 근거 탐색(→ 재종합), 근거 약함 → 근거 부족 기준 재작업, 그 밖 → 보고서 재작성.
   보고서 재작성 상한(`MAX_REPORT_REGENERATION`)에 닿으면 PDF로 간다.
 - supervisor 판단은 `SupervisorDecision`으로 검증한 뒤 State에 쓴다(잘못된 action·기술 ID·담당 밖 기준 차단).
+- 재개: 웹 검색 URL 레지스트리를 State(`source_urls`)에 동기화하고, `checkpoint_path`(SQLite) 또는 주입한
+  checkpointer로 새 그래프·새 프로세스에서도 `thread_id=trace_id`로 이어서 실행할 수 있다.
 - 하위 에이전트가 예외를 내면 `node_status`에 error로 기록하고 그래프는 계속 간다(fallback: 재시도 → not_public).
 """
 
@@ -137,6 +139,20 @@ class GraphConfig(BaseModel):
     skip_pdf: bool = False
     stub: bool = False  # True면 query_rewrite에 LLM을 쓰지 않고, 웹 픽스처 URL을 출처 레지스트리에 미리 등록
     recursion_limit: int = DEFAULT_RECURSION_LIMIT
+    checkpoint: bool = False  # True면 MemorySaver로 슈퍼스텝마다 State 저장 (같은 그래프 객체 안에서만 재개)
+    checkpoint_path: str | None = None  # SQLite 파일 경로. 새 그래프·새 프로세스에서 thread_id=trace_id로 재개
+
+
+def _sqlite_saver(path: str) -> Any:
+    """프로세스를 넘어 재개할 수 있는 SQLite checkpointer. 선택 의존성 `langgraph-checkpoint-sqlite`."""
+    import sqlite3
+
+    try:
+        from langgraph.checkpoint.sqlite import SqliteSaver
+    except ImportError as e:
+        raise ImportError("checkpoint_path를 쓰려면 `uv pip install langgraph-checkpoint-sqlite`가 필요합니다") from e
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    return SqliteSaver(sqlite3.connect(path, check_same_thread=False))
 
 
 def _preload_fixture_urls() -> list[str]:
@@ -186,10 +202,12 @@ def build_graph(
     agents: Agents | None = None,
     config: GraphConfig | None = None,
     agent_deps: dict[str, Deps] | None = None,
+    checkpointer: Any | None = None,
 ):
     """CompiledStateGraph를 만든다. `deps.web_search`는 출처 레지스트리로 감싸 V5 검사에 쓴다.
 
     `agent_deps`: 에이전트 이름(tech_research/domain/market/stakeholder/synthesis/report) → 그 노드에만 줄 Deps.
+    `checkpointer`: 직접 주입할 LangGraph checkpointer. 없으면 `config.checkpoint_path` → `config.checkpoint` 순.
     """
     cfg = config or GraphConfig()
     if agents is None:
@@ -479,6 +497,10 @@ def build_graph(
         status = dict(state.get("node_status", {}))
         prev = state.get("next")
         updates: dict[str, Any] = {}
+        for url in state.get(
+            "source_urls", []
+        ):  # 재개 시 출처 레지스트리 복원 (그래프·프로세스가 바뀌어도 V5 검사 유지)
+            registry.add(url)
 
         # 1) 방금 돌아온 하위 에이전트 결과를 판정한다 (근거 충분도 = 코드 판정)
         if prev == "tech_research":
@@ -541,6 +563,7 @@ def build_graph(
             "retry_counts": retry,
             "missing_criteria": missing,
             "node_status": status,
+            "source_urls": sorted(registry.known_urls),
         }
 
     def route_from_supervisor(state: GraphState) -> str | list[Send]:
@@ -600,13 +623,16 @@ def build_graph(
                 tracked = base.model_copy(
                     update={"web_search": web_search, "retriever": _QueryRecordingRetriever(base.retriever, queries)}
                 )
-                log = {"search_log": {key: queries}}
+                log = {"search_log": {key: queries}, "source_urls": sorted(registry.known_urls)}
                 try:
                     out = fn(payload, tracked)
                 except Exception as e:
                     logger.exception("%s(%s) 실패 — supervisor가 재작업/확정을 결정", name, key)
+                    log["source_urls"] = sorted(registry.known_urls)
                     return {**log, "node_status": {key: "error"}, "last_error": f"{key}: {type(e).__name__}: {e}"}
                 logger.info("◀ %s (%s)", name, key)
+                # 이 노드가 검색한 URL을 State에도 남긴다 (supervisor 전에 중단돼도 재개 시 V5 검사 기준 유지)
+                log["source_urls"] = sorted(registry.known_urls)
                 return {**out, **log, "node_status": {key: "done"}}
 
             return wrapper
@@ -785,7 +811,14 @@ def build_graph(
         g.add_edge(n, "supervisor")
     g.add_edge("render_pdf", END)
 
-    compiled = g.compile()
+    saver = checkpointer
+    if saver is None and cfg.checkpoint_path:
+        saver = _sqlite_saver(cfg.checkpoint_path)
+    elif saver is None and cfg.checkpoint:
+        from langgraph.checkpoint.memory import MemorySaver
+
+        saver = MemorySaver()
+    compiled = g.compile(checkpointer=saver)
     compiled.registry = registry  # type: ignore[attr-defined]  # 테스트·run.py에서 검색 호출 기록 확인용
     return compiled
 
@@ -795,6 +828,7 @@ def invoke_config(cfg: GraphConfig | None = None, trace_id: str | None = None) -
     out: dict[str, Any] = {"recursion_limit": (cfg or GraphConfig()).recursion_limit}
     if trace_id:
         out["metadata"] = {"trace_id": trace_id}
+        out["configurable"] = {"thread_id": trace_id}  # checkpointer 사용 시 재개 키
         out["run_name"] = f"TechEvalAgent-supervisor-{trace_id}"
     return out
 

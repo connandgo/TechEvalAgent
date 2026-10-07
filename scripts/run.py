@@ -11,6 +11,7 @@ import argparse
 import logging
 import sys
 import time
+import uuid
 from collections import Counter
 from pathlib import Path
 
@@ -37,6 +38,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument(
         "--allow-stub-fallback", action="store_true", help="아직 없는 역할의 에이전트를 스텁으로 대체해 실행"
     )
+    p.add_argument(
+        "--checkpoint-db",
+        default=None,
+        help="SQLite checkpoint 파일 (기본: <out>/checkpoints.sqlite). langgraph-checkpoint-sqlite 없으면 메모리 저장",
+    )
+    p.add_argument("--resume", default=None, metavar="TRACE_ID", help="중단된 실행을 같은 trace_id로 이어서 실행")
     p.add_argument("--log-level", default=None)
     return p.parse_args(argv)
 
@@ -52,7 +59,20 @@ def main(argv: list[str] | None = None) -> int:
     stub_deps = args.stub or args.stub_deps
     deps = build_deps(stub=stub_deps, settings=settings, use_cache=not args.no_cache)
     agents, stubbed = load_agents(stub=args.stub, allow_stub_fallback=args.allow_stub_fallback)
-    cfg = GraphConfig(output_dir=str(out_dir), skip_pdf=args.skip_pdf, stub=stub_deps)
+    db = args.checkpoint_db or str(out_dir / "checkpoints.sqlite")
+    try:
+        import langgraph.checkpoint.sqlite  # noqa: F401
+
+        ckpt = {"checkpoint_path": db}
+    except ImportError:
+        if args.resume:
+            print(
+                "--resume 에는 langgraph-checkpoint-sqlite 가 필요합니다 (uv pip install langgraph-checkpoint-sqlite)"
+            )
+            return 2
+        logger.warning("langgraph-checkpoint-sqlite 없음 — 메모리 checkpoint(프로세스 종료 시 사라짐)")
+        ckpt = {"checkpoint": True}
+    cfg = GraphConfig(output_dir=str(out_dir), skip_pdf=args.skip_pdf, stub=stub_deps, **ckpt)
     agent_deps = {} if stub_deps else build_agent_deps(deps, settings)  # LLM_MODEL_<AGENT> 가 있는 에이전트만
     graph = build_graph(deps, agents, cfg, agent_deps=agent_deps)
 
@@ -61,7 +81,18 @@ def main(argv: list[str] | None = None) -> int:
     final_state: dict = {}
     pending: list[str] = []  # 이번 슈퍼스텝에서 실행된 노드들 — 다음 values 이벤트(실행 후 State)와 함께 덤프
     t0 = time.perf_counter()
-    for mode, chunk in graph.stream({}, config=invoke_config(cfg), stream_mode=["updates", "values"]):
+    trace_id = args.resume or uuid.uuid4().hex[:12]  # State·로그·LangSmith 메타데이터를 잇는 상관 키
+    run_cfg = invoke_config(cfg, trace_id)
+    graph_input: dict | None = {}
+    if args.resume:
+        snap = graph.get_state(run_cfg)
+        if not snap.values:
+            print(f"trace_id={trace_id} 의 checkpoint가 {db} 에 없습니다")
+            return 2
+        graph_input = None  # None = 마지막 checkpoint에서 이어서 실행
+        print(f"재개: trace_id={trace_id}, 다음 노드 {list(snap.next)}")
+    print(f"trace_id={trace_id}")
+    for mode, chunk in graph.stream(graph_input, config=run_cfg, stream_mode=["updates", "values"]):
         if mode == "updates":
             for node in chunk:
                 step += 1
@@ -94,7 +125,26 @@ def main(argv: list[str] | None = None) -> int:
     if agent_deps:
         print("에이전트별 모델:", settings.agent_overrides())
     if jr is not None:
-        print(f"judge: passed={jr.passed} scores={jr.scores} missing={jr.missing_required}")
+        print(f"judge(LLM): scores={jr.scores}")
+    qr = final_state.get("quality_result")
+    if qr is not None:
+        print(
+            f"quality_eval: passed={qr.passed} "
+            + ", ".join(f"{c}={'O' if v.passed else 'X'}" for c, v in qr.checks.items())
+            + f", 기존 judge={'O' if qr.legacy_judge_passed else 'X'}"
+        )
+        if qr.issues:
+            print("  미달 원인:", sorted({i.cause for i in qr.issues}))
+    print(f"supervisor 판단: {final_state.get('step_count')}회, 마지막 사유: {final_state.get('decision_reason')}")
+    status = final_state.get("run_status")
+    print(
+        f"보고서 생성: {'O' if final_state.get('report_md') else 'X'}   "
+        f"품질 검수 통과: {'O' if qr is not None and qr.passed else 'X'}   "
+        f"실행 상태: {status or '미종료'} ({final_state.get('end_reason', '')})"
+    )
+    if final_state.get("last_error"):
+        print("마지막 오류:", final_state["last_error"][:200])
+    print(f"trace_id={final_state.get('trace_id')}")
     print(
         f"산출물: {out_dir / 'report.md'}",
         f"/ {final_state.get('report_pdf_path')}" if final_state.get("report_pdf_path") else "",
