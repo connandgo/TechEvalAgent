@@ -1,0 +1,34 @@
+[project]
+name = "techeval"
+version = "0.1.0"
+description = "KV cache 최적화 기술 다관점 평가 — LangGraph Supervisor 패턴 Agentic RAG"
+authors = [
+    { name = "백승현", email = "seunghyun020907@naver.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "chromadb>=1.5.9",
+    "httpx>=0.28.1",
+    "langchain>=1.4.2",
+    "langchain-core>=1.6.4",
+    "langchain-openai>=1.6.3",
+    "langgraph>=1.2.12",
+    "langgraph-checkpoint-sqlite>=3.1",
+    "markdown>=3.10.3",
+    "pydantic>=2.13.5",
+    "pymupdf>=1.28.2",
+    "python-dotenv>=1.2.3",
+    "rank-bm25>=0.2.2",
+    "sentence-transformers>=6.1.0",
+    "weasyprint>=70.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.17,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.16.8",
+]

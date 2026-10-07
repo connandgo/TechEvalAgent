@@ -3,7 +3,7 @@
 본 프로젝트는 KV cache 최적화 기술을 소프트웨어·하드웨어 두 진영에서 하나씩 선정하여,
 기술 성숙도·시장성·이해관계자·도메인 적합성 관점에서 평가하는 **Supervisor 패턴** 기반으로 설계/개발한 프로젝트입니다.
 
-> 이 브랜치(`feat/supervisor-pattern`)는 RAG 실습 때 만든 고정 순서 그래프를 Agent 실습 과제에 맞춰 Supervisor 패턴으로 재구성한 버전입니다.
+> 이 브랜치(`agent/supervisor`)는 RAG 실습 때 만든 고정 순서 그래프를 Agent 실습 과제에 맞춰 Supervisor 패턴으로 재구성한 버전입니다.
 > 에이전트·검색기·근거 검사 함수는 `main`과 같고, 그래프 연결·State·품질 평가 노드가 바뀌었습니다. 전체 설명은 `main` 브랜치 README를 참고하세요.
 
 ## Overview
@@ -136,14 +136,13 @@ flowchart TD
 ## Usage
 
 ```bash
-uv sync
-uv add "langgraph-checkpoint-sqlite>=3.1"   # 재개(--resume)·재개 테스트용. pyproject.toml·uv.lock은 Git 제외 대상이라 각자 추가
+uv sync               # pyproject.toml·uv.lock 기준으로 의존성 설치 (재개용 langgraph-checkpoint-sqlite 포함)
 cp .env.example .env   # OPENAI_API_KEY, WEB_SEARCH_API_KEY, LANGSMITH_* 설정
 uv run python scripts/download_papers.py
 uv run python scripts/ingest.py --papers-dir data/papers --chroma-dir data/chroma --rebuild
 uv run python scripts/run.py                    # 실제 실행 → outputs/report.md, outputs/report.pdf
 uv run python scripts/run.py --stub --skip-pdf  # 스텁으로 Supervisor 흐름만 확인
-uv run python scripts/run.py --resume <trace_id> # 중단된 실행 재개 (uv pip install langgraph-checkpoint-sqlite 필요)
+uv run python scripts/run.py --resume <trace_id> # 중단된 실행 재개 (SQLite checkpoint)
 uv run pytest -m "not integration"              # 스텁 기반 테스트
 ```
 
