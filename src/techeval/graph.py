@@ -11,7 +11,10 @@ Agent 실습에서 고정 순서(기술 조사 → 검사 → 관점 3개 병렬
 - 근거가 부족하면 해당 하위 에이전트에 부족 기준만 재작업을 요청한다.
   상한(관점·기술별 2회)에 도달하면 not_public으로 확정.
 - 종료는 단계 수 고정이 아니라 상한으로 보장한다: 재시도 상한 + `MAX_SUPERVISOR_STEPS` + `recursion_limit`.
-- 보고서 생성 후 검수(`judge`)는 기존 흐름 그대로다: 미달이면 보고서를 다시 생성한다(`MAX_REPORT_REGENERATION`).
+- 보고서·품질 평가도 supervisor로 돌아온다. `quality_eval`(Groundedness·중립성·편향 통제·관점 커버리지 + 기존 Judge)이
+  미달이면 supervisor가 원인(`QualityResult.issues`)을 보고 재작업 위치를 고른다: 결과 누락 → 해당 관점 에이전트,
+  반대 근거 미확보·근거 비대칭·벤더 편중 → 반대 근거 탐색(→ 재종합), 근거 약함 → 근거 부족 기준 재작업, 그 밖 → 보고서 재작성.
+  보고서 재작성 상한(`MAX_REPORT_REGENERATION`)에 닿으면 PDF로 간다.
 """
 
 import functools
@@ -36,8 +39,8 @@ from techeval.agents._deps import (
 from techeval.control._common import make_not_public_result
 from techeval.control.counter_evidence import search_counter_evidence
 from techeval.control.evidence_gap import check_evidence_gap
-from techeval.control.judge import judge_report
 from techeval.control.perspective_check import check_perspectives
+from techeval.control.quality_eval import evaluate_report_quality
 from techeval.control.query_rewrite import rewrite_queries
 from techeval.control.sources import SourceRegistry
 from techeval.control.tech_evidence_check import check_tech_evidence
@@ -46,7 +49,9 @@ from techeval.schemas import (
     MAX_REPORT_REGENERATION,
     MAX_RETRY_PER_PERSPECTIVE,
     MAX_SUPERVISOR_STEPS,
+    PERSPECTIVE_CRITERIA,
     CriterionResult,
+    QualityResult,
     TechRef,
 )
 from techeval.state import (
@@ -307,10 +312,17 @@ def build_graph(
         techs = state["technologies"]
 
         if step > MAX_SUPERVISOR_STEPS:
-            cap = f"supervisor 상한({MAX_SUPERVISOR_STEPS}) 도달 — 남은 재작업 없이"
+            stale = [k for k in ("synthesis_stale", "report_stale") if state.get(k)]
+            cap = f"supervisor 상한({MAX_SUPERVISOR_STEPS}) 도달 — 남은 재작업 없이" + (
+                f"(주의: {stale} — 재작업 결과가 보고서에 반영되지 않음)" if stale else ""
+            )
             if not state.get("synthesis"):
                 return "synthesis", {}, f"{cap} 종합으로 진행"
-            return "report", {}, f"{cap} 보고서 작성으로 진행"
+            if not state.get("report_md"):
+                return "report", {}, f"{cap} 보고서 작성으로 진행"
+            if state.get("quality_pending"):
+                return "quality_eval", {}, f"{cap} 품질 평가로 진행"
+            return "render_pdf", {}, f"{cap} 출력"
 
         not_run = [t.tech_id for t in techs if f"trl:{t.tech_id}" not in status]
         if not_run:
@@ -351,7 +363,75 @@ def build_graph(
                 causes.append(f"반대 근거 없는 기준 {len(gap.opposing_missing)}개")
             return "counter_evidence", {}, "반대 근거 탐색 필요: " + (", ".join(causes) or gap.note[:80])
 
-        return "report", {}, "근거 충분·비대칭 해소 → 보고서 작성"
+        if not state.get("report_md"):
+            return "report", {}, "근거 충분·비대칭 해소 → 보고서 작성"
+        if state.get("report_stale"):
+            return "report", {}, "품질 미달 재작업 반영 → 보고서 재작성"
+        if state.get("quality_pending"):
+            return "quality_eval", {}, "새 보고서 → 품질 평가"
+
+        q = state.get("quality_result")
+        if q is None:
+            return "render_pdf", {}, "품질 검수 실행 오류(재시도 포함) — 보고서는 보존, 검수 미완료로 출력"
+        if q.passed:
+            return "render_pdf", {}, "품질 평가 4개 항목·기존 Judge 통과 → 출력"
+        if retry.get("report", 0) >= MAX_REPORT_REGENERATION:
+            return "render_pdf", {}, f"품질 미달이지만 보고서 재작성 상한({MAX_REPORT_REGENERATION}) 도달 — 그대로 출력"
+        return _quality_rework(state, q, missing, status, retry)
+
+    def _quality_rework(
+        state: GraphState, q: QualityResult, missing: dict, status: dict, retry: dict
+    ) -> tuple[str, dict, str]:
+        """품질 미달 원인별로 재작업 위치를 고른다. 고칠 수 있는 상류(조사·반대 근거)부터, 안 되면 보고서 재작성."""
+        causes = sorted({i.cause for i in q.issues})
+
+        # 1) State에 결과 자체가 없는 기준 → 그 관점 에이전트 (TRL이 있으면 TRL 먼저: 다른 관점의 입력)
+        lacking: dict[str, dict[str, list[str]]] = {}
+        for i in q.issues:
+            if i.cause != "missing_result" or not i.tech_id or not i.criterion_id:
+                continue
+            p = next(p for p, cids in PERSPECTIVE_CRITERIA.items() if i.criterion_id in cids)
+            if status.get(f"{p}:{i.tech_id}") != "exhausted":
+                lacking.setdefault(PERSPECTIVE_NODE[p], {}).setdefault(i.tech_id, []).append(i.criterion_id)
+        if "tech_research" in lacking:
+            return (
+                "tech_research",
+                {"tech_research": lacking["tech_research"]},
+                f"품질: 기술×기준 결과 누락 → 재조사 {lacking}",
+            )
+        if lacking:
+            return "perspectives", lacking, f"품질: 기술×기준 결과 누락 → 관점 재평가 {lacking}"
+
+        # 2) 편향 통제: 반대 근거 탐색 전이면 탐색 (→ 재종합 → 보고서)
+        bias = sorted(
+            {f"{i.cause}:{i.tech_id}" for i in q.issues if i.cause in ("asymmetry", "counter_missing", "vendor_heavy")}
+        )
+        if bias and retry.get("counter", 0) < MAX_COUNTER_EVIDENCE_SEARCH:
+            return "counter_evidence", {}, f"품질: 편향 통제 미달 {bias} → 반대 근거 탐색"
+
+        # 3) 근거 약함(LLM groundedness) → 신뢰도 low 판정 중 재작업 여유가 있는 기준
+        if any(i.cause == "weak_evidence" for i in q.issues):
+            weak: dict[str, dict[str, list[str]]] = {}
+            for p, results in _latest_evals(state).items():
+                for r in results:
+                    key = f"{p}:{r.tech_id}"
+                    if r.confidence != "low" or r.level == "not_public" or status.get(key) == "exhausted":
+                        continue
+                    if retry.get(key, 0) >= MAX_RETRY_PER_PERSPECTIVE:
+                        continue
+                    weak.setdefault(PERSPECTIVE_NODE[p], {}).setdefault(r.tech_id, []).append(r.criterion_id)
+            if "tech_research" in weak:
+                weak = {"tech_research": weak["tech_research"]}
+            for node, by_tech in weak.items():
+                for tid, cids in by_tech.items():
+                    # 재시도 횟수는 올리지 않는다 — 재실행 결과가 여전히 부족하면 사후 검사(_post_*)가 올린다 (이중 계산 방지)
+                    missing[f"{NODE_PERSPECTIVE[node]}:{tid}"] = cids
+            if weak:
+                nxt = "tech_research" if "tech_research" in weak else "perspectives"
+                return (nxt, weak, f"품질: Groundedness 미달 → 신뢰도 low 기준 재작업 {weak}")
+
+        # 4) 보고서 표현·구조 문제(각주·금칙어·어조·한계점 미공개·절 누락·기존 Judge) 또는 상류 재작업 여유 없음
+        return "report", {}, f"품질 미달 {causes} → 수정 지시로 보고서 재작성"
 
     def supervisor(state: GraphState) -> dict:
         step = state.get("step_count", 0) + 1
@@ -374,13 +454,25 @@ def build_graph(
             updates["evidence_gap"] = check_evidence_gap(
                 state["technologies"], _latest_evals(state), state.get("synthesis"), state.get("counter_evidence", [])
             )
+        elif prev == "report":
+            updates["report_stale"] = False
+            updates["quality_pending"] = True
+        elif prev == "quality_eval":
+            updates["quality_pending"] = False
         if prev in ("tech_research", "perspectives", "counter_evidence") and state.get("synthesis"):
             updates["synthesis_stale"] = True  # 종합 뒤에 근거가 바뀜 → 재종합
 
         # 2) 갱신된 State로 다음 담당을 고른다
-        keys = ("synthesis_stale", "evidence_gap")
+        keys = ("synthesis_stale", "evidence_gap", "report_stale", "quality_pending")
         view = {**state, **{k: v for k, v in updates.items() if k in keys}}
         nxt, dispatch, reason = _decide(view, missing, status, retry, step)
+        q = view.get("quality_result")
+        if q is not None and not q.passed and not view.get("quality_pending") and nxt not in ("report", "render_pdf"):
+            updates["report_stale"] = True  # 품질 미달로 상류 재작업 → 끝나면 보고서를 다시 써야 함
+        if nxt == "render_pdf":  # 보고서 생성과 품질 검수 통과를 구분해 남긴다
+            passed = q is not None and q.passed and not view.get("report_stale") and not view.get("synthesis_stale")
+            updates["run_status"] = "succeeded" if passed else "incomplete"
+            updates["end_reason"] = reason
         if nxt == "counter_evidence":
             retry["counter"] = retry.get("counter", 0) + 1
         for node, techs_items in dispatch.items():  # 배정 표시 (재개 시 어디까지 갔는지 판단)
@@ -517,21 +609,34 @@ def build_graph(
         return {"report_md": md, "retry_counts": retry}
 
     @_log_node
-    def judge(state: GraphState) -> dict:
+    def quality_eval(state: GraphState) -> dict:
         judge_llm = deps.judge_llm
+        counter_attempts = state["retry_counts"].get("counter", 0)
         if judge_llm is None:
             raise RuntimeError("deps.judge_llm (JUDGE_MODEL) 이 필요합니다 — AGENTS.md 규칙 9")
-        return {"judge_result": judge_report(state["report_md"], report_input(state), judge_llm, deps.now())}
-
-    def route_after_judge(state: GraphState) -> str:
-        jr = state["judge_result"]
-        if not jr.passed and state["retry_counts"].get("report", 0) < MAX_REPORT_REGENERATION:
-            return "report"
-        if not jr.passed:
-            logger.warning(
-                "judge 미달이지만 재생성 상한 도달 — 그대로 출력: scores=%s missing=%s", jr.scores, jr.missing_required
+        try:
+            quality, judge = evaluate_report_quality(
+                state["report_md"], report_input(state), judge_llm, deps.now(), counter_attempts=counter_attempts
             )
-        return "render_pdf"
+        except Exception:  # Judge LLM 일시 오류 대비 1회 재시도, 그래도 실패하면 평가 없이 출력 (보고서는 남긴다)
+            logger.exception("quality_eval 실패 — 1회 재시도")
+            try:
+                quality, judge = evaluate_report_quality(
+                    state["report_md"], report_input(state), judge_llm, deps.now(), counter_attempts=counter_attempts
+                )
+            except Exception as e:
+                logger.exception("quality_eval 재시도 실패 — 평가 없이 PDF로 진행")
+                return {"last_error": f"quality_eval: {type(e).__name__}: {e}", "quality_result": None}
+        failed = [c for c, chk in quality.checks.items() if not chk.passed]
+        logger.info(
+            "[trace=%s] quality_eval passed=%s 미달=%s 기존 judge=%s 원인=%s",
+            state.get("trace_id"),
+            quality.passed,
+            failed,
+            quality.legacy_judge_passed,
+            sorted({i.cause for i in quality.issues}),
+        )
+        return {"quality_result": quality, "judge_result": judge}
 
     @_log_node
     def render_pdf(state: GraphState) -> dict:
@@ -554,7 +659,7 @@ def build_graph(
     g.add_node("synthesis", synthesis)
     g.add_node("counter_evidence", counter_evidence)
     g.add_node("report", report)
-    g.add_node("judge", judge)
+    g.add_node("quality_eval", quality_eval)
     g.add_node("render_pdf", render_pdf)
 
     g.add_edge(START, "init")
@@ -570,13 +675,22 @@ def build_graph(
             "counter_evidence",
             "synthesis",
             "report",
+            "quality_eval",
+            "render_pdf",
         ],
     )
-    # 하위 에이전트는 항상 supervisor로만 복귀 (하위 에이전트 간 직접 통신 없음)
-    for n in ("tech_research", "market_eval", "stakeholder_eval", "domain_eval", "counter_evidence", "synthesis"):
+    # 하위 에이전트·보고서·품질 평가는 항상 supervisor로만 복귀 (하위 에이전트 간 직접 통신 없음)
+    for n in (
+        "tech_research",
+        "market_eval",
+        "stakeholder_eval",
+        "domain_eval",
+        "counter_evidence",
+        "synthesis",
+        "report",
+        "quality_eval",
+    ):
         g.add_edge(n, "supervisor")
-    g.add_edge("report", "judge")
-    g.add_conditional_edges("judge", route_after_judge, ["report", "render_pdf"])
     g.add_edge("render_pdf", END)
 
     compiled = g.compile()

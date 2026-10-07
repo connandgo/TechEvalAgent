@@ -17,12 +17,12 @@ from tests.graph_harness import levels as _levels
 def test_a_normal_path_reaches_end(h: Harness):
     final, nodes = h.run()
     assert final["report_md"] and (h.cfg.output_dir + "/report.md")
-    assert final["judge_result"].passed is True
+    assert final["judge_result"].passed is True and final["quality_result"].passed is True
     assert all(v == 0 for v in final["retry_counts"].values())
     assert nodes["tech_research"] == 2 and nodes["market_eval"] == 2
     assert nodes["stakeholder_eval"] == 2 and nodes["domain_eval"] == 2
     assert nodes["supervisor"] >= 1 and nodes["synthesis"] == 1 and nodes["report"] == 1
-    assert nodes["judge"] == 1 and nodes["render_pdf"] == 1
+    assert nodes["quality_eval"] == 1 and nodes["render_pdf"] == 1
     # 정상 경로에서는 재작업(missing_criteria)이 한 번도 나가지 않는다
     assert all(i.missing_criteria is None for n in ("run_tech_research", "run_market_eval") for i in h.inputs[n])
     assert nodes["counter_evidence"] == 0
@@ -147,9 +147,11 @@ def test_e_judge_failure_regenerates_once(h: Harness):
     h.judge_llm.register(JudgeResult, failing)
     final, nodes = h.run()
 
-    assert nodes["report"] == 2 and nodes["judge"] == 2 and nodes["render_pdf"] == 1
+    assert nodes["report"] == 2 and nodes["quality_eval"] == 2 and nodes["render_pdf"] == 1
     assert final["retry_counts"]["report"] == 1
-    assert final["judge_result"].passed is False  # 상한 도달 후 그대로 출력
+    assert final["quality_result"].passed is False  # 상한 도달 후 그대로 출력
+    assert final["quality_result"].checks["groundedness"].passed is False
+    assert final["judge_result"].passed is False
     second = h.inputs["run_report"][1]
     instr = second.judge_result.revision_instructions
     assert second.judge_result is not None and instr
@@ -214,17 +216,19 @@ def test_fabricated_chunk_is_rejected_and_reran(h: Harness):
 # --- Supervisor 패턴 --------------------------------------------------------------
 
 SUB_AGENTS = ("tech_research", "market_eval", "stakeholder_eval", "domain_eval", "synthesis", "counter_evidence")
+# 보고서·품질 평가도 supervisor로 복귀한다 (품질 미달 시 supervisor가 원인별 재작업 위치를 고름)
+HUB_CHILDREN = (*SUB_AGENTS, "report", "quality_eval")
 
 
 def test_supervisor_is_hub(h: Harness):
     graph = build_graph(h.deps, h.agents(), h.cfg)
     edges = {(e.source, e.target) for e in graph.get_graph().edges}
-    for n in SUB_AGENTS:
+    for n in HUB_CHILDREN:
         outgoing = {t for s, t in edges if s == n}
         assert outgoing == {"supervisor"}, (n, outgoing)
-    assert not [(s, t) for s, t in edges if s in SUB_AGENTS and t in SUB_AGENTS]
-    # supervisor 는 모든 하위 에이전트로 갈 수 있다
-    assert {t for s, t in edges if s == "supervisor"} >= set(SUB_AGENTS)
+    assert not [(s, t) for s, t in edges if s in HUB_CHILDREN and t in HUB_CHILDREN]
+    # supervisor 는 모든 하위 에이전트·보고서·품질 평가·출력으로 갈 수 있다
+    assert {t for s, t in edges if s == "supervisor"} >= {*HUB_CHILDREN, "render_pdf"}
 
 
 def test_routing_follows_state_not_fixed_order(h: Harness):
@@ -237,9 +241,9 @@ def test_routing_follows_state_not_fixed_order(h: Harness):
     batches: list[set[str]] = []
     i = 0
     while i < len(order):
-        if order[i] in SUB_AGENTS:
+        if order[i] in HUB_CHILDREN:
             j = i
-            while j < len(order) and order[j] in SUB_AGENTS:
+            while j < len(order) and order[j] in HUB_CHILDREN:
                 j += 1
             batches.append(set(order[i:j]))
             assert order[j] == "supervisor", (order[i:j], order[j])
@@ -249,7 +253,8 @@ def test_routing_follows_state_not_fixed_order(h: Harness):
     assert nodes["supervisor"] == len(batches) + 1
     # 시장·이해관계자·도메인은 서로 의존이 없어 State상 대기 중이면 한 번의 판단으로 함께 배정된다 (순서 고정 아님)
     assert {"market_eval", "stakeholder_eval", "domain_eval"} in batches
-    assert order[:2] == ["init", "supervisor"] and order[-3:] == ["report", "judge", "render_pdf"]
+    assert order[:2] == ["init", "supervisor"]
+    assert order[-5:] == ["report", "supervisor", "quality_eval", "supervisor", "render_pdf"]
 
 
 def test_recursion_limit_is_configured():
