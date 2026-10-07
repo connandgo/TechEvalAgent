@@ -3,6 +3,8 @@
 tech_evidence_check / perspective_check / evidence_gap / query_rewrite / counter_evidence / judge
 """
 
+import pytest
+
 from techeval.agents._deps import Deps, ReportInput
 from techeval.control.counter_evidence import search_counter_evidence
 from techeval.control.evidence_gap import check_evidence_gap
@@ -13,6 +15,7 @@ from techeval.control.sources import SourceRegistry, evidence_problems, normaliz
 from techeval.control.tech_evidence_check import check_tech_evidence
 from techeval.schemas import (
     PERSPECTIVE_CRITERIA,
+    Evidence,
     EvidenceGap,
     Gap,
     JudgeResult,
@@ -235,6 +238,31 @@ def test_evidence_gap_uses_synthesis_gaps_first_and_skips_covered_tech():
     gap2 = check_evidence_gap(TECHS, evals, synth, covered)
     assert all(i["tech_id"] != "mla" for i in gap2.opposing_missing)
     assert gap2.needs_counter_search is True  # pim은 아직 탐색 전
+
+
+@pytest.mark.parametrize("source_type", ["not_public", "inference"])
+def test_failed_counter_search_record_does_not_close_gap(source_type):
+    """탐색 실패(not_public)·추론(inference) COUNTER 기록은 반대 근거 확보가 아니다 → 공백 유지."""
+    r, reg = _retriever(), SourceRegistry()
+    evals = _full_evals(r, reg)
+    before = check_evidence_gap(TECHS, evals, None)
+    assert any(i["tech_id"] == "mla" for i in before.opposing_missing)
+    failed = Evidence(
+        evidence_id="mla-COUNTER-01",
+        source_type=source_type,
+        unit="family",
+        quote="",
+        locator="not_found",
+        search_query="MLA limitations",
+        searched_at=NOW,
+    )
+    gap = check_evidence_gap(TECHS, evals, None, [failed])
+    assert [i for i in gap.opposing_missing if i["tech_id"] == "mla"] == [
+        i for i in before.opposing_missing if i["tech_id"] == "mla"
+    ]
+    real = web_evidence("mla-COUNTER-02", "https://c.example.com/2")
+    gap2 = check_evidence_gap(TECHS, evals, None, [failed, real])
+    assert all(i["tech_id"] != "mla" for i in gap2.opposing_missing)
 
 
 # --- query_rewrite ------------------------------------------------------------------
