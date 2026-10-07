@@ -194,7 +194,7 @@ TechEvalAgent/
 
 ## 5. 기술 스택 및 환경
 
-- Python 3.11+, 패키지 관리 `uv` (`pyproject.toml`/`uv.lock`은 현재 `.gitignore`에 있어 개인 관리. 의존성 목록은 아래를 기준으로 맞춘다)
+- Python 3.11+, 패키지 관리 `uv` (`pyproject.toml`/`uv.lock`을 저장소에서 관리한다. 의존성을 바꾸면 `uv add`/`uv remove`로 두 파일을 함께 커밋한다)
 - 핵심 의존성: `langgraph`, `langchain-core`, `pydantic>=2`, `chromadb`, `FlagEmbedding` 또는 `sentence-transformers`(BGE-M3), `rank-bm25`, `pymupdf`(PDF 파싱), `python-dotenv`, `httpx`
 - 보고서: `markdown` + `weasyprint` (PDF 변환, D가 최종 확정)
 - 테스트/린트: `pytest`, `ruff`
