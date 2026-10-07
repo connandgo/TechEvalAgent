@@ -8,13 +8,14 @@ Agent 실습에서 고정 순서(기술 조사 → 검사 → 관점 3개 병렬
   끝나면 항상 supervisor로 돌아온다. 하위 에이전트끼리는 직접 연결되지 않는다.
 - 근거 충분도 판단은 기존 제어 함수(`check_tech_evidence`, `check_perspectives`, `check_evidence_gap`)를
   supervisor 안에서 호출해 코드로 결정한다(판정은 결정론, 의견 생성 없음).
-- 근거가 부족하면 해당 하위 에이전트에 부족 기준만 재작업을 요청한다.
-  상한(관점·기술별 2회)에 도달하면 not_public으로 확정.
+- 근거가 부족하면 해당 하위 에이전트에 부족 기준만 재작업을 요청한다. 상한(관점·기술별 2회)에 도달하면 not_public으로 확정.
 - 종료는 단계 수 고정이 아니라 상한으로 보장한다: 재시도 상한 + `MAX_SUPERVISOR_STEPS` + `recursion_limit`.
 - 보고서·품질 평가도 supervisor로 돌아온다. `quality_eval`(Groundedness·중립성·편향 통제·관점 커버리지 + 기존 Judge)이
   미달이면 supervisor가 원인(`QualityResult.issues`)을 보고 재작업 위치를 고른다: 결과 누락 → 해당 관점 에이전트,
   반대 근거 미확보·근거 비대칭·벤더 편중 → 반대 근거 탐색(→ 재종합), 근거 약함 → 근거 부족 기준 재작업, 그 밖 → 보고서 재작성.
   보고서 재작성 상한(`MAX_REPORT_REGENERATION`)에 닿으면 PDF로 간다.
+- supervisor 판단은 `SupervisorDecision`으로 검증한 뒤 State에 쓴다(잘못된 action·기술 ID·담당 밖 기준 차단).
+- 하위 에이전트가 예외를 내면 `node_status`에 error로 기록하고 그래프는 계속 간다(fallback: 재시도 → not_public).
 """
 
 import functools
@@ -27,7 +28,7 @@ from typing import Any
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from techeval.agents._deps import (
     AgentInput,
@@ -52,6 +53,7 @@ from techeval.schemas import (
     PERSPECTIVE_CRITERIA,
     CriterionResult,
     QualityResult,
+    SupervisorDecision,
     TechRef,
 )
 from techeval.state import (
@@ -143,6 +145,21 @@ def _preload_fixture_urls() -> list[str]:
         return []
     data = json.loads(path.read_text(encoding="utf-8"))
     return [r["url"] for results in data.values() for r in results if r.get("url")]
+
+
+class _QueryRecordingRetriever:
+    """`search` 호출의 질의를 기록하고 나머지는 원래 검색기로 넘긴다 (not_public 기록에 실제 검색 이력을 남기기 위함)."""
+
+    def __init__(self, inner: Any, log: list[str]):
+        self._inner = inner
+        self._log = log
+
+    def search(self, query: str, *args: Any, **kwargs: Any) -> Any:
+        self._log.append(query)
+        return self._inner.search(query, *args, **kwargs)
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._inner, name)
 
 
 def _tech_by_id(state: GraphState, tech_id: str) -> TechRef:
@@ -238,7 +255,12 @@ def build_graph(
             missing[key] = []
             status[key] = "exhausted"
             profile = next((p for p in latest_by_tech(state.get("tech_profiles", [])) if p.tech_id == tid), None)
-            used = list(profile.search_queries_used) if profile else []
+            used = list(
+                dict.fromkeys(
+                    [*(profile.search_queries_used if profile else []), *state.get("search_log", {}).get(key, [])]
+                )
+            )
+            err = _run_error(state, key, state.get("node_status", {}).get(key))
             for cid in res.missing_criteria(tid):
                 prev = latest_trl.get((tid, cid))
                 if prev is not None and prev.level == "not_public":
@@ -250,10 +272,24 @@ def build_graph(
                         queries=used,
                         now=deps.now(),
                         retry_count=retry.get(key, 0),
+                        run_error=err,
                         problems=[p for p in res.problems.get(tid, []) if p.startswith(f"{cid}:") or f"-{cid}-" in p],
                     )
                 )
         return {"trl_eval": confirmed}
+
+    def _searched(state: GraphState, key: str, results: list[CriterionResult]) -> list[str]:
+        """이 작업(`관점:기술`)에서 실제 실행한 검색어: 노드가 기록한 이력 + 결과 Evidence의 search_query."""
+        qs = list(state.get("search_log", {}).get(key, []))
+        qs += [e.search_query for r in results for e in r.evidence if e.search_query and e.source_type != "not_public"]
+        return list(dict.fromkeys(qs))
+
+    def _run_error(state: GraphState, key: str, status_before: str | None) -> str | None:
+        """마지막 실행이 예외로 끝났으면 그 오류 요약 (검색 미수행 not_public과 '공개 근거 없음'을 구분)."""
+        if status_before != "error":
+            return None
+        err = state.get("last_error") or ""
+        return err if err.startswith(f"{key}:") else f"{key}: 노드 예외"
 
     def _post_perspectives(
         state: GraphState, just_ran: list[str], retry: dict, missing: dict, status: dict
@@ -284,7 +320,9 @@ def build_graph(
                     missing[key] = list(cids)
                     continue
                 missing[key] = []
+                err = _run_error(state, key, status.get(key))
                 status[key] = "exhausted"
+                used = _searched(state, key, [r for r in evals[p] if r.tech_id == tid])
                 for cid in cids:
                     prev = latest.get((tid, cid))
                     if prev is not None and prev.level == "not_public":
@@ -293,10 +331,11 @@ def build_graph(
                         make_not_public_result(
                             tech,
                             cid,
-                            queries=[],
+                            queries=used,
                             now=deps.now(),
                             retry_count=retry.get(key, 0),
                             problems=[x for x in res.problems if x.startswith(f"{tid}/{cid}") or f"{tid}-{cid}-" in x],
+                            run_error=err,
                         )
                     )
         return updates
@@ -465,7 +504,20 @@ def build_graph(
         # 2) 갱신된 State로 다음 담당을 고른다
         keys = ("synthesis_stale", "evidence_gap", "report_stale", "quality_pending")
         view = {**state, **{k: v for k, v in updates.items() if k in keys}}
-        nxt, dispatch, reason = _decide(view, missing, status, retry, step)
+        # 판단은 사본에 하고, 검증을 통과했을 때만 재시도·부족 기준 변경을 반영한다
+        retry_d, missing_d = dict(retry), dict(missing)
+        nxt, dispatch, reason = _decide(view, missing_d, status, retry_d, step)
+        try:  # 배정 검증: 잘못된 action·기술 ID·담당 밖 기준은 State에 쓰기 전에 차단
+            decision = SupervisorDecision(next=nxt, dispatch=dispatch, reason=reason)
+            retry, missing = retry_d, missing_d
+        except ValidationError as e:
+            fallback = "render_pdf" if view.get("report_md") else ("report" if view.get("synthesis") else "synthesis")
+            logger.error("[trace=%s] supervisor 판단 검증 실패 → %s: %s", state.get("trace_id"), fallback, e)
+            decision = SupervisorDecision(
+                next=fallback, dispatch={}, reason=f"판단 검증 실패로 {fallback} 진행: {e.errors()[0]['msg']}"
+            )
+            updates["last_error"] = f"supervisor: {e.errors()[0]['msg']}"
+        nxt, dispatch, reason = decision.next, decision.dispatch, decision.reason
         q = view.get("quality_result")
         if q is not None and not q.passed and not view.get("quality_pending") and nxt not in ("report", "render_pdf"):
             updates["report_stale"] = True  # 품질 미달로 상류 재작업 → 끝나면 보고서를 다시 써야 함
@@ -516,7 +568,11 @@ def build_graph(
             profiles = {pr.tech_id: pr for pr in latest_by_tech(state.get("tech_profiles", []))}
             prev_q = profiles[tid].search_queries_used if tid in profiles else []
             retry_n = state["retry_counts"].get(f"trl:{tid}", 0)
-            extra["rewritten_queries"] = rewrite_queries(tech, items, prev_q, retry_count=retry_n, llm=rewrite_llm)
+            try:
+                extra["rewritten_queries"] = rewrite_queries(tech, items, prev_q, retry_count=retry_n, llm=rewrite_llm)
+            except Exception:
+                logger.exception("rewrite_queries LLM 실패(%s) — 결정적 검색어로 대체", tid)
+                extra["rewritten_queries"] = rewrite_queries(tech, items, prev_q, retry_count=retry_n, llm=None)
         else:
             extra["previous_results"] = [
                 r for r in latest_by_criterion(state.get(PERSPECTIVE_KEY[p], [])) if r.tech_id == tid
@@ -525,24 +581,52 @@ def build_graph(
 
     # ================================================================ 하위 에이전트
 
-    def tech_research(payload: dict) -> dict:
+    def _guard(key_of: Callable[[dict], str], name: str):
+        """하위 에이전트 예외를 그래프 중단 대신 node_status/last_error로 기록 (fallback = 재시도 → not_public)."""
+
+        def deco(fn: Callable[[dict, Deps], dict]) -> Callable[[dict], dict]:
+            @functools.wraps(fn)
+            def wrapper(payload: dict) -> dict:
+                key = key_of(payload)
+                logger.info("▶ %s (%s)", name, key)
+                # 실제 실행한 검색어(웹·논문)를 기록하는 Deps — 상한 도달 시 not_public 기록에 그대로 쓴다
+                queries: list[str] = []
+                base = deps_for(name)
+
+                def web_search(query: str, **kwargs: Any) -> list[Any]:
+                    queries.append(query)
+                    return base.web_search(query, **kwargs)
+
+                tracked = base.model_copy(
+                    update={"web_search": web_search, "retriever": _QueryRecordingRetriever(base.retriever, queries)}
+                )
+                log = {"search_log": {key: queries}}
+                try:
+                    out = fn(payload, tracked)
+                except Exception as e:
+                    logger.exception("%s(%s) 실패 — supervisor가 재작업/확정을 결정", name, key)
+                    return {**log, "node_status": {key: "error"}, "last_error": f"{key}: {type(e).__name__}: {e}"}
+                logger.info("◀ %s (%s)", name, key)
+                return {**out, **log, "node_status": {key: "done"}}
+
+            return wrapper
+
+        return deco
+
+    @_guard(lambda p: f"trl:{p['tech'].tech_id}", "tech_research")
+    def tech_research(payload: dict, d: Deps) -> dict:
         inp = AgentInput.model_validate(payload)
-        logger.info("▶ tech_research (%s)", inp.tech.tech_id)
-        out = agents.run_tech_research(inp, deps_for("tech_research"))
+        out = agents.run_tech_research(inp, d)
         out = TechResearchOutput.model_validate(out if isinstance(out, dict) else out.model_dump())
-        return {
-            "tech_profiles": [out.tech_profile],
-            "trl_eval": out.trl_eval,
-            "node_status": {f"trl:{inp.tech.tech_id}": "done"},
-        }
+        return {"tech_profiles": [out.tech_profile], "trl_eval": out.trl_eval}
 
     def _perspective_node(name: str, key: str, fn_name: str):
-        def node(payload: dict) -> dict:
+        @_guard(lambda p: f"{name}:{p['tech'].tech_id}", name)
+        def node(payload: dict, d: Deps) -> dict:
             inp = AgentInput.model_validate(payload)
-            logger.info("▶ %s (%s)", key, inp.tech.tech_id)
-            results = getattr(agents, fn_name)(inp, deps_for(name))
+            results = getattr(agents, fn_name)(inp, d)
             results = [CriterionResult.model_validate(r if isinstance(r, dict) else r.model_dump()) for r in results]
-            return {key: results, "node_status": {f"{name}:{inp.tech.tech_id}": "done"}}
+            return {key: results}
 
         node.__name__ = key
         return node
@@ -567,12 +651,20 @@ def build_graph(
     def synthesis(state: GraphState) -> dict:
         from techeval.schemas import SynthesisResult
 
-        out = agents.run_synthesis(synthesis_input(state), deps_for("synthesis"))
+        try:
+            out = agents.run_synthesis(synthesis_input(state), deps_for("synthesis"))
+        except Exception:  # 일시 오류 대비 1회 재시도 (종합이 없으면 보고서를 만들 수 없음)
+            logger.exception("synthesis 실패 — 1회 재시도")
+            out = agents.run_synthesis(synthesis_input(state), deps_for("synthesis"))
         return {"synthesis": SynthesisResult.model_validate(out if isinstance(out, dict) else out.model_dump())}
 
     @_log_node
     def counter_evidence(state: GraphState) -> dict:
-        evs = search_counter_evidence(state["evidence_gap"], deps, technologies=state["technologies"])
+        try:
+            evs = search_counter_evidence(state["evidence_gap"], deps, technologies=state["technologies"])
+        except Exception as e:  # 반대 근거 탐색 실패는 보고서 한계점으로 남기고 진행 (재시도 횟수는 이미 소진 처리됨)
+            logger.exception("counter_evidence 실패 — 반대 근거 없이 진행")
+            return {"last_error": f"counter_evidence: {type(e).__name__}: {e}"}
         return {"counter_evidence": [*state.get("counter_evidence", []), *evs]}
 
     # ================================================================ 보고서 · 품질 평가

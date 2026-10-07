@@ -84,22 +84,36 @@ def make_not_public_result(
     retry_count: int,
     reason: str = "재검색 상한 도달",
     problems: list[str] | None = None,
+    run_error: str | None = None,
 ) -> CriterionResult:
     """재시도 상한에 도달한 기준을 `not_public`으로 확정하는 **기록**(판정 아님).
 
     - `queries`: 실제로 사용된 검색어. 모르면 빈 리스트로 넘기고, 기록에는 '검색어 미기록'으로 남긴다 (지어내지 않음).
     - `problems`: 마지막 검사에서 걸린 위반 목록. 있으면 "근거 검증 실패", 없으면 "결과 없음"으로 사유를 구분한다.
+    - `run_error`: 마지막 실행이 예외로 끝난 경우의 오류 요약. "검색했으나 공개 근거 없음"과 구분해 `locator="run_error"`로
+      남기고, 검색어 칸에 실제 검색어(없으면 '검색 미수행')와 오류를 함께 적는다.
     """
     perspective = CRITERION_PERSPECTIVE[criterion_id]
     unit = "paper" if perspective in ("trl", "domain") else "family"
-    cause = "근거 검증 실패" if problems else "결과 없음"
+    cause = "실행 오류(공개 여부 미확인)" if run_error else "근거 검증 실패" if problems else "결과 없음"
+    if run_error:  # 실행 오류는 '검색했으나 공개 근거 없음'이 아니다 — locator와 검색어 칸에 구분해 남긴다
+        locator = "run_error"
+        tried = " | ".join(queries)
+        search_query = (
+            f"{tried} (검색 후 실행 오류: {run_error[:120]})"
+            if queries
+            else f"(검색 미수행 — 실행 오류: {run_error[:120]})"
+        )
+    else:
+        search_query = " | ".join(queries) if queries else "(검색어 미기록 — 에이전트 재실행 상한 도달)"
+        locator = "not_found"
     evidence = Evidence(
         evidence_id=f"{tech.tech_id}-{criterion_id}-NP",
         source_type="not_public",
         unit=unit,
         quote="",
-        locator="not_found",
-        search_query=" | ".join(queries) if queries else "(검색어 미기록 — 에이전트 재실행 상한 도달)",
+        locator=locator,
+        search_query=search_query,
         searched_at=now,
         search_scope=CRITERION_SCOPE.get(criterion_id, ""),
     )
