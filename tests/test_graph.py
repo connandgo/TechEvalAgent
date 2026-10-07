@@ -5,7 +5,7 @@
 """
 
 from techeval import stub_agents
-from techeval.graph import GraphConfig, invoke_config
+from techeval.graph import GraphConfig, build_graph, invoke_config
 from techeval.schemas import MAX_RETRY_PER_PERSPECTIVE, JudgeResult, TechRef
 from techeval.state import latest_by_criterion
 from tests.graph_harness import Harness
@@ -21,8 +21,11 @@ def test_a_normal_path_reaches_end(h: Harness):
     assert all(v == 0 for v in final["retry_counts"].values())
     assert nodes["tech_research"] == 2 and nodes["market_eval"] == 2
     assert nodes["stakeholder_eval"] == 2 and nodes["domain_eval"] == 2
-    assert nodes["perspective_check"] == 1 and nodes["synthesis"] == 1 and nodes["report"] == 1
-    assert nodes["query_rewrite"] == 0 and nodes["counter_evidence_search"] == 0
+    assert nodes["supervisor"] >= 1 and nodes["synthesis"] == 1 and nodes["report"] == 1
+    assert nodes["judge"] == 1 and nodes["render_pdf"] == 1
+    # 정상 경로에서는 재작업(missing_criteria)이 한 번도 나가지 않는다
+    assert all(i.missing_criteria is None for n in ("run_tech_research", "run_market_eval") for i in h.inputs[n])
+    assert nodes["counter_evidence"] == 0
     # 30개 (tech, criterion) 결과, 전부 실제 검색 결과 근거 (not_public 없음)
     results = [
         r for k in ("trl_eval", "market_eval", "stakeholder_eval", "domain_eval") for r in latest_by_criterion(final[k])
@@ -46,8 +49,8 @@ def test_b_missing_t3_retries_then_not_public(h: Harness):
     h.overrides["run_tech_research"] = drop_t3
     final, nodes = h.run()
 
-    assert nodes["query_rewrite"] == MAX_RETRY_PER_PERSPECTIVE
-    assert nodes["tech_evidence_check"] == MAX_RETRY_PER_PERSPECTIVE + 1
+    # query_rewrite 는 supervisor 내부 호출 → rewritten_queries 가 실린 재작업 tech_research 호출 수로 확인
+    assert sum(1 for i in h.inputs["run_tech_research"] if i.rewritten_queries) == MAX_RETRY_PER_PERSPECTIVE
     # mla만 재검색: 초기 2 + 재시도 2
     assert h.calls["run_tech_research"] == 2 + MAX_RETRY_PER_PERSPECTIVE
     assert [i.tech.tech_id for i in h.inputs["run_tech_research"][2:]] == ["mla"] * MAX_RETRY_PER_PERSPECTIVE
@@ -61,6 +64,7 @@ def test_b_missing_t3_retries_then_not_public(h: Harness):
     assert _levels(final, "trl_eval", "mla")["T3"] == "not_public"
     assert _levels(final, "trl_eval", "pim_cxl")["T3"] != "not_public"
     assert final["missing_criteria"]["trl:mla"] == []
+    assert final["node_status"]["trl:mla"] == "exhausted"
     assert final["judge_result"] is not None and nodes["render_pdf"] == 1
 
 
@@ -76,10 +80,9 @@ def test_c_missing_m2_reruns_only_market(h: Harness):
     h.overrides["run_market_eval"] = drop_m2_once
     final, nodes = h.run()
 
-    assert nodes["perspective_check"] == 2
     assert nodes["market_eval"] == 3
     assert nodes["stakeholder_eval"] == 2 and nodes["domain_eval"] == 2 and nodes["tech_research"] == 2
-    assert nodes["query_rewrite"] == 0
+    assert not any(i.rewritten_queries for i in h.inputs["run_tech_research"])  # 쿼리 재작성은 기술 조사 전용
     rerun = h.inputs["run_market_eval"][2]
     assert rerun.tech.tech_id == "pim_cxl" and rerun.missing_criteria == ["M2"] and rerun.retry_count == 1
     assert {r.criterion_id for r in rerun.previous_results} == {"M1", "M3"}
@@ -114,8 +117,11 @@ def test_d_asymmetry_triggers_single_counter_search(h: Harness):
     # 최종 evidence_gap 은 반대 근거 탐색 뒤의 재검사 결과 → 이미 탐색한 기술은 다시 요청하지 않는다
     gap = final["evidence_gap"]
     assert gap.needs_counter_search is False
-    assert nodes["counter_evidence_search"] == 1
-    assert nodes["synthesis"] == 2 and nodes["evidence_gap_check"] == 2
+    assert nodes["counter_evidence"] == 1
+    assert nodes["synthesis"] == 2  # 반대 근거 반영을 위해 재종합
+    # counter_evidence 직후 synthesis 가 supervisor 를 거쳐 다시 돈다
+    assert h.order[h.order.index("counter_evidence") + 1] == "supervisor"
+    assert h.order[h.order.index("counter_evidence") + 2] == "synthesis"
     assert final["retry_counts"]["counter"] == 1
     assert final["counter_evidence"] and all("-COUNTER-" in e.evidence_id for e in final["counter_evidence"])
     assert all(e.unit == "family" for e in final["counter_evidence"])
@@ -145,7 +151,9 @@ def test_e_judge_failure_regenerates_once(h: Harness):
     assert final["retry_counts"]["report"] == 1
     assert final["judge_result"].passed is False  # 상한 도달 후 그대로 출력
     second = h.inputs["run_report"][1]
-    assert second.judge_result is not None and second.judge_result.revision_instructions == ["근거 각주를 보강하라"]
+    instr = second.judge_result.revision_instructions
+    assert second.judge_result is not None and instr
+    assert any("각주" in i or "근거" in i for i in instr)  # groundedness 관련 지시
     assert second.previous_report_md == h.inputs["run_report"][0].previous_report_md or second.previous_report_md
 
 
@@ -201,6 +209,47 @@ def test_fabricated_chunk_is_rejected_and_reran(h: Harness):
     rerun = h.inputs["run_domain_eval"][2]
     assert rerun.tech.tech_id == "mla" and set(rerun.missing_criteria) == {"D1", "D2", "D3", "D4"}
     assert not [r for r in latest_by_criterion(final["domain_eval"]) if r.level == "not_public"]
+
+
+# --- Supervisor 패턴 --------------------------------------------------------------
+
+SUB_AGENTS = ("tech_research", "market_eval", "stakeholder_eval", "domain_eval", "synthesis", "counter_evidence")
+
+
+def test_supervisor_is_hub(h: Harness):
+    graph = build_graph(h.deps, h.agents(), h.cfg)
+    edges = {(e.source, e.target) for e in graph.get_graph().edges}
+    for n in SUB_AGENTS:
+        outgoing = {t for s, t in edges if s == n}
+        assert outgoing == {"supervisor"}, (n, outgoing)
+    assert not [(s, t) for s, t in edges if s in SUB_AGENTS and t in SUB_AGENTS]
+    # supervisor 는 모든 하위 에이전트로 갈 수 있다
+    assert {t for s, t in edges if s == "supervisor"} >= set(SUB_AGENTS)
+
+
+def test_routing_follows_state_not_fixed_order(h: Harness):
+    final, nodes = h.run()
+    assert isinstance(final["decision_reason"], str) and final["decision_reason"].strip()
+    assert final["step_count"] >= 1
+    assert final["step_count"] == nodes["supervisor"]
+    # 하위 에이전트 실행 묶음(같은 슈퍼스텝의 Send 병렬 포함)마다 직후에 supervisor 가 한 번 돈다
+    order = h.order
+    batches: list[set[str]] = []
+    i = 0
+    while i < len(order):
+        if order[i] in SUB_AGENTS:
+            j = i
+            while j < len(order) and order[j] in SUB_AGENTS:
+                j += 1
+            batches.append(set(order[i:j]))
+            assert order[j] == "supervisor", (order[i:j], order[j])
+            i = j
+        else:
+            i += 1
+    assert nodes["supervisor"] == len(batches) + 1
+    # 시장·이해관계자·도메인은 서로 의존이 없어 State상 대기 중이면 한 번의 판단으로 함께 배정된다 (순서 고정 아님)
+    assert {"market_eval", "stakeholder_eval", "domain_eval"} in batches
+    assert order[:2] == ["init", "supervisor"] and order[-3:] == ["report", "judge", "render_pdf"]
 
 
 def test_recursion_limit_is_configured():

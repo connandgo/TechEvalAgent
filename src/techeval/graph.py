@@ -1,13 +1,17 @@
-"""LangGraph StateGraph (E). CONTRACTS §8 흐름을 그대로 구현한다.
+"""LangGraph StateGraph (E) — Supervisor 패턴.
 
-- 에이전트 노드는 `Send` payload를 `AgentInput`으로 검증해 순수 함수 `run_xxx(inp, deps)`를 호출하고
-  부분 State를 반환한다.
-- 제어 노드는 `techeval.control.*`의 순수 함수를 감싼다. 의견을 만들지 않는다.
-- 모든 루프는 `retry_counts`로 상한을 건다 (기술 재검색 2, 관점별 2, 반대 근거 1, 보고서 재생성 1).
-- `operator.add` 키의 중복은 종합·보고서 입력 조립 시 `latest_by_criterion`/`latest_by_tech`로 제거한다.
+Agent 실습에서 고정 순서(기술 조사 → 검사 → 관점 3개 병렬 → 종합 → 보고서)를 Supervisor 패턴으로 바꿨다.
 
-State.missing_criteria 는 관점별 합집합(`"trl"`)에 더해 기술별 항목(`"trl:mla"`)도 같은 dict에 기록한다
-(재실행 대상을 Send payload로 나눌 때 필요). 키 형식은 `retry_counts`와 같다.
+- `supervisor`가 매번 현재 State(수집된 관점, 근거 충분도, 재시도 횟수)를 보고 `add_conditional_edges`로
+  다음 담당을 고른다. 실행 순서를 코드에 박아 두지 않는다.
+- 하위 에이전트(tech_research, market_eval, stakeholder_eval, domain_eval, counter_evidence, synthesis)는
+  끝나면 항상 supervisor로 돌아온다. 하위 에이전트끼리는 직접 연결되지 않는다.
+- 근거 충분도 판단은 기존 제어 함수(`check_tech_evidence`, `check_perspectives`, `check_evidence_gap`)를
+  supervisor 안에서 호출해 코드로 결정한다(판정은 결정론, 의견 생성 없음).
+- 근거가 부족하면 해당 하위 에이전트에 부족 기준만 재작업을 요청한다.
+  상한(관점·기술별 2회)에 도달하면 not_public으로 확정.
+- 종료는 단계 수 고정이 아니라 상한으로 보장한다: 재시도 상한 + `MAX_SUPERVISOR_STEPS` + `recursion_limit`.
+- 보고서 생성 후 검수(`judge`)는 기존 흐름 그대로다: 미달이면 보고서를 다시 생성한다(`MAX_REPORT_REGENERATION`).
 """
 
 import functools
@@ -17,11 +21,18 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
 from pydantic import BaseModel
 
-from techeval.agents._deps import AgentInput, Deps, ReportInput, SynthesisInput, TechResearchOutput
+from techeval.agents._deps import (
+    AgentInput,
+    Deps,
+    ReportInput,
+    SynthesisInput,
+    TechResearchOutput,
+)
 from techeval.control._common import make_not_public_result
 from techeval.control.counter_evidence import search_counter_evidence
 from techeval.control.evidence_gap import check_evidence_gap
@@ -34,11 +45,16 @@ from techeval.schemas import (
     MAX_COUNTER_EVIDENCE_SEARCH,
     MAX_REPORT_REGENERATION,
     MAX_RETRY_PER_PERSPECTIVE,
-    PERSPECTIVE_CRITERIA,
+    MAX_SUPERVISOR_STEPS,
     CriterionResult,
     TechRef,
 )
-from techeval.state import GraphState, build_initial_state, latest_by_criterion, latest_by_tech
+from techeval.state import (
+    GraphState,
+    build_initial_state,
+    latest_by_criterion,
+    latest_by_tech,
+)
 from techeval.stub_llm import DEFAULT_FIXTURES_DIR
 
 logger = logging.getLogger(__name__)
@@ -49,13 +65,16 @@ PERSPECTIVE_NODE: dict[str, str] = {
     "stakeholder": "stakeholder_eval",
     "domain": "domain_eval",
 }
+NODE_PERSPECTIVE: dict[str, str] = {v: k for k, v in PERSPECTIVE_NODE.items()}
 PERSPECTIVE_KEY: dict[str, str] = {
     "trl": "trl_eval",
     "market": "market_eval",
     "stakeholder": "stakeholder_eval",
     "domain": "domain_eval",
 }
-DEFAULT_RECURSION_LIMIT = 60
+# supervisor가 첫 실행을 배정하는 관점 순서. 순서 자체가 흐름을 정하지 않는다 — 매 판단은 State 조건으로 한다.
+EVAL_PERSPECTIVES: tuple[str, ...] = ("market", "stakeholder", "domain")
+DEFAULT_RECURSION_LIMIT = 150
 
 
 class Agents(BaseModel):
@@ -149,7 +168,6 @@ def build_graph(
     """CompiledStateGraph를 만든다. `deps.web_search`는 출처 레지스트리로 감싸 V5 검사에 쓴다.
 
     `agent_deps`: 에이전트 이름(tech_research/domain/market/stakeholder/synthesis/report) → 그 노드에만 줄 Deps.
-    없는 에이전트는 공용 `deps`를 쓴다 (에이전트별 모델 분리용, 계약 변경 없음).
     """
     cfg = config or GraphConfig()
     if agents is None:
@@ -165,9 +183,8 @@ def build_graph(
     retriever = deps.retriever
     rewrite_llm = None if cfg.stub else deps.llm
 
-    # ----------------------------------------------------------------- payloads
-
     def agent_payload(state: GraphState, tech: TechRef, perspective: str, **extra: Any) -> dict:
+        """하위 에이전트에 넘길 스코프 입력. 전체 State가 아니라 담당 기술·관점에 필요한 것만."""
         profiles = {p.tech_id: p for p in latest_by_tech(state.get("tech_profiles", []))}
         trl = [r for r in latest_by_criterion(state.get("trl_eval", [])) if r.tech_id == tech.tech_id]
         payload = {
@@ -180,42 +197,18 @@ def build_graph(
         payload.update(extra)
         return payload
 
-    # -------------------------------------------------------------------- nodes
+    # ================================================================ init
 
-    @_log_node
-    def init(state: GraphState) -> dict:
-        return dict(build_initial_state())
+    def init(state: GraphState, config: RunnableConfig) -> dict:
+        trace_id = (config.get("metadata") or {}).get("trace_id")
+        out = dict(build_initial_state(trace_id=trace_id))
+        logger.info("[trace=%s] 시작", out["trace_id"])
+        return out
 
-    def fan_out_tech(state: GraphState) -> list[Send]:
-        return [Send("tech_research", agent_payload(state, t, "trl")) for t in state["technologies"]]
+    # ================================================================ supervisor
 
-    @_log_node
-    def tech_research(payload: dict) -> dict:
-        inp = AgentInput.model_validate(payload)
-        out = agents.run_tech_research(inp, deps_for("tech_research"))
-        out = TechResearchOutput.model_validate(out if isinstance(out, dict) else out.model_dump())
-        expected = set(inp.missing_criteria) if inp.missing_criteria else set(PERSPECTIVE_CRITERIA["trl"])
-        got = {r.criterion_id for r in out.trl_eval}
-        if got != expected:
-            logger.warning(
-                "tech_research(%s): 반환 기준 %s ≠ 요청 %s — 검사 노드가 재실행을 건다",
-                inp.tech.tech_id,
-                sorted(got),
-                sorted(expected),
-            )
-        return {"tech_profiles": [out.tech_profile], "trl_eval": out.trl_eval}
-
-    def route_after_tech_research(state: GraphState) -> str:
-        # perspective_check가 한 번이라도 돌았으면 missing_criteria에 "market:<tech>" 류 키가 생긴다.
-        # 그 뒤의 tech_research(T 기준 재실행)는 검사 노드로 돌아가지 않고 perspective_check로 합류한다.
-        started = any(
-            ":" in k and k.split(":")[0] in ("market", "stakeholder", "domain")
-            for k in state.get("missing_criteria", {})
-        )
-        return "perspective_check" if started else "tech_evidence_check"
-
-    @_log_node
-    def tech_evidence_check(state: GraphState) -> dict:
+    def _post_tech_research(state: GraphState, retry: dict, missing: dict, status: dict) -> dict[str, list]:
+        """방금 끝난 기술 조사 결과의 근거 충분도를 판정하고, 부족하면 재작업 대상으로 올린다."""
         res = check_tech_evidence(
             state["technologies"],
             latest_by_tech(state.get("tech_profiles", [])),
@@ -223,167 +216,248 @@ def build_graph(
             retriever,
             registry,
         )
-        retry = dict(state["retry_counts"])
-        missing = {k: v for k, v in state.get("missing_criteria", {}).items() if not k.startswith("trl")}
-        missing["trl"] = []
+        latest_trl = {(r.tech_id, r.criterion_id): r for r in latest_by_criterion(state.get("trl_eval", []))}
         confirmed: list[CriterionResult] = []
         for tech in state["technologies"]:
             tid = tech.tech_id
-            items = res.missing.get(tid, [])
             key = f"trl:{tid}"
-            if not items:
+            items = res.missing.get(tid, [])
+            if not items or status.get(key) == "exhausted":
                 missing[key] = []
                 continue
             if retry.get(key, 0) < MAX_RETRY_PER_PERSPECTIVE:
                 retry[key] = retry.get(key, 0) + 1
                 missing[key] = items
-                missing["trl"] = sorted(set(missing["trl"]) | {i for i in items if not i.startswith("PROFILE:")})
-                logger.info(
-                    "tech_evidence_check: %s 재검색 %d/%d — %s", tid, retry[key], MAX_RETRY_PER_PERSPECTIVE, items
-                )
-            else:
-                missing[key] = []
-                profile_items = [i for i in items if i.startswith("PROFILE:")]
-                if profile_items:
-                    logger.warning(
-                        "tech_evidence_check: %s 프로필 항목 %s 은 상한 도달로 그대로 진행", tid, profile_items
-                    )
-                profile = next((p for p in latest_by_tech(state.get("tech_profiles", [])) if p.tech_id == tid), None)
-                used = list(profile.search_queries_used) if profile else []
-                for cid in res.missing_criteria(tid):
-                    confirmed.append(
-                        make_not_public_result(
-                            tech,
-                            cid,
-                            queries=used,
-                            now=deps.now(),
-                            retry_count=retry.get(key, 0),
-                            problems=[
-                                p for p in res.problems.get(tid, []) if p.startswith(f"{cid}:") or f"-{cid}-" in p
-                            ],
-                        )
-                    )
-        return {"missing_criteria": missing, "retry_counts": retry, "trl_eval": confirmed}
-
-    def route_after_tech_check(state: GraphState) -> str | list[Send]:
-        mc = state["missing_criteria"]
-        if any(mc.get(f"trl:{t.tech_id}") for t in state["technologies"]):
-            return "query_rewrite"
-        return [
-            Send(PERSPECTIVE_NODE[p], agent_payload(state, t, p))
-            for p in ("market", "stakeholder", "domain")
-            for t in state["technologies"]
-        ]
-
-    @_log_node
-    def query_rewrite(state: GraphState) -> dict:
-        # 검색어 자체는 아래 fan_out_rewritten 에서 Send payload로만 전달한다 (State 키 없음)
-        return {}
-
-    def fan_out_rewritten(state: GraphState) -> list[Send]:
-        profiles = {p.tech_id: p for p in latest_by_tech(state.get("tech_profiles", []))}
-        sends = []
-        for tech in state["technologies"]:
-            items = state["missing_criteria"].get(f"trl:{tech.tech_id}") or []
-            if not items:
                 continue
-            prev = profiles[tech.tech_id].search_queries_used if tech.tech_id in profiles else []
-            retry = state["retry_counts"][f"trl:{tech.tech_id}"]
-            queries = rewrite_queries(tech, items, prev, retry_count=retry, llm=rewrite_llm)
-            criteria = [i for i in items if not i.startswith("PROFILE:")] or None
-            sends.append(
-                Send(
-                    "tech_research",
-                    agent_payload(state, tech, "trl", missing_criteria=criteria, rewritten_queries=queries),
+            # 상한 도달: 근거를 끝내 못 찾은 기준은 not_public으로 확정하고 재작업 대상에서 뺀다
+            missing[key] = []
+            status[key] = "exhausted"
+            profile = next((p for p in latest_by_tech(state.get("tech_profiles", [])) if p.tech_id == tid), None)
+            used = list(profile.search_queries_used) if profile else []
+            for cid in res.missing_criteria(tid):
+                prev = latest_trl.get((tid, cid))
+                if prev is not None and prev.level == "not_public":
+                    continue
+                confirmed.append(
+                    make_not_public_result(
+                        tech,
+                        cid,
+                        queries=used,
+                        now=deps.now(),
+                        retry_count=retry.get(key, 0),
+                        problems=[p for p in res.problems.get(tid, []) if p.startswith(f"{cid}:") or f"-{cid}-" in p],
+                    )
                 )
-            )
-        return sends
+        return {"trl_eval": confirmed}
 
-    def _perspective_node(name: str, key: str, fn_name: str):
-        def node(payload: dict) -> dict:
-            inp = AgentInput.model_validate(payload)
-            results = getattr(agents, fn_name)(inp, deps_for(name))
-            results = [CriterionResult.model_validate(r if isinstance(r, dict) else r.model_dump()) for r in results]
-            expected = set(inp.missing_criteria) if inp.missing_criteria else set(PERSPECTIVE_CRITERIA[name])
-            got = {r.criterion_id for r in results}
-            if got != expected:
-                logger.warning(
-                    "%s(%s): 반환 기준 %s ≠ 요청 %s — perspective_check가 재실행을 건다",
-                    key,
-                    inp.tech.tech_id,
-                    sorted(got),
-                    sorted(expected),
-                )
-            return {key: results}
+    def _post_perspectives(
+        state: GraphState, just_ran: list[str], retry: dict, missing: dict, status: dict
+    ) -> dict[str, list]:
+        """방금 돌아온 관점(`just_ran`)만 판정한다 (검사 함수는 한 번만 호출).
 
-        node.__name__ = key
-        return _log_node(node)
-
-    market_eval = _perspective_node("market", "market_eval", "run_market_eval")
-    stakeholder_eval = _perspective_node("stakeholder", "stakeholder_eval", "run_stakeholder_eval")
-    domain_eval = _perspective_node("domain", "domain_eval", "run_domain_eval")
-
-    @_log_node
-    def perspective_check(state: GraphState) -> dict:
-        res = check_perspectives(state["technologies"], _latest_evals(state), retriever, registry)
-        retry = dict(state["retry_counts"])
-        missing: dict[str, list[str]] = {k: v for k, v in state["missing_criteria"].items() if k.startswith("trl:")}
+        배정되지 않았던 관점은 건드리지 않는다 — 재작업을 배정받기 전에 재시도 횟수만 올라가
+        상한에 걸리는 일을 막는다.
+        """
+        evals = _latest_evals(state)
+        res = check_perspectives(state["technologies"], evals, retriever, registry)
         updates: dict[str, list[CriterionResult]] = {key: [] for key in PERSPECTIVE_KEY.values()}
-        for r in res.corrected:
+        for r in res.corrected:  # 신뢰도 재계산본 (V7)
             updates[PERSPECTIVE_KEY[r.perspective]].append(r)
-        for p, techs in res.missing.items():
-            missing[p] = []
-            for tid, cids in techs.items():
+        for p in just_ran:
+            latest = {(r.tech_id, r.criterion_id): r for r in evals[p]}
+            for tech in state["technologies"]:
+                tid = tech.tech_id
                 key = f"{p}:{tid}"
-                if not cids:
+                if key not in status:  # 아직 배정 전
+                    continue
+                cids = res.missing[p].get(tid, [])
+                if not cids or status.get(key) == "exhausted":
                     missing[key] = []
                     continue
                 if retry.get(key, 0) < MAX_RETRY_PER_PERSPECTIVE:
                     retry[key] = retry.get(key, 0) + 1
                     missing[key] = list(cids)
-                    missing[p] = sorted(set(missing[p]) | set(cids))
-                    logger.info(
-                        "perspective_check: %s 재실행 %d/%d — %s", key, retry[key], MAX_RETRY_PER_PERSPECTIVE, cids
-                    )
-                else:
-                    missing[key] = []
-                    tech = _tech_by_id(state, tid)
-                    for cid in cids:
-                        updates[PERSPECTIVE_KEY[p]].append(
-                            make_not_public_result(
-                                tech,
-                                cid,
-                                queries=[],
-                                now=deps.now(),
-                                retry_count=retry.get(key, 0),
-                                problems=[
-                                    x for x in res.problems if x.startswith(f"{tid}/{cid}") or f"{tid}-{cid}-" in x
-                                ],
-                            )
-                        )
-        return {"missing_criteria": missing, "retry_counts": retry, **updates}
-
-    def route_after_perspective_check(state: GraphState) -> str | list[Send]:
-        mc = state["missing_criteria"]
-        sends: list[Send] = []
-        for p in PERSPECTIVE_CRITERIA:
-            for tech in state["technologies"]:
-                cids = mc.get(f"{p}:{tech.tech_id}") or []
-                if not cids:
                     continue
-                extra: dict[str, Any] = {"missing_criteria": cids}
-                if p == "trl":
-                    profiles = {pr.tech_id: pr for pr in latest_by_tech(state.get("tech_profiles", []))}
-                    prev = profiles[tech.tech_id].search_queries_used if tech.tech_id in profiles else []
-                    extra["rewritten_queries"] = rewrite_queries(
-                        tech, cids, prev, retry_count=state["retry_counts"][f"trl:{tech.tech_id}"], llm=rewrite_llm
+                missing[key] = []
+                status[key] = "exhausted"
+                for cid in cids:
+                    prev = latest.get((tid, cid))
+                    if prev is not None and prev.level == "not_public":
+                        continue
+                    updates[PERSPECTIVE_KEY[p]].append(
+                        make_not_public_result(
+                            tech,
+                            cid,
+                            queries=[],
+                            now=deps.now(),
+                            retry_count=retry.get(key, 0),
+                            problems=[x for x in res.problems if x.startswith(f"{tid}/{cid}") or f"{tid}-{cid}-" in x],
+                        )
                     )
-                else:
-                    extra["previous_results"] = [
-                        r for r in latest_by_criterion(state.get(PERSPECTIVE_KEY[p], [])) if r.tech_id == tech.tech_id
-                    ]
-                sends.append(Send(PERSPECTIVE_NODE[p], agent_payload(state, tech, p, **extra)))
-        return sends or "synthesis"
+        return updates
+
+    def _decide(state: GraphState, missing: dict, status: dict, retry: dict, step: int) -> tuple[str, dict, str]:
+        """현재 State만 보고 다음 담당을 고른다.
+
+        반환: (next, dispatch{노드: {tech_id: 부족 항목}}, 사유). 빈 리스트 = 첫 실행.
+        기술 조사(TRL)를 먼저 두는 것은 순서 고정이 아니라 데이터 의존이다 — 도메인 평가가 `tech_profile`을,
+        모든 관점이 `trl_eval`을 입력으로 받는다. 시장·이해관계자·도메인 사이에는 의존이 없으므로
+        State상 대기 중인 관점(미수집 또는 근거 부족)을 한 번의 판단으로 모두 배정한다.
+        """
+        techs = state["technologies"]
+
+        if step > MAX_SUPERVISOR_STEPS:
+            cap = f"supervisor 상한({MAX_SUPERVISOR_STEPS}) 도달 — 남은 재작업 없이"
+            if not state.get("synthesis"):
+                return "synthesis", {}, f"{cap} 종합으로 진행"
+            return "report", {}, f"{cap} 보고서 작성으로 진행"
+
+        not_run = [t.tech_id for t in techs if f"trl:{t.tech_id}" not in status]
+        if not_run:
+            return (
+                "tech_research",
+                {"tech_research": {tid: [] for tid in not_run}},
+                f"기술 프로필·TRL 미수집: {not_run}",
+            )
+
+        rework = {t.tech_id: missing[f"trl:{t.tech_id}"] for t in techs if missing.get(f"trl:{t.tech_id}")}
+        if rework:
+            return "tech_research", {"tech_research": rework}, f"기술 근거 부족 → 재조사 요청 {rework}"
+
+        plan: dict[str, dict[str, list[str]]] = {}
+        why: list[str] = []
+        for p in EVAL_PERSPECTIVES:
+            for t in techs:
+                key = f"{p}:{t.tech_id}"
+                if key not in status:
+                    plan.setdefault(PERSPECTIVE_NODE[p], {})[t.tech_id] = []
+                    why.append(f"{key} 미수집")
+                elif missing.get(key):
+                    plan.setdefault(PERSPECTIVE_NODE[p], {})[t.tech_id] = list(missing[key])
+                    why.append(f"{key} 근거 부족 {missing[key]} → 재작업")
+        if plan:
+            return "perspectives", plan, "관점 평가 배정: " + ", ".join(why)
+
+        if not state.get("synthesis") or state.get("synthesis_stale"):
+            why = "반대 근거 반영 위해 재종합" if state.get("synthesis_stale") else "4개 관점 근거 충분 → 종합"
+            return "synthesis", {}, why
+
+        gap = state.get("evidence_gap")
+        if gap is not None and gap.needs_counter_search and retry.get("counter", 0) < MAX_COUNTER_EVIDENCE_SEARCH:
+            causes = []
+            if gap.asymmetry:
+                causes.append(f"근거 수 비대칭 {gap.evidence_count}")
+            if gap.opposing_missing:
+                causes.append(f"반대 근거 없는 기준 {len(gap.opposing_missing)}개")
+            return "counter_evidence", {}, "반대 근거 탐색 필요: " + (", ".join(causes) or gap.note[:80])
+
+        return "report", {}, "근거 충분·비대칭 해소 → 보고서 작성"
+
+    def supervisor(state: GraphState) -> dict:
+        step = state.get("step_count", 0) + 1
+        retry = dict(state["retry_counts"])
+        missing = dict(state.get("missing_criteria", {}))
+        status = dict(state.get("node_status", {}))
+        prev = state.get("next")
+        updates: dict[str, Any] = {}
+
+        # 1) 방금 돌아온 하위 에이전트 결과를 판정한다 (근거 충분도 = 코드 판정)
+        if prev == "tech_research":
+            for k, v in _post_tech_research(state, retry, missing, status).items():
+                updates[k] = [*updates.get(k, []), *v]
+        elif prev == "perspectives":
+            ran = [NODE_PERSPECTIVE[n] for n in state.get("dispatch", {})]
+            for k, v in _post_perspectives(state, ran, retry, missing, status).items():
+                updates[k] = [*updates.get(k, []), *v]
+        elif prev == "synthesis":
+            updates["synthesis_stale"] = False
+            updates["evidence_gap"] = check_evidence_gap(
+                state["technologies"], _latest_evals(state), state.get("synthesis"), state.get("counter_evidence", [])
+            )
+        if prev in ("tech_research", "perspectives", "counter_evidence") and state.get("synthesis"):
+            updates["synthesis_stale"] = True  # 종합 뒤에 근거가 바뀜 → 재종합
+
+        # 2) 갱신된 State로 다음 담당을 고른다
+        keys = ("synthesis_stale", "evidence_gap")
+        view = {**state, **{k: v for k, v in updates.items() if k in keys}}
+        nxt, dispatch, reason = _decide(view, missing, status, retry, step)
+        if nxt == "counter_evidence":
+            retry["counter"] = retry.get("counter", 0) + 1
+        for node, techs_items in dispatch.items():  # 배정 표시 (재개 시 어디까지 갔는지 판단)
+            for tid in techs_items:
+                status.setdefault(f"{NODE_PERSPECTIVE[node]}:{tid}", "assigned")
+
+        logger.info("[trace=%s] supervisor #%d → %s | %s", state.get("trace_id"), step, nxt, reason)
+        return {
+            **updates,
+            "next": nxt,
+            "dispatch": dispatch,
+            "decision_reason": reason,
+            "step_count": step,
+            "retry_counts": retry,
+            "missing_criteria": missing,
+            "node_status": status,
+        }
+
+    def route_from_supervisor(state: GraphState) -> str | list[Send]:
+        """supervisor가 State에 남긴 결정대로 분기한다. 평가 에이전트는 기술별 Send로 보낸다."""
+        nxt = state["next"]
+        if nxt not in ("tech_research", "perspectives"):
+            return nxt
+        sends: list[Send] = []
+        for node, techs_items in state.get("dispatch", {}).items():
+            for tid, items in techs_items.items():
+                sends.append(_send_for(state, node, tid, items))
+        if not sends:  # _decide가 빈 배정을 만들 수 없지만, 만약을 대비해 보고서로 진행 (그래프가 조용히 끝나지 않게)
+            logger.error("빈 배정 — 보고서 작성으로 진행")
+            return "report"
+        return sends
+
+    def _send_for(state: GraphState, nxt: str, tid: str, items: list[str]) -> Send:
+        p = NODE_PERSPECTIVE[nxt]
+        tech = _tech_by_id(state, tid)
+        if not items:  # 첫 실행
+            return Send(nxt, agent_payload(state, tech, p))
+        criteria = [i for i in items if not i.startswith("PROFILE:")] or None
+        extra: dict[str, Any] = {"missing_criteria": criteria}
+        if p == "trl":
+            profiles = {pr.tech_id: pr for pr in latest_by_tech(state.get("tech_profiles", []))}
+            prev_q = profiles[tid].search_queries_used if tid in profiles else []
+            retry_n = state["retry_counts"].get(f"trl:{tid}", 0)
+            extra["rewritten_queries"] = rewrite_queries(tech, items, prev_q, retry_count=retry_n, llm=rewrite_llm)
+        else:
+            extra["previous_results"] = [
+                r for r in latest_by_criterion(state.get(PERSPECTIVE_KEY[p], [])) if r.tech_id == tid
+            ]
+        return Send(nxt, agent_payload(state, tech, p, **extra))
+
+    # ================================================================ 하위 에이전트
+
+    def tech_research(payload: dict) -> dict:
+        inp = AgentInput.model_validate(payload)
+        logger.info("▶ tech_research (%s)", inp.tech.tech_id)
+        out = agents.run_tech_research(inp, deps_for("tech_research"))
+        out = TechResearchOutput.model_validate(out if isinstance(out, dict) else out.model_dump())
+        return {
+            "tech_profiles": [out.tech_profile],
+            "trl_eval": out.trl_eval,
+            "node_status": {f"trl:{inp.tech.tech_id}": "done"},
+        }
+
+    def _perspective_node(name: str, key: str, fn_name: str):
+        def node(payload: dict) -> dict:
+            inp = AgentInput.model_validate(payload)
+            logger.info("▶ %s (%s)", key, inp.tech.tech_id)
+            results = getattr(agents, fn_name)(inp, deps_for(name))
+            results = [CriterionResult.model_validate(r if isinstance(r, dict) else r.model_dump()) for r in results]
+            return {key: results, "node_status": {f"{name}:{inp.tech.tech_id}": "done"}}
+
+        node.__name__ = key
+        return node
+
+    market_eval = _perspective_node("market", "market_eval", "run_market_eval")
+    stakeholder_eval = _perspective_node("stakeholder", "stakeholder_eval", "run_stakeholder_eval")
+    domain_eval = _perspective_node("domain", "domain_eval", "run_domain_eval")
 
     def synthesis_input(state: GraphState) -> SynthesisInput:
         ev = _latest_evals(state)
@@ -399,33 +473,23 @@ def build_graph(
 
     @_log_node
     def synthesis(state: GraphState) -> dict:
-        out = agents.run_synthesis(synthesis_input(state), deps_for("synthesis"))
         from techeval.schemas import SynthesisResult
 
+        out = agents.run_synthesis(synthesis_input(state), deps_for("synthesis"))
         return {"synthesis": SynthesisResult.model_validate(out if isinstance(out, dict) else out.model_dump())}
 
     @_log_node
-    def evidence_gap_check(state: GraphState) -> dict:
-        gap = check_evidence_gap(
-            state["technologies"], _latest_evals(state), state.get("synthesis"), state.get("counter_evidence", [])
-        )
-        return {"evidence_gap": gap}
-
-    def route_after_gap_check(state: GraphState) -> str:
-        gap = state["evidence_gap"]
-        if gap.needs_counter_search and state["retry_counts"].get("counter", 0) < MAX_COUNTER_EVIDENCE_SEARCH:
-            return "counter_evidence_search"
-        return "report"
-
-    @_log_node
-    def counter_evidence_search(state: GraphState) -> dict:
+    def counter_evidence(state: GraphState) -> dict:
         evs = search_counter_evidence(state["evidence_gap"], deps, technologies=state["technologies"])
-        retry = dict(state["retry_counts"])
-        retry["counter"] = retry.get("counter", 0) + 1
-        return {"counter_evidence": [*state.get("counter_evidence", []), *evs], "retry_counts": retry}
+        return {"counter_evidence": [*state.get("counter_evidence", []), *evs]}
+
+    # ================================================================ 보고서 · 품질 평가
 
     def report_input(state: GraphState) -> ReportInput:
         si = synthesis_input(state)
+        gap = state.get("evidence_gap") or check_evidence_gap(
+            state["technologies"], _latest_evals(state), state.get("synthesis"), state.get("counter_evidence", [])
+        )
         return ReportInput(
             technologies=si.technologies,
             domain=state["domain"],
@@ -436,7 +500,7 @@ def build_graph(
             domain_eval=si.domain_eval,
             counter_evidence=si.counter_evidence,
             synthesis=state["synthesis"],
-            evidence_gap=state["evidence_gap"],
+            evidence_gap=gap,
             judge_result=state.get("judge_result"),
             previous_report_md=state.get("report_md"),
         )
@@ -444,7 +508,7 @@ def build_graph(
     @_log_node
     def report(state: GraphState) -> dict:
         retry = dict(state["retry_counts"])
-        if state.get("judge_result") is not None:  # 재생성
+        if state.get("judge_result") is not None:  # 품질 평가 미달 → 재생성
             retry["report"] = retry.get("report", 0) + 1
             logger.info("report: 재생성 %d/%d", retry["report"], MAX_REPORT_REGENERATION)
         md = agents.run_report(report_input(state), deps_for("report"))
@@ -478,46 +542,39 @@ def build_graph(
             return {"report_pdf_path": ""}
         return {"report_pdf_path": agents.render_pdf(state["report_md"], str(out_dir / "report.pdf"))}
 
-    # -------------------------------------------------------------------- graph
+    # ================================================================ graph
 
     g = StateGraph(GraphState)
-    for name, fn in [
-        ("init", init),
-        ("tech_research", tech_research),
-        ("tech_evidence_check", tech_evidence_check),
-        ("query_rewrite", query_rewrite),
-        ("market_eval", market_eval),
-        ("stakeholder_eval", stakeholder_eval),
-        ("domain_eval", domain_eval),
-        ("perspective_check", perspective_check),
-        ("synthesis", synthesis),
-        ("evidence_gap_check", evidence_gap_check),
-        ("counter_evidence_search", counter_evidence_search),
-        ("report", report),
-        ("judge", judge),
-        ("render_pdf", render_pdf),
-    ]:
-        g.add_node(name, fn)
+    g.add_node("init", init)
+    g.add_node("supervisor", supervisor)
+    g.add_node("tech_research", tech_research)
+    g.add_node("market_eval", market_eval)
+    g.add_node("stakeholder_eval", stakeholder_eval)
+    g.add_node("domain_eval", domain_eval)
+    g.add_node("synthesis", synthesis)
+    g.add_node("counter_evidence", counter_evidence)
+    g.add_node("report", report)
+    g.add_node("judge", judge)
+    g.add_node("render_pdf", render_pdf)
 
     g.add_edge(START, "init")
-    g.add_conditional_edges("init", fan_out_tech, ["tech_research"])
-    g.add_conditional_edges("tech_research", route_after_tech_research, ["tech_evidence_check", "perspective_check"])
+    g.add_edge("init", "supervisor")
     g.add_conditional_edges(
-        "tech_evidence_check",
-        route_after_tech_check,
-        ["query_rewrite", "market_eval", "stakeholder_eval", "domain_eval"],
+        "supervisor",
+        route_from_supervisor,
+        [
+            "tech_research",
+            "market_eval",
+            "stakeholder_eval",
+            "domain_eval",
+            "counter_evidence",
+            "synthesis",
+            "report",
+        ],
     )
-    g.add_conditional_edges("query_rewrite", fan_out_rewritten, ["tech_research"])
-    for n in ("market_eval", "stakeholder_eval", "domain_eval"):
-        g.add_edge(n, "perspective_check")
-    g.add_conditional_edges(
-        "perspective_check",
-        route_after_perspective_check,
-        ["tech_research", "market_eval", "stakeholder_eval", "domain_eval", "synthesis"],
-    )
-    g.add_edge("synthesis", "evidence_gap_check")
-    g.add_conditional_edges("evidence_gap_check", route_after_gap_check, ["counter_evidence_search", "report"])
-    g.add_edge("counter_evidence_search", "synthesis")
+    # 하위 에이전트는 항상 supervisor로만 복귀 (하위 에이전트 간 직접 통신 없음)
+    for n in ("tech_research", "market_eval", "stakeholder_eval", "domain_eval", "counter_evidence", "synthesis"):
+        g.add_edge(n, "supervisor")
     g.add_edge("report", "judge")
     g.add_conditional_edges("judge", route_after_judge, ["report", "render_pdf"])
     g.add_edge("render_pdf", END)
@@ -527,8 +584,13 @@ def build_graph(
     return compiled
 
 
-def invoke_config(cfg: GraphConfig | None = None) -> dict:
-    return {"recursion_limit": (cfg or GraphConfig()).recursion_limit}
+def invoke_config(cfg: GraphConfig | None = None, trace_id: str | None = None) -> dict:
+    """recursion_limit + LangSmith 상관 메타데이터(trace_id)."""
+    out: dict[str, Any] = {"recursion_limit": (cfg or GraphConfig()).recursion_limit}
+    if trace_id:
+        out["metadata"] = {"trace_id": trace_id}
+        out["run_name"] = f"TechEvalAgent-supervisor-{trace_id}"
+    return out
 
 
 def state_to_json(state: dict) -> str:
