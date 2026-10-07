@@ -39,3 +39,7 @@ def deps_stub(fake_llm: FakeStructuredLLM) -> Deps:
         judge_llm=FakeStructuredLLM(fixtures_dir=FIXTURES_DIR),
         now=lambda: FIXED_NOW,
     )
+
+
+# 그래프 테스트 공용 하네스 픽스처 `h` (tests/test_graph*.py에서 사용)
+from tests.graph_harness import h  # noqa: F401
